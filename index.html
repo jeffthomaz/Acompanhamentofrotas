@@ -8,6 +8,7 @@
 :root{
   --bg:#EDF0EA;--ink:#16251E;--muted:#5A6A61;--line:#CBD3CB;--soft:#E2E7E0;
   --folha:#3E9B34;--maq:#E9A800;--maq-ink:#16251E;
+  --v1:#E9A800;--v2:#E2701B;--v3:#C23B2B;
   --s1:#0F4A2A;--s2:#E9A800;--s3:#5E9C8A;--s4:#AEBBB2;--on3:#16251E;--on4:#16251E;
   --bom:#2C7A4B;--atencao:#8F6200;--critico:#C23B2B;
   --bom-bg:#D9ECDF;--atencao-bg:#F6E7B8;--critico-bg:#F6D9D4;
@@ -17,13 +18,13 @@
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   --bg:#0F1914;--ink:#E6EEE8;--muted:#9BAAA1;--line:#2A3A32;--soft:#1A2820;
   --folha:#6FBF99;--maq:#F2B90F;--maq-ink:#16251E;
-  --s1:#6FBF99;--s2:#F2B90F;--s3:#3F8A78;--s4:#55655C;--on3:#FFFFFF;--on4:#FFFFFF;
+  --v1:#F2B90F;--v2:#F08C3C;--v3:#F2807A;--s1:#6FBF99;--s2:#F2B90F;--s3:#3F8A78;--s4:#55655C;--on3:#FFFFFF;--on4:#FFFFFF;
   --bom:#6FD09A;--atencao:#F2C24D;--critico:#F2807A;
   --bom-bg:#173325;--atencao-bg:#3A2F10;--critico-bg:#3B1E1B;color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#0F1914;--ink:#E6EEE8;--muted:#9BAAA1;--line:#2A3A32;--soft:#1A2820;
   --folha:#6FBF99;--maq:#F2B90F;--maq-ink:#16251E;
-  --s1:#6FBF99;--s2:#F2B90F;--s3:#3F8A78;--s4:#55655C;--on3:#FFFFFF;--on4:#FFFFFF;
+  --v1:#F2B90F;--v2:#F08C3C;--v3:#F2807A;--s1:#6FBF99;--s2:#F2B90F;--s3:#3F8A78;--s4:#55655C;--on3:#FFFFFF;--on4:#FFFFFF;
   --bom:#6FD09A;--atencao:#F2C24D;--critico:#F2807A;
   --bom-bg:#173325;--atencao-bg:#3A2F10;--critico-bg:#3B1E1B;color-scheme:dark}
 *{box-sizing:border-box}
@@ -64,9 +65,10 @@ button:focus-visible{outline:3px solid var(--maq);outline-offset:2px}
 .legend{display:flex;flex-wrap:wrap;gap:.3rem 1.1rem;margin:0 0 .6rem;padding:0;list-style:none;font-size:.82rem;color:var(--muted)}
 .legend i{display:inline-block;width:.7rem;height:.7rem;border-radius:2px;margin-right:.35rem;vertical-align:-1px}
 .board{border-top:2px solid var(--ink)}
-.row{display:grid;grid-template-columns:6.5rem minmax(0,1fr) 8.5rem;gap:0 1rem;align-items:stretch;border-bottom:1px solid var(--line);min-height:3.4rem}
+.row{display:grid;grid-template-columns:minmax(7rem,11rem) minmax(0,1fr) 8.5rem;gap:0 1rem;align-items:stretch;border-bottom:1px solid var(--line);min-height:3.4rem}
 .row.hd{min-height:1.8rem;border-bottom:0;font-size:.8rem;color:var(--muted)}
-.who{display:grid;align-content:center}
+.who{display:grid;align-content:center;min-width:0}
+.who b{overflow-wrap:anywhere}
 .who b{font-family:var(--display);font-weight:700;font-size:1.05rem;line-height:1.2}
 .who span{font-size:.78rem;color:var(--muted)}
 .plot{position:relative;display:flex;align-items:center}
@@ -83,6 +85,16 @@ button:focus-visible{outline:3px solid var(--maq);outline-offset:2px}
 .res .b{display:inline-block;font-size:.74rem;font-weight:600;padding:.05rem .5rem;border-radius:999px;margin-top:.15rem}
 .b.bom{background:var(--bom-bg);color:var(--bom)}.b.atencao{background:var(--atencao-bg);color:var(--atencao)}.b.critico{background:var(--critico-bg);color:var(--critico)}
 .n-bom{color:var(--bom)}.n-atencao{color:var(--atencao)}.n-critico{color:var(--critico)}
+.filtros{display:flex;flex-wrap:wrap;gap:.75rem 1.25rem;align-items:flex-end}
+.filtros label{display:grid;gap:.25rem;font-size:.8rem;font-weight:600;color:var(--muted)}
+.filtros select{font:inherit;font-size:.92rem;font-weight:500;color:var(--ink);background:var(--bg);border:1px solid var(--ink);border-radius:6px;padding:.45rem 2rem .45rem .7rem;min-width:min(100%,15rem);max-width:100%}
+.limpar{font:inherit;font-size:.85rem;font-weight:600;color:var(--ink);background:none;border:0;border-bottom:2px solid var(--maq);padding:.2rem 0;cursor:pointer}
+select:focus-visible{outline:3px solid var(--maq);outline-offset:2px}
+.bar span.v1,.bar.v1{background:var(--v1)}.bar span.v2,.bar.v2{background:var(--v2)}.bar span.v3,.bar.v3{background:var(--v3)}
+.row.subrow{min-height:2.5rem;border-bottom:1px dashed var(--line)}
+.row.subrow .who{padding-left:1rem}.row.subrow .who b{font-size:.88rem;font-weight:600}.row.subrow .bar{height:.8rem}.row.subrow .res strong{font-size:1.05rem}
+.rowbtn{font:inherit;color:inherit;text-align:left;background:none;border:0;border-bottom:1px solid var(--line);width:100%;padding:0;cursor:pointer}
+.rowbtn:hover{background:var(--soft)}.rowbtn:focus-visible{outline:3px solid var(--maq);outline-offset:-3px}
 .chart{width:100%;height:auto;max-height:150px;display:block}
 .col{fill:var(--folha);transform-box:fill-box;transform-origin:bottom;animation:up .7s cubic-bezier(.2,.8,.2,1) backwards}
 .col.hi{fill:var(--critico)}

@@ -49,42 +49,87 @@
     return '<div class="row" style="--i:' + i + '"><div class="who">' + quem + '</div><div class="plot">' + plot + '</div><div class="res">' + res + "</div></div>";
   }
 
-  // ---------- Comportamento ----------
-  function pontos(id) {
-    var p = D.comportamento.pesos, c = D.comportamento.porEquip[id];
-    return (c.vel * p.vel + c.freada * p.freada + c.acel * p.acel + c.curva * p.curva) / c.horas * 100;
+  // ---------- Comportamento (ocorrências por tipo, filtradas por processo e responsável) ----------
+  var fil_ = { processo: "", responsavel: "" };
+
+  function opcoes(lista, atual, rotulo) {
+    return '<option value="">' + rotulo + "</option>" + lista.map(function (v) {
+      return '<option value="' + esc(v) + '"' + (v === atual ? " selected" : "") + ">" + esc(v) + "</option>";
+    }).join("");
   }
-  function faixa(s) { return s >= 80 ? ["bom", "Bom"] : s >= 60 ? ["atencao", "Atenção"] : ["critico", "Crítico"]; }
+  function unicos(a) { return a.filter(function (v, i) { return a.indexOf(v) === i; }).sort(function (x, y) { return x.localeCompare(y, "pt-BR"); }); }
 
   function abaComportamento() {
-    var c = D.comportamento, tipos = Object.keys(c.tipos);
-    var rows = equips().map(function (e) {
-      var x = c.porEquip[e.id];
-      return { id: e.id, tipo: e.tipo, x: x, total: x.vel + x.freada + x.acel + x.curva, score: Math.max(0, Math.round(100 - pontos(e.id) / 2)) };
-    }).sort(function (a, b) { return a.score - b.score; });
-    if (!rows.length) return "";
-    var crit = rows.filter(function (r) { return r.score < 60; }).length;
-    var total = sum(rows, function (r) { return r.total; });
-    var media = Math.round(sum(rows, function (r) { return r.score; }) / rows.length);
-    var maxT = Math.max.apply(null, rows.map(function (r) { return r.total; }));
-    var lead = crit
-      ? "<b>" + crit + " de " + rows.length + "</b> equipamentos estão em faixa crítica. O pior é <b>" + rows[0].id + "</b>, com nota " + rows[0].score + "."
-      : "Nenhum equipamento em faixa crítica. A nota média da frota é <b>" + media + "</b>.";
-    var legenda = tipos.map(function (k, i) { return '<li><i class="s' + (i + 1) + '"></i>' + esc(c.tipos[k]) + "</li>"; }).join("");
-    var corpo = rows.map(function (r, i) {
-      var f = faixa(r.score);
-      var segs = tipos.map(function (k, j) {
-        var v = r.x[k]; if (!v) return "";
-        return '<span class="s' + (j + 1) + '" style="flex:' + v + '" title="' + esc(c.tipos[k] + ": " + v) + '">' + (v / maxT >= .08 ? v : "") + "</span>";
+    var O = D.ocorrencias, T = O.tipos;
+    var processos = unicos(O.linhas.map(function (l) { return l.processo; }));
+    var doProc = O.linhas.filter(function (l) { return !fil_.processo || l.processo === fil_.processo; });
+    var resps = unicos(doProc.map(function (l) { return l.responsavel; }));
+    if (fil_.responsavel && resps.indexOf(fil_.responsavel) < 0) fil_.responsavel = "";
+    var linhas = doProc.filter(function (l) { return !fil_.responsavel || l.responsavel === fil_.responsavel; });
+
+    var cont = {}; T.forEach(function (t) { cont[t.id] = sum(linhas, function (l) { return l[t.id] || 0; }); });
+    var total = sum(T, function (t) { return cont[t.id]; });
+    var frotas = sum(linhas, function (l) { return l.frotas; });
+    var vel = T.filter(function (t) { return t.grupo === "vel"; });
+    var velTot = sum(vel, function (t) { return cont[t.id]; });
+    var outros = T.filter(function (t) { return !t.grupo; });
+
+    var cats = outros.map(function (t) { return { nome: t.nome, n: cont[t.id] }; });
+    cats.push({ nome: "Excesso de velocidade", n: velTot, vel: true });
+    cats.sort(function (a, b) { return b.n - a.n; });
+    var maxN = Math.max.apply(null, [1].concat(cats.map(function (c) { return c.n; })));
+    var pct = function (n) { return total ? num(n / total * 100, 0) + "% do total" : ""; };
+
+    var onde = fil_.processo ? (fil_.responsavel ? "" : "responsável") : "processo";
+    var contexto = fil_.responsavel ? " de " + esc(fil_.responsavel) : "";
+    contexto += fil_.processo ? " em " + esc(fil_.processo) : "";
+    var lead;
+    if (!total) lead = "Nenhuma ocorrência para esse filtro.";
+    else {
+      var top = cats[0];
+      lead = "<b>" + num(total, 0) + "</b> " + plural(total, "ocorrência", "ocorrências") + contexto + " em <b>" + frotas + "</b> " + plural(frotas, "veículo", "veículos") +
+        ". " + (top.vel ? "O excesso de velocidade" : "<b>" + esc(top.nome) + "</b>") + " responde por " + num(top.n / total * 100, 0) + "%.";
+    }
+
+    var filtros = '<div class="filtros"><label>Processo<select data-fil="processo" id="f-processo">' + opcoes(processos, fil_.processo, "Todos os processos") + "</select></label>" +
+      '<label>Responsável<select data-fil="responsavel" id="f-responsavel">' + opcoes(resps, fil_.responsavel, "Todos os responsáveis") + "</select></label>" +
+      (fil_.processo || fil_.responsavel ? '<button type="button" class="limpar" data-limpar="1">Limpar filtros</button>' : "") + "</div>";
+
+    var i = 0;
+    var corpo = cats.map(function (c) {
+      var r = linha(i++, "<b>" + esc(c.nome) + "</b>",
+        c.vel ? '<div class="bar" style="width:' + (c.n / maxN * 100).toFixed(1) + '%;--i:' + (i - 1) + '" role="img" aria-label="Excesso de velocidade: ' + c.n + '">' +
+            vel.map(function (t, k) { return cont[t.id] ? '<span class="v' + (k + 1) + '" style="flex:' + cont[t.id] + '"></span>' : ""; }).join("") + "</div>"
+          : '<div class="bar solo" style="width:' + (c.n / maxN * 100).toFixed(1) + '%;--i:' + (i - 1) + '"></div>',
+        "<strong>" + num(c.n, 0) + "</strong><small>" + pct(c.n) + "</small>");
+      if (!c.vel) return r;
+      var sub = vel.map(function (t, k) {
+        return '<div class="row subrow" style="--i:' + (i + k) + '"><div class="who"><b>' + esc(t.nome) + '</b></div><div class="plot"><div class="bar v' + (k + 1) + '" style="width:' +
+          (cont[t.id] / maxN * 100).toFixed(1) + '%;--i:' + (i + k) + '"></div></div><div class="res"><strong>' + num(cont[t.id], 0) + "</strong><small>" + pct(cont[t.id]) + "</small></div></div>";
       }).join("");
-      var bar = '<div class="bar" style="width:' + (r.total / maxT * 100).toFixed(1) + '%;--i:' + i + '" role="img" aria-label="' + esc(r.id + ": " + r.total + " eventos") + '">' + segs + "</div>";
-      return linha(i, "<b>" + r.id + "</b><span>" + r.tipo + "</span>", bar,
-        '<strong class="n-' + f[0] + '">' + r.score + '</strong><span class="b ' + f[0] + '">' + f[1] + "</span>");
+      return r + sub;
     }).join("");
-    return '<div class="head"><p class="lead">' + lead + "</p>" + dias(c.eventosPorDia, "", null, "Eventos por dia na frota (" + total + " no período)") + "</div>" +
-      '<section class="sec"><h2>Equipamentos do pior para o melhor</h2><p class="sub">Cada barra mostra quantos eventos o equipamento teve no período. À direita, a nota de 0 a 100: quanto maior, melhor.</p>' +
-      '<ul class="legend">' + legenda + '</ul><div class="board">' + corpo + "</div>" +
-      '<p class="rodape" style="margin-top:.8rem">A nota desconta pontos por 100 horas operadas: velocidade 3, frenagem 2, aceleração 2 e curva 1,5. Bom a partir de 80, atenção de 60 a 79, crítico abaixo de 60.</p></section>';
+
+    // Onde se concentram: por processo, ou por responsável quando há processo escolhido
+    var conc = "";
+    if (onde) {
+      var chave = onde === "processo" ? "processo" : "responsavel", mapa = {};
+      linhas.forEach(function (l) {
+        var m = mapa[l[chave]] || (mapa[l[chave]] = { n: 0, frotas: 0 });
+        m.n += sum(T, function (t) { return l[t.id] || 0; }); m.frotas += l.frotas;
+      });
+      var lista = Object.keys(mapa).map(function (k) { return { nome: k, n: mapa[k].n, frotas: mapa[k].frotas }; }).sort(function (a, b) { return b.n - a.n; });
+      var mx = Math.max.apply(null, [1].concat(lista.map(function (x) { return x.n; })));
+      conc = '<section class="sec"><h2>Onde as ocorrências se concentram</h2><p class="sub">Por ' + (chave === "processo" ? "processo" : "responsável") +
+        ". Clique em uma linha para filtrar.</p><div class=\"board\">" + lista.map(function (x, k) {
+          return '<button type="button" class="row rowbtn" style="--i:' + k + '" data-set="' + chave + ":" + esc(x.nome) + '" aria-label="Filtrar por ' + esc(x.nome) + '"><div class="who"><b>' + esc(x.nome) +
+            "</b><span>" + x.frotas + " " + plural(x.frotas, "veículo", "veículos") + '</span></div><div class="plot"><div class="bar solo" style="width:' + (x.n / mx * 100).toFixed(1) + '%;--i:' + k +
+            '"></div></div><div class="res"><strong>' + num(x.n, 0) + "</strong><small>" + num(x.n / x.frotas, 1) + " por veículo</small></div></button>";
+        }).join("") + "</div></section>";
+    }
+
+    return filtros + '<div class="head"><p class="lead">' + lead + "</p></div>" +
+      '<section class="sec"><h2>Quantidade por tipo de ocorrência</h2><p class="sub">' + esc(D.periodo) + ". O excesso de velocidade é dividido pela faixa acima do limite.</p><div class=\"board\">" + corpo + "</div></section>" + conc;
   }
 
   // ---------- Motor ocioso ----------
@@ -155,6 +200,7 @@
     }).join("");
     painel.setAttribute("aria-labelledby", "tab-" + id);
     painel.innerHTML = VIEWS[id]();
+    fil.hidden = id === "comportamento";
   }
   function ir(id) { if (location.hash === "#" + id) render(); else location.hash = id; }
 
@@ -170,6 +216,20 @@
     var p = b.dataset.sort.split(":"), o = ordem[p[0]];
     ordem[p[0]] = { col: p[1], dir: o && o.col === p[1] ? -o.dir : 1 };
     render();
+  });
+  painel.addEventListener("change", function (e) {
+    var sel = e.target.closest("select[data-fil]"); if (!sel) return;
+    fil_[sel.dataset.fil] = sel.value;
+    if (sel.dataset.fil === "processo") fil_.responsavel = "";
+    render();
+    var n = document.getElementById(sel.id); if (n) n.focus();
+  });
+  painel.addEventListener("click", function (e) {
+    var l = e.target.closest("[data-limpar]");
+    if (l) { fil_.processo = ""; fil_.responsavel = ""; render(); return; }
+    var b = e.target.closest("[data-set]"); if (!b) return;
+    var p = b.dataset.set, k = p.indexOf(":");
+    fil_[p.slice(0, k)] = p.slice(k + 1); render();
   });
   fil.addEventListener("click", function (e) {
     var b = e.target.closest("[data-f]"); if (!b) return;
