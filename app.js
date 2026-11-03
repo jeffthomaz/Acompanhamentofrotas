@@ -147,9 +147,9 @@
       '<p class="ctx">' + num(frotas, 0) + " " + plural(frotas, "veículo", "veículos") + " no filtro, " + esc(D.periodo) + "</p></div>";
 
     // Cartões
-    var kpis = '<div class="kpis"><article class="kpi c-total">' + ico(TOTAL_ICONE) + '<span class="kl">Total de ocorrências</span><strong class="kv">' + num(total, 0) + "</strong>" + delta(total, totalAnt) + '<span class="ks">vs. período anterior</span></article>' +
+    var kpis = '<div class="kpis"><article class="kpi c-total"><div class="kh">' + ico(TOTAL_ICONE) + '<span class="kl">Total de ocorrências</span></div><strong class="kv">' + num(total, 0) + "</strong>" + delta(total, totalAnt) + '<span class="ks">vs. período anterior</span></article>' +
       CATS.map(function (c) {
-        return '<article class="kpi c-' + c.id + '">' + ico(c.icone) + '<span class="kl">' + esc(c.nome) + '</span><strong class="kv">' + num(c.n, 0) + "</strong>" + delta(c.n, c.ant) + '<span class="ks">vs. período anterior</span></article>';
+        return '<article class="kpi c-' + c.id + '"><div class="kh">' + ico(c.icone) + '<span class="kl">' + esc(c.nome).replace("Ultrapassagem", "Ultra&shy;passagem") + '</span></div><strong class="kv">' + num(c.n, 0) + "</strong>" + delta(c.n, c.ant) + '<span class="ks">vs. período anterior</span></article>';
       }).join("") + "</div>";
 
     // Evolução (colunas empilhadas)
