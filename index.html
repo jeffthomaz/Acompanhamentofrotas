@@ -7,8 +7,8 @@
 <style>
 :root{
   --bg:#EDF0EA;--ink:#16251E;--muted:#5A6A61;--line:#CBD3CB;--soft:#E2E7E0;
-  --folha:#2F6B4F;--maq:#E9A800;--maq-ink:#16251E;
-  --s1:#1F4D3A;--s2:#E9A800;--s3:#5E9C8A;--s4:#AEBBB2;--on3:#16251E;--on4:#16251E;
+  --folha:#3E9B34;--maq:#E9A800;--maq-ink:#16251E;
+  --s1:#0F4A2A;--s2:#E9A800;--s3:#5E9C8A;--s4:#AEBBB2;--on3:#16251E;--on4:#16251E;
   --bom:#2C7A4B;--atencao:#8F6200;--critico:#C23B2B;
   --bom-bg:#D9ECDF;--atencao-bg:#F6E7B8;--critico-bg:#F6D9D4;
   --display:'Bricolage Grotesque','Segoe UI',system-ui,sans-serif;
@@ -28,11 +28,18 @@
   --bom-bg:#173325;--atencao-bg:#3A2F10;--critico-bg:#3B1E1B;color-scheme:dark}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--text);font-size:15px;line-height:1.55;
-  padding-block:2rem 4rem;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
-.wrap{max-width:1040px;margin:0 auto;display:grid;gap:1.75rem}
+  padding-bottom:3rem}
+.gut{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.band{background:linear-gradient(90deg,#0A2A19 0%,rgba(10,42,25,.86) 42%,rgba(10,42,25,.5) 100%),url(fundo.jpg) right center/cover #0A2A19;color:#fff;border-bottom:4px solid var(--maq)}
+.band-in{max-width:1104px;margin:0 auto;display:flex;flex-wrap:wrap;align-items:center;gap:1rem 1.75rem;padding-block:1.6rem}
+.logo{display:block;height:92px;width:auto}
+.band h1{color:#fff}
+.band .per{color:#BFD3C6;margin:.5rem 0 0}
+.wrap{max-width:1104px;margin:0 auto;display:grid;gap:1.75rem;padding-top:1.75rem}
+.foot{max-width:1104px;margin:2.5rem auto 0;font-size:.82rem;color:var(--muted)}
+.foot a{color:inherit}
 .wrap>*{min-width:0}
-.top{display:flex;flex-wrap:wrap;gap:.75rem 2rem;justify-content:space-between;align-items:flex-end}
-h1{font-family:var(--display);font-weight:800;font-size:clamp(2rem,5.5vw,3.4rem);line-height:1;letter-spacing:-.03em;margin:0;text-wrap:balance}
+h1{font-family:var(--display);font-weight:800;font-size:clamp(1.9rem,5vw,3rem);line-height:1;letter-spacing:-.03em;margin:0;text-wrap:balance}
 .per{color:var(--muted);font-size:.9rem;margin:0}
 .aviso{margin:0;padding:.5rem .8rem;border-left:4px solid var(--maq);background:var(--atencao-bg);color:var(--ink);font-size:.88rem}
 .nav{display:flex;flex-wrap:wrap;gap:.5rem 1.5rem;justify-content:space-between;align-items:flex-end;border-bottom:1px solid var(--line)}
@@ -46,6 +53,7 @@ h1{font-family:var(--display);font-weight:800;font-size:clamp(2rem,5.5vw,3.4rem)
 .seg button[aria-pressed=true]{background:var(--ink);border-color:var(--ink);color:var(--bg)}
 button:focus-visible{outline:3px solid var(--maq);outline-offset:2px}
 #painel{display:grid;gap:2.25rem;min-width:0}
+#painel>*{min-width:0}
 #painel:focus-visible{outline:none}
 .head{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:1.5rem 3rem;align-items:end}
 .lead{font-family:var(--display);font-weight:600;font-size:clamp(1.35rem,3vw,2rem);line-height:1.2;letter-spacing:-.015em;margin:0;text-wrap:pretty}
@@ -91,7 +99,8 @@ button:focus-visible{outline:3px solid var(--maq);outline-offset:2px}
 [hidden]{display:none!important}
 @keyframes grow{from{transform:scaleX(0)}}@keyframes up{from{transform:scaleY(0)}}
 @media (prefers-reduced-motion:reduce){.bar,.col{animation:none}}
-@media (max-width:720px){.head{grid-template-columns:1fr}}
+@media (max-width:720px){.head{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:480px){.logo{height:68px}}
 @media (max-width:560px){
   .row{grid-template-columns:1fr auto;gap:.25rem 1rem;padding-block:.6rem}
   .row .plot{grid-column:1/-1;order:3;min-height:1.6rem}
@@ -99,11 +108,11 @@ button:focus-visible{outline:3px solid var(--maq);outline-offset:2px}
 }
 </style>
 </head><body>
-<div class="wrap">
-  <header class="top">
-    <h1>Acompanhamento de frotas</h1>
-    <p class="per" id="periodo"></p>
-  </header>
+<header class="band"><div class="band-in gut">
+  <img class="logo" src="logo-branco.png" alt="Bioenergética Aroeira" width="67" height="92">
+  <div><h1>Acompanhamento de frotas</h1><p class="per" id="periodo"></p></div>
+</div></header>
+<div class="wrap gut">
   <p class="aviso" id="aviso" role="note">Dados de exemplo para definir o visual. Os números reais entram quando a fonte estiver definida.</p>
   <div class="nav">
     <div id="tabs" role="tablist" aria-label="Áreas do painel"></div>
@@ -115,6 +124,7 @@ button:focus-visible{outline:3px solid var(--maq);outline-offset:2px}
   </div>
   <main id="painel" role="tabpanel" tabindex="0"></main>
 </div>
+<footer class="foot gut">Bioenergética Aroeira S/A, Tupaciguara/MG. <a href="https://www.bioaroeira.com.br" target="_blank" rel="noopener">www.bioaroeira.com.br</a></footer>
 <script src="dados.js"></script>
 <script src="app.js"></script>
 </body></html>
