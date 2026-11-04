@@ -6,6 +6,7 @@ Comandos:
     python conectividade.py iniciar-bi   <resultado-dax.json> <base.json> [pendencias.json]
     python conectividade.py vfleets      <Localizacao_da_Frota.csv> <base.json>
     python conectividade.py montar       <base.json> <status_frotas.xlsx> <dados-fonte.json>
+    python conectividade.py excluir      <frota> <base.json>        (desconsiderar um equipamento)
 
 iniciar-bi: cria a base a partir do Power BI "Conectividade" (consulta em conectividade_do_powerbi.py).
 vfleets:    acrescenta (ou substitui) o dia do arquivo "Localização da Frota" exportado do vFleets.
@@ -137,6 +138,13 @@ def vfleets(arquivo, base):
         print("AVISO: frotas sem processo no cadastro do BI:", ", ".join(novos))
 
 
+def excluir(frota, base):
+    B = ler_json(base)
+    B["excluidos"] = sorted(set(B.get("excluidos", [])) | {frota.strip()})
+    gravar_json(B, base)
+    print("desconsiderados:", ", ".join(B["excluidos"]))
+
+
 # ---------- montar ----------
 def ler_planilha(caminho):
     ws = openpyxl.load_workbook(caminho, data_only=True).worksheets[0]
@@ -161,7 +169,10 @@ def montar(base, planilha, destino):
     man, avisos = ler_planilha(planilha)
     dias = B["dias"]
     hist, atual = {}, {}
+    fora = set(B.get("excluidos", []))
     for f, src in B["fonte"].items():
+        if f in fora:
+            continue
         res, ant = [], "."
         for i, d in enumerate(dias):
             s = src[i] if i < len(src) else "."
@@ -184,6 +195,8 @@ def montar(base, planilha, destino):
         hist[f] = "".join(res)
     ultimo = dias[-1]
     for f, a in B["atual"].items():
+        if f in fora:
+            continue
         x = dict(a)
         x["st"] = hist.get(f, ".")[-1]
         ref = [m for m in man.get(f, []) if m["desde"] <= date.fromisoformat(ultimo) and (not m["ate"] or m["ate"] >= date.fromisoformat(ultimo))]
@@ -211,7 +224,7 @@ def montar(base, planilha, destino):
 
 
 if __name__ == "__main__":
-    cmds = {"iniciar-bi": iniciar_bi, "vfleets": vfleets, "montar": montar}
+    cmds = {"iniciar-bi": iniciar_bi, "vfleets": vfleets, "montar": montar, "excluir": excluir}
     if len(sys.argv) < 2 or sys.argv[1] not in cmds:
         sys.exit(__doc__)
     cmds[sys.argv[1]](*sys.argv[2:])
