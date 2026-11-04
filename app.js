@@ -206,30 +206,64 @@ window.iniciarPainel = function (D) {
     return filtros + kpis + '<div class="g3 g-a">' + evolucao + part + tend + '</div><div class="g3 g-b">' + velCard + conc + alerta + "</div>";
   }
 
-  // ---------- Motor ocioso ----------
+  // ---------- Motor ocioso (dados reais do Power BI "Ociosidade Frota Leve") ----------
+  function horas(h) { return h >= 100 ? num(h, 0) + " h" : num(h, 1).replace(",0", "") + " h"; }
   function abaOcioso() {
-    var m = D.motorOcioso;
-    var rows = equips().map(function (e) {
-      var x = m.porEquip[e.id];
-      return { id: e.id, tipo: e.tipo, ligado: x.ligado, ocioso: x.ocioso, pct: x.ocioso / x.ligado * 100 };
-    }).sort(function (a, b) { return b.pct - a.pct; });
-    if (!rows.length) return "";
-    var lig = sum(rows, function (r) { return r.ligado; }), oc = sum(rows, function (r) { return r.ocioso; });
-    var pct = oc / lig * 100, acima = rows.filter(function (r) { return r.pct > m.metaPct; }).length;
-    var maxP = Math.max.apply(null, [m.metaPct].concat(rows.map(function (r) { return r.pct; }))) * 1.12;
-    var mkPos = (m.metaPct / maxP * 100).toFixed(1);
-    var lead = "A frota ficou <b>" + num(pct, 1) + "%</b> do tempo com o motor ligado e parado. " +
-      (acima ? "<b>" + acima + "</b> " + plural(acima, "equipamento passou", "equipamentos passaram") + " da meta de " + m.metaPct + "%, e <b>" + rows[0].id + "</b> lidera com " + num(rows[0].pct, 1) + "%."
-             : "Todos os equipamentos estão dentro da meta de " + m.metaPct + "%.");
-    var cab = '<div class="row hd"><div></div><div class="plot"><span class="mkl" style="left:' + mkPos + '%">meta ' + m.metaPct + '%</span></div><div></div></div>';
-    var corpo = rows.map(function (r, i) {
-      var over = r.pct > m.metaPct;
-      return linha(i, "<b>" + r.id + "</b><span>" + r.tipo + "</span>",
-        '<div class="bar solo' + (over ? " over" : "") + '" style="width:' + (r.pct / maxP * 100).toFixed(1) + '%;--i:' + i + '"></div><i class="mk" style="left:' + mkPos + '%"></i>',
-        '<strong class="' + (over ? "n-critico" : "n-bom") + '">' + num(r.pct, 1) + "%</strong><small>" + num(r.ocioso, 1) + " de " + num(r.ligado, 1) + " h por dia</small>");
-    }).join("");
-    return '<div class="head"><p class="lead">' + lead + "</p>" + dias(m.pctPorDia, "%", m.metaPct, "Motor ocioso por dia na frota (linha tracejada: meta de " + m.metaPct + "%)") + "</div>" +
-      '<section class="sec"><h2>Equipamentos do mais ocioso ao menos</h2><p class="sub">A barra é a parte do tempo ligado em que o motor ficou parado. A linha vertical marca a meta.</p><div class="board">' + cab + corpo + "</div></section>";
+    var m = D.motorOcioso, meta = m.metaPct, V = m.veiculos;
+    var processos = unicos(V.map(function (v) { return v.processo; }));
+    if (fil_.processo && processos.indexOf(fil_.processo) < 0) fil_.processo = "";
+    var doProc = V.filter(function (v) { return !fil_.processo || v.processo === fil_.processo; });
+    var resps = unicos(doProc.map(function (v) { return v.responsavel; }).filter(Boolean));
+    if (fil_.responsavel && resps.indexOf(fil_.responsavel) < 0) fil_.responsavel = "";
+    var vs = doProc.filter(function (v) { return !fil_.responsavel || v.responsavel === fil_.responsavel; });
+    var tot = function (a) { return sum(a, function (x) { return x; }); };
+    var rows = vs.map(function (v) {
+      var li = tot(v.ligado), oc = tot(v.ocioso);
+      return { v: v, li: li, oc: oc, pct: li ? oc / li * 100 : 0 };
+    });
+    var li = sum(rows, function (r) { return r.li; }), oc = sum(rows, function (r) { return r.oc; }), pct = li ? oc / li * 100 : 0;
+    var porSem = m.semanas.map(function (_, k) {
+      var a = sum(vs, function (v) { return v.ligado[k]; }), b = sum(vs, function (v) { return v.ocioso[k]; });
+      return a ? b / a * 100 : 0;
+    });
+    var acima = rows.filter(function (r) { return r.pct > meta; }).sort(function (a, b) { return b.pct - a.pct; });
+
+    var filtros = '<div class="filtros"><label>Processo<select data-fil="processo" id="o-processo">' + opcoes(processos, fil_.processo, D.escopo && D.escopo !== "todos" ? "Todos os meus processos" : "Todos os processos") + "</select></label>" +
+      '<label>Responsável<select data-fil="responsavel" id="o-responsavel">' + opcoes(resps, fil_.responsavel, "Todos os responsáveis") + "</select></label>" +
+      (fil_.processo || fil_.responsavel ? '<button type="button" class="limpar" data-limpar="1">Limpar filtros</button>' : "") +
+      '<p class="ctx">' + rows.length + " " + plural(rows.length, "veículo leve", "veículos leves") + ", " + esc(m.periodo) + "</p></div>";
+
+    var lead = "Os veículos ficaram <b>" + num(pct, 1) + "%</b> do tempo de motor ligado parados, <b>" + horas(oc) + "</b> de " + horas(li) + ". " +
+      (acima.length ? "<b>" + acima.length + "</b> " + plural(acima.length, "veículo passou", "veículos passaram") + " da meta de " + meta + "%, e o <b>" + esc(acima[0].v.id) + "</b> lidera com " + num(acima[0].pct, 1) + "%."
+                    : "Todos os veículos estão dentro da meta de " + meta + "%.");
+
+    function quadro(lista, chave, clicavel) {
+      var maxP = Math.max.apply(null, [meta].concat(lista.map(function (r) { return r.pct; }))) * 1.12, mkPos = (meta / maxP * 100).toFixed(1);
+      var cab = '<div class="row hd"><div></div><div class="plot"><span class="mkl" style="left:' + mkPos + '%">meta ' + meta + '%</span></div><div></div></div>';
+      return '<div class="board">' + cab + lista.map(function (r, i) {
+        var over = r.pct > meta;
+        var corpo = '<div class="who">' + r.quem + '</div><div class="plot"><div class="bar solo' + (over ? " over" : "") + '" style="width:' + (r.pct / maxP * 100).toFixed(1) + "%;--i:" + i + '"></div><i class="mk" style="left:' + mkPos + '%"></i></div>' +
+          '<div class="res"><strong class="' + (over ? "n-critico" : "n-bom") + '">' + num(r.pct, 1) + "%</strong><small>" + horas(r.oc) + " de " + horas(r.li) + "</small></div>";
+        return clicavel ? '<button type="button" class="row rowbtn" style="--i:' + i + '" data-set="' + chave + ":" + esc(r.nome) + '">' + corpo + "</button>"
+                        : '<div class="row" style="--i:' + i + '">' + corpo + "</div>";
+      }).join("") + "</div>";
+    }
+
+    var secoes = "";
+    if (!fil_.processo && processos.length > 1) {
+      var mp = {};
+      rows.forEach(function (r) { var x = mp[r.v.processo] || (mp[r.v.processo] = { li: 0, oc: 0, n: 0 }); x.li += r.li; x.oc += r.oc; x.n++; });
+      var lp = Object.keys(mp).map(function (k) { var x = mp[k]; return { nome: k, li: x.li, oc: x.oc, pct: x.li ? x.oc / x.li * 100 : 0, quem: "<b>" + esc(k) + "</b><span>" + x.n + " " + plural(x.n, "veículo", "veículos") + "</span>" }; })
+        .sort(function (a, b) { return b.pct - a.pct; });
+      secoes += '<section class="sec"><h2>Processos do mais ocioso ao menos</h2><p class="sub">A barra é a parte do tempo de motor ligado em que o veículo ficou parado. A linha vertical marca a meta. Clique em um processo para ver os veículos dele.</p>' + quadro(lp, "processo", true) + "</section>";
+    }
+    var lv = rows.map(function (r) { r.quem = "<b>" + esc(r.v.id) + "</b><span>" + esc([r.v.placa, fil_.processo ? r.v.responsavel : r.v.processo].filter(Boolean).join(" · ")) + "</span>"; return r; })
+      .sort(function (a, b) { return b.pct - a.pct; });
+    var limite = fil_.processo || fil_.responsavel ? lv.length : 15;
+    secoes += '<section class="sec"><h2>' + (limite < lv.length ? "Os " + limite + " veículos mais ociosos" : "Veículos do mais ocioso ao menos") + "</h2>" +
+      '<p class="sub">Horas de motor ligado parado no período.' + (limite < lv.length ? " Escolha um processo para ver todos os veículos dele." : "") + "</p>" + quadro(lv.slice(0, limite)) + "</section>";
+
+    return filtros + '<div class="head"><p class="lead">' + lead + "</p>" + dias(porSem, "%", meta, "Motor ocioso por semana (linha tracejada: meta de " + meta + "%)", m.semanas) + "</div>" + secoes;
   }
 
   // ---------- Permanência ----------
@@ -274,7 +308,10 @@ window.iniciarPainel = function (D) {
     }).join("");
     painel.setAttribute("aria-labelledby", "tab-" + id);
     painel.innerHTML = VIEWS[id]();
-    fil.hidden = id === "comportamento";
+    fil.hidden = id !== "permanencia";
+    var real = id === "motor-ocioso" && D.motorOcioso && D.motorOcioso.real;
+    document.getElementById("periodo").textContent = real ? D.motorOcioso.periodo + " · dados reais" : D.periodo;
+    document.getElementById("aviso").hidden = real || !D.exemplo;
   }
   function ir(id) { if (location.hash === "#" + id) render(); else location.hash = id; }
 
@@ -312,7 +349,5 @@ window.iniciarPainel = function (D) {
     render();
   });
   window.addEventListener("hashchange", render);
-  document.getElementById("periodo").textContent = D.periodo;
-  document.getElementById("aviso").hidden = !D.exemplo;
   render();
 };

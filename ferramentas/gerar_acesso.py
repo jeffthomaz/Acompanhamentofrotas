@@ -63,17 +63,16 @@ def recorte(D, procs):
     if procs is None:
         return d
     d["ocorrencias"]["linhas"] = [l for l in d["ocorrencias"]["linhas"] if chave_proc(l["processo"]) in procs]
+    if "motorOcioso" in d:
+        d["motorOcioso"]["veiculos"] = [v for v in d["motorOcioso"]["veiculos"] if chave_proc(v["processo"]) in procs]
+        if not d["motorOcioso"]["veiculos"]:
+            d.pop("motorOcioso")
     eqs = d.get("equipamentos", [])
-    if eqs and all("processo" in e for e in eqs):
+    if "permanencia" in d and eqs and all("processo" in e for e in eqs):
         ids = {e["id"] for e in eqs if chave_proc(e["processo"]) in procs}
-        d["equipamentos"] = [e for e in eqs if e["id"] in ids]
-        if "motorOcioso" in d:
-            d["motorOcioso"]["porEquip"] = {k: v for k, v in d["motorOcioso"]["porEquip"].items() if k in ids}
-        if "permanencia" in d:
-            d["permanencia"]["estadias"] = [x for x in d["permanencia"]["estadias"] if x["equip"] in ids]
+        d["permanencia"]["estadias"] = [x for x in d["permanencia"]["estadias"] if x["equip"] in ids]
     else:
-        # Sem processo por equipamento ainda: essas abas ficam só para quem vê todos.
-        d.pop("motorOcioso", None)
+        # Permanência ainda sem processo por equipamento: só para quem vê todos.
         d.pop("permanencia", None)
     return d
 
@@ -81,6 +80,7 @@ def recorte(D, procs):
 def main(cad, fonte, saida):
     D = json.load(open(fonte, encoding="utf-8"))
     conhecidos = {chave_proc(l["processo"]): l["processo"] for l in D["ocorrencias"]["linhas"]}
+    conhecidos.update({chave_proc(v["processo"]): v["processo"] for v in D.get("motorOcioso", {}).get("veiculos", [])})
     grupos, usuarios, avisos = {}, {}, []
 
     for n, u, p, s in ler_cadastros(cad):

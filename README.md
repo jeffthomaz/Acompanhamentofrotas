@@ -23,5 +23,9 @@ Atualizar usuários ou dados:
 
     python ferramentas/gerar_acesso.py cadastros.xlsx dados-fonte.json acesso.js
 
-As abas Motor ocioso e Permanência só aparecem para quem vê todos os processos enquanto os
-equipamentos não tiverem o campo `processo` nos dados.
+## Fontes dos dados
+
+- Motor ocioso: dados reais do Power BI "Ociosidade Frota Leve" (veículos leves), extraídos com a
+  consulta DAX descrita em `ferramentas/ociosidade_do_powerbi.py`. Filtrada por processo para cada grupo.
+- Comportamento e Permanência: ainda dados de exemplo. Permanência só aparece para quem vê todos os
+  processos enquanto não houver processo por equipamento.
