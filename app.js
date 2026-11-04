@@ -553,10 +553,21 @@ window.iniciarPainel = function (D) {
         ST.map(function (s) { return x.o[s.l] ? '<i class="c-' + s.id + '" style="flex:' + x.o[s.l] + '" title="' + s.nome + ": " + x.o[s.l] + '"></i>' : ""; }).join("") + "</div></button>";
     }).join("") + "</div></section>";
 
-    // Avisos: quem está na planilha mas voltou a conectar, e pendências.
-    var voltou = ehHoje ? ids.filter(function (f) { var a = K.atual[f]; return a && a.manual && !a.manual.aplicado && a.st === "C"; }) : [];
+    // Confirmar status: está como manutenção ou parado (no rastreador ou na planilha),
+    // mas comunicou há menos de 2 dias. Pode já ter voltado a operar.
+    var confirmar = ehHoje ? ids.map(function (f) {
+      var a = K.atual[f]; if (!a) return null;
+      if ((a.st === "M" || a.st === "P") && (a.dias || 0) < 2) return { f: f, st: a.st === "M" ? "Manutenção" : "Parado", fonte: "rastreador", a: a };
+      if (a.manual && !a.manual.aplicado && a.st === "C") return { f: f, st: a.manual.status === "MANUTENÇÃO" ? "Manutenção" : "Parado", fonte: "planilha", a: a };
+      return null;
+    }).filter(Boolean) : [];
     var avisos = "";
-    if (voltou.length) avisos += '<p class="aviso">' + voltou.length + " " + plural(voltou.length, "veículo está", "veículos estão") + " na planilha de parados e manutenção mas " + plural(voltou.length, "voltou", "voltaram") + " a conectar: <b>" + voltou.map(esc).join(", ") + "</b>. " + plural(voltou.length, "Pode", "Podem") + " sair da planilha.</p>";
+    if (confirmar.length) avisos += '<section class="card confirmar"><h3>Confirmar status <span class="cnt">' + confirmar.length + '</span></h3><p class="cs">Estão como parado ou em manutenção, mas o rastreador comunicou há menos de 2 dias. Confirme se já voltaram a operar: se sim, tire do apelido no rastreador ou da planilha <b>status_frotas.xlsx</b>; se não, pode manter.</p><ul class="longas">' +
+      confirmar.map(function (x) {
+        var v = F[x.f], u = x.a.ult;
+        return "<li><span><b>" + esc(x.f) + "</b> " + esc(v.processo) + "<small>" + esc([v.placa, v.grupo, "marcado como " + x.st.toLowerCase() + (x.fonte === "planilha" ? " na planilha" : " no rastreador"), x.a.manual && x.a.manual.obs].filter(Boolean).join(" · ")) + "</small></span><strong>" +
+          (u ? "Comunicou em " + esc(u.slice(8, 10) + "/" + u.slice(5, 7) + " " + u.slice(11)) : "Comunicando") + (x.a.mov === "Movimento" ? '<small class="mov">em movimento</small>' : "") + "</strong></li>";
+      }).join("") + "</ul></section>";
     if (pend.length) avisos += '<section class="card"><h3>Pendências em campo</h3><ul class="longas">' + pend.map(function (p) {
       return "<li><span><b>" + esc(p.f) + "</b> " + esc(p.oc) + "<small>" + esc([p.equip, p.d ? dbr(p.d) : "", p.obs].filter(Boolean).join(" · ")) + "</small></span><strong>" + esc(p.status) + "</strong></li>";
     }).join("") + "</ul></section>";
