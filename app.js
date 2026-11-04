@@ -55,8 +55,7 @@ window.iniciarPainel = function (D) {
     { id: "cinto", nome: "Sem cinto de segurança", icone: "M12 3.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zM6 21l3-9h6l3 9M8 12l9 7" },
     { id: "distracao", nome: "Distração", icone: "M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12zM12 9.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5z" },
     { id: "fadiga", nome: "Fadiga e bocejo", icone: "M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z" },
-    { id: "camera", nome: "Câmera obstruída", icone: "M3 7h4l2-3h6l2 3h4v13H3zM12 10.5a3 3 0 1 1 0 6 3 3 0 0 1 0-6zM3 3l18 18" },
-    { id: "outros", nome: "Manobra brusca", icone: "M4 18c4 0 4-12 8-12s4 12 8 12M17 6l3 0 0 3" }
+    { id: "camera", nome: "Câmera obstruída", icone: "M3 7h4l2-3h6l2 3h4v13H3zM12 10.5a3 3 0 1 1 0 6 3 3 0 0 1 0-6zM3 3l18 18" }
   ];
   var TOTAL_ICONE = "M5 20V10M12 20V4M19 20v-7";
 
@@ -164,7 +163,9 @@ window.iniciarPainel = function (D) {
 
     var kpis = '<div class="kpis"><article class="kpi c-total"><div class="kh">' + ico(TOTAL_ICONE) + '<span class="kl">Total de ocorrências</span></div><strong class="kv">' + num(total, 0) + "</strong>" + dl(total, totalAnt) + '<span class="ks">' + (temBase ? "vs. período anterior" : "&nbsp;") + "</span></article>" +
       CATS.map(function (c) {
-        return '<article class="kpi c-' + c.id + '"><div class="kh">' + ico(c.icone) + '<span class="kl">' + esc(c.nome) + '</span></div><strong class="kv">' + num(c.n, 0) + "</strong>" + dl(c.n, c.ant) + '<span class="ks">' + (temBase ? "vs. período anterior" : "&nbsp;") + "</span></article>";
+        // Cards com mais de um tipo (ex.: fadiga e bocejo) mostram a quantidade de cada um.
+        var partes = c.ix.length > 1 && c.id !== "vel" ? '<span class="kp">' + c.ix.map(function (i) { return esc(T[i].nome) + " <b>" + num(cur[i], 0) + "</b>"; }).map(function (x) { return "<span>" + x + "</span>"; }).join("") + "</span>" : "";
+        return '<article class="kpi c-' + c.id + '"><div class="kh">' + ico(c.icone) + '<span class="kl">' + esc(c.nome) + '</span></div><strong class="kv">' + num(c.n, 0) + "</strong>" + partes + dl(c.n, c.ant) + '<span class="ks">' + (temBase ? "vs. período anterior" : "&nbsp;") + "</span></article>";
       }).join("") + "</div>";
 
     // Evolução: por dia até 14 dias, senão por semana.

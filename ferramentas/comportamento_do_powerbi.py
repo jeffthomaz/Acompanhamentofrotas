@@ -36,16 +36,16 @@ TIPOS = [
     {"id": "celular", "nome": "Uso de celular"},
     {"id": "cinto", "nome": "Sem cinto de segurança"},
     {"id": "distracao", "nome": "Distração"},
-    {"id": "fadiga", "nome": "Fadiga e bocejo"},
+    {"id": "bocejo", "nome": "Bocejo", "grupo": "fadiga"},
+    {"id": "fadigam", "nome": "Fadiga", "grupo": "fadiga"},
     {"id": "camera", "nome": "Câmera obstruída ou desconectada"},
-    {"id": "outros", "nome": "Freada, curva ou aceleração brusca"},
 ]
 POR_TIPO = {
     "MANUSEIO_CELULAR": "celular", "SEM_CINTO": "cinto", "DISTRACAO_MOTORISTA": "distracao",
-    "BOCEJO": "fadiga", "FADIGA_MOTORISTA": "fadiga",
+    "BOCEJO": "bocejo", "FADIGA_MOTORISTA": "fadigam",
     "CAMERA_OBSTRUIDA": "camera", "DESCONEXAO_DA_CAMERA_DO_MOTORISTA": "camera",
     "DESCONEXAO_DA_CAMERA_DA_PISTA": "camera", "DESCONEXAO_DA_CAMERA_DE_AUDITORIA": "camera",
-    "FREADA_BRUSCA": "outros", "CURVA_BRUSCA": "outros", "ACELERACAO_BRUSCA": "outros",
+    # Freada, curva e aceleração brusca ficam de fora do painel (pedido do usuário).
 }
 
 
