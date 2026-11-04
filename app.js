@@ -472,6 +472,8 @@ window.iniciarPainel = function (D) {
     { id: "par", l: "P", nome: "Parados", um: "Parado", icone: "M12 3a9 9 0 1 1 0 18 9 9 0 0 1 0-18zM10 9v6M14 9v6" }
   ];
   var fco = { grupo: "", dia: -1, mes: "", todos: false };
+  // Planilha de parados e manutenção no OneDrive (link só para pessoas da Bioenergética Aroeira).
+  var LINK_STATUS = "https://bioaroeira0500-my.sharepoint.com/:x:/g/personal/jeffersonmelo_bioaroeira_com_br/IQCBOXgux4WkRLqhbxJaqrmVAbGk8PWZR-k1z45-LiRN5w4?e=cqk76A";
   function letraSt(c) { return c === "m" ? "M" : c === "p" ? "P" : c; }
   function abaConectividade() {
     var K = D.conectividade, F = K.frotas, nd = K.dias.length;
@@ -607,7 +609,8 @@ window.iniciarPainel = function (D) {
           return '<td class="dd"><i class="q ' + clsLetra[c] + '" title="' + esc(v.f + " em " + K.dias[dm[k]].slice(8, 10) + "/" + K.dias[dm[k]].slice(5, 7) + ": " + nomeLetra[c]) + '"></i></td>';
         }).join("") + "</tr>";
       }).join("") + "</tbody></table></div>" : '<p class="cs">Nenhum veículo com problema nesse mês.</p>') + "</section>";
-    return filtros + kpis + avisos + '<div class="g3 g-a">' + evol + sit + sis + '</div><div class="g2">' + tab + porProc + "</div>" + historico;
+    var informar = '<div class="informar"><p><b>Algum equipamento parado ou em manutenção?</b> Informe na planilha de status. O painel passa a mostrar na próxima atualização.</p><a class="btn" href="' + LINK_STATUS + '" target="_blank" rel="noopener">Informar parado/manutenção <span aria-hidden="true">↗</span></a></div>';
+    return filtros + kpis + informar + avisos + '<div class="g3 g-a">' + evol + sit + sis + '</div><div class="g2">' + tab + porProc + "</div>" + historico;
   }
 
   function linhaDias(serie, dias, sel) {
