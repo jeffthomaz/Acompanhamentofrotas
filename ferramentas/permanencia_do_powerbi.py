@@ -33,15 +33,16 @@ def main(origem, destino):
     locais, idx, veiculos, eventos, cidades = [], {}, {}, [], {}
     datas = sorted({r["d"] for r in rows})  # período completo do relatório
     for r in rows:
-        nome = limpo(r["ponto"]) or limpo(r["cerca"]) or ("Sem ponto de referência, " + limpo(r["cid"]).title())
-        if nome.upper().startswith(("LIBERAÇÃO", "LIBERACAO")):
+        if limpo(r["ponto"]).upper().startswith(("LIBERAÇÃO", "LIBERACAO")):
             continue
+        # O local é a CERCA ELETRÔNICA; sem cerca, usa o ponto de referência.
+        nome = limpo(r["cerca"]) or limpo(r["ponto"]) or ("Sem cerca, " + limpo(r["cid"]).title())
         chave = nome
         cidades.setdefault(chave, Counter())[limpo(r["cid"]).title()] += 1
         if chave not in idx:
             idx[chave] = len(locais)
             locais.append({"nome": nome, "cidade": limpo(r["cid"]).title(), "categoria": limpo(r["cat"]).title(),
-                           "cerca": limpo(r["cerca"]), "tipo": "Cerca" if r["tipo"] == "PERMANENCIA_CERCA" else "Ponto"})
+                           "cerca": bool(limpo(r["cerca"]))})
         f = r["f"]
         veiculos.setdefault(f, {"placa": r["placa"] or "", "processo": r["proc"] or "Sem processo",
                                 "responsavel": (r["resp"] or "").title()})

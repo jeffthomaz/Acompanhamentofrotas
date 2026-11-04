@@ -29,5 +29,6 @@ Atualizar usuários ou dados:
   consulta DAX descrita em `ferramentas/ociosidade_do_powerbi.py`. Filtrada por processo para cada grupo.
 - Permanência: mapa de calor com dados reais da tabela Ocorrências (eventos PERMANENCIA_CERCA e
   PERMANENCIA_PONTO) do mesmo Power BI, extraídos com `ferramentas/permanencia_do_powerbi.py`.
-  Não leva motorista nem CPF; alarmes falsos ficam de fora. Mapa com Leaflet (CDN) e camada de calor própria.
+  O local é a coluna CERCA ELETRÔNICA (sem cerca, usa o ponto de referência). Não leva motorista
+  nem CPF; alarmes falsos e pontos de Liberação ficam de fora. Mapa com Leaflet (CDN) e camada de calor própria.
 - Comportamento: ainda dados de exemplo.

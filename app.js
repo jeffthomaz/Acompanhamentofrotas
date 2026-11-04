@@ -419,7 +419,7 @@ window.iniciarPainel = function (D) {
     var mxMin = Math.max.apply(null, [1].concat(U.locais.map(function (x) { return x.min; })));
     U.locais.forEach(function (x) {
       var L0 = P.locais[x.i];
-      if (/^Sem ponto/.test(L0.nome)) return;
+      if (/^Sem cerca/.test(L0.nome)) return;
       var m = L.circleMarker([x.lat / x.n, x.lon / x.n], { radius: 5 + Math.sqrt(x.min / mxMin) * 9, color: "#16251E", weight: 1.5, fillColor: "#FFFFFF", fillOpacity: .85 })
         .bindPopup("<b>" + esc(L0.nome) + "</b><br>" + esc(L0.cidade) + "<br>" + x.n + " " + plural(x.n, "permanência", "permanências") + ", " + hmin(x.min) + "<br>Média de " + hmin(x.min / x.n) + " · " + Object.keys(x.fr).length + " " + plural(Object.keys(x.fr).length, "frota", "frotas"))
         .bindTooltip(esc(L0.nome), { direction: "top", offset: [0, -6] })
