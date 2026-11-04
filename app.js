@@ -1,7 +1,7 @@
 window.iniciarPainel = function (D) {
   // Abas sem dados para o grupo do usuário não aparecem.
   var ABAS = [
-    { id: "comportamento", nome: "Comportamento", tem: "ocorrencias" },
+    { id: "comportamento", nome: "Comportamento", tem: "comportamento" },
     { id: "motor-ocioso", nome: "Motor ocioso", tem: "motorOcioso" },
     { id: "permanencia", nome: "Permanência", tem: "permanencia" }
   ].filter(function (a) { return D[a.tem]; });
@@ -54,8 +54,9 @@ window.iniciarPainel = function (D) {
     { id: "celular", nome: "Uso de celular", icone: "M8 3h8a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM11 18h2" },
     { id: "cinto", nome: "Sem cinto de segurança", icone: "M12 3.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zM6 21l3-9h6l3 9M8 12l9 7" },
     { id: "distracao", nome: "Distração", icone: "M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12zM12 9.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5z" },
-    { id: "cigarro", nome: "Uso de cigarro", icone: "M3 16h13v3H3zM19 16v3M12 12c0-2 2-2 2-4M16 12c0-2 2-2 2-4" },
-    { id: "faixa", nome: "Ultrapassagem em faixa contínua", icone: "M8 3L4 21M16 3l4 18M12 4v3M12 10.5v3M12 17v3" }
+    { id: "fadiga", nome: "Fadiga e bocejo", icone: "M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z" },
+    { id: "camera", nome: "Câmera obstruída", icone: "M3 7h4l2-3h6l2 3h4v13H3zM12 10.5a3 3 0 1 1 0 6 3 3 0 0 1 0-6zM3 3l18 18" },
+    { id: "outros", nome: "Manobra brusca", icone: "M4 18c4 0 4-12 8-12s4 12 8 12M17 6l3 0 0 3" }
   ];
   var TOTAL_ICONE = "M5 20V10M12 20V4M19 20v-7";
 
@@ -114,88 +115,111 @@ window.iniciarPainel = function (D) {
   }
 
   function abaComportamento() {
-    var O = D.ocorrencias, T = O.tipos, NDIA = D.dias.length;
-    var processos = unicos(O.linhas.map(function (l) { return l.processo; }));
-    var doProc = O.linhas.filter(function (l) { return !fil_.processo || l.processo === fil_.processo; });
-    var resps = unicos(doProc.map(function (l) { return l.responsavel; }));
-    if (fil_.responsavel && resps.indexOf(fil_.responsavel) < 0) fil_.responsavel = "";
-    var linhas = doProc.filter(function (l) { return !fil_.responsavel || l.responsavel === fil_.responsavel; });
+    var C = D.comportamento, T = C.tipos, F = C.frotas, NT = T.length;
+    var fc = fil_.comp || (fil_.comp = { frota: "", gerencia: "", janela: 28 });
+    // Filtros: tipo de frota, processo e gerência.
+    var ids = Object.keys(F).filter(function (f) { return !fc.frota || F[f].frota === fc.frota; });
+    var processos = unicos(ids.map(function (f) { return F[f].processo; }));
+    if (fil_.processo && processos.indexOf(fil_.processo) < 0) fil_.processo = "";
+    ids = ids.filter(function (f) { return !fil_.processo || F[f].processo === fil_.processo; });
+    var gerencias = unicos(ids.map(function (f) { return F[f].gerencia; }));
+    if (fc.gerencia && gerencias.indexOf(fc.gerencia) < 0) fc.gerencia = "";
+    ids = ids.filter(function (f) { return !fc.gerencia || F[f].gerencia === fc.gerencia; });
+    var sel = {}; ids.forEach(function (f) { sel[f] = 1; });
+    var ev = C.ev.filter(function (e) { return sel[e[2]]; });
 
-    var cont = {}, ant = {}, diaT = {};
-    T.forEach(function (t) {
-      diaT[t.id] = D.dias.map(function (_, i) { return sum(linhas, function (l) { return l.d[t.id][i]; }); });
-      cont[t.id] = sum(diaT[t.id], function (x) { return x; });
-      ant[t.id] = sum(linhas, function (l) { return l.ant[t.id]; });
+    // Janela atual e anterior (mesmo tamanho), terminando no último dia com dados.
+    var N = C.ndias, J = fc.janela && fc.janela < N ? fc.janela : N, a0 = N - J, b0 = a0 - J;
+    var dia0 = new Date(C.inicio + "T12:00:00");
+    function rot(i) { var d = new Date(dia0); d.setDate(d.getDate() + i); return ("0" + d.getDate()).slice(-2) + "/" + ("0" + (d.getMonth() + 1)).slice(-2); }
+    var cur = [], ant = [], k;
+    for (k = 0; k < NT; k++) { cur.push(0); ant.push(0); }
+    var porDia = [];
+    for (k = 0; k < N; k++) porDia.push(new Array(NT).fill(0));
+    var porFrota = {};
+    ev.forEach(function (e) {
+      porDia[e[0]][e[1]] += e[3];
+      if (e[0] >= a0) { cur[e[1]] += e[3]; porFrota[e[2]] = (porFrota[e[2]] || 0) + e[3]; }
+      else if (b0 >= 0 && e[0] >= b0) ant[e[1]] += e[3];
     });
+    var temBase = b0 >= 0;
     CATS.forEach(function (c) {
-      var ids = T.filter(function (t) { return (t.grupo || t.id) === c.id; }).map(function (t) { return t.id; });
-      c.ids = ids;
-      c.n = sum(ids, function (id) { return cont[id]; });
-      c.ant = sum(ids, function (id) { return ant[id]; });
-      c.dia = D.dias.map(function (_, i) { return sum(ids, function (id) { return diaT[id][i]; }); });
+      var ix = T.map(function (t, i) { return (t.grupo || t.id) === c.id ? i : -1; }).filter(function (i) { return i >= 0; });
+      c.ix = ix; c.n = sum(ix, function (i) { return cur[i]; }); c.ant = temBase ? sum(ix, function (i) { return ant[i]; }) : 0;
     });
     var total = sum(CATS, function (c) { return c.n; }), totalAnt = sum(CATS, function (c) { return c.ant; });
-    var frotas = sum(linhas, function (l) { return l.frotas; });
-    var sem = [0, 1, 2].map(function (k) { return sum(linhas, function (l) { return l.sem[k]; }); }).concat([total]);
+    var nVeic = Object.keys(porFrota).length;
+    function dl(cur, ant) { return temBase ? delta(cur, ant) : '<span class="dl neutro">período todo</span>'; }
 
-    // Filtros
-    var filtros = '<div class="filtros"><label>Processo<select data-fil="processo" id="f-processo">' + opcoes(processos, fil_.processo, D.escopo && D.escopo !== "todos" ? "Todos os meus processos" : "Todos os processos") + "</select></label>" +
-      '<label>Responsável<select data-fil="responsavel" id="f-responsavel">' + opcoes(resps, fil_.responsavel, "Todos os responsáveis") + "</select></label>" +
-      (fil_.processo || fil_.responsavel ? '<button type="button" class="limpar" data-limpar="1">Limpar filtros</button>' : "") +
-      '<p class="ctx">' + num(frotas, 0) + " " + plural(frotas, "veículo", "veículos") + " no filtro, " + esc(D.periodo) + "</p></div>";
+    var janelas = [[7, "Últimos 7 dias"], [28, "Últimas 4 semanas"], [91, "Últimos 3 meses"], [0, "Todo o período"]];
+    var filtros = '<div class="filtros">' +
+      '<div class="campo"><span class="rot">Frota</span><div class="pills" role="group" aria-label="Tipo de frota">' + [["", "Todas"], ["Leve", "Leve"], ["Pesada", "Pesada"]].map(function (o) {
+        return '<button type="button" data-cfrota="' + o[0] + '" aria-pressed="' + (fc.frota === o[0]) + '">' + o[1] + "</button>";
+      }).join("") + "</div></div>" +
+      '<label>Processo<select data-fil="processo" id="c-processo">' + opcoes(processos, fil_.processo, D.escopo && D.escopo !== "todos" ? "Todos os meus processos" : "Todos os processos") + "</select></label>" +
+      '<label>Gerência<select data-comp="gerencia" id="c-gerencia">' + opcoes(gerencias, fc.gerencia, "Todas as gerências") + "</select></label>" +
+      '<label>Período<select data-comp="janela" id="c-janela">' + janelas.map(function (o) { return '<option value="' + o[0] + '"' + (fc.janela === o[0] ? " selected" : "") + ">" + o[1] + "</option>"; }).join("") + "</select></label>" +
+      (fc.frota || fil_.processo || fc.gerencia ? '<button type="button" class="limpar" data-limpar="1">Limpar filtros</button>' : "") +
+      '<p class="ctx">' + num(nVeic, 0) + " " + plural(nVeic, "veículo", "veículos") + " com ocorrência, " + rot(a0) + " a " + rot(N - 1) + (temBase ? " (comparado com " + rot(b0) + " a " + rot(a0 - 1) + ")" : "") + "</p></div>";
 
-    // Cartões
-    var kpis = '<div class="kpis"><article class="kpi c-total"><div class="kh">' + ico(TOTAL_ICONE) + '<span class="kl">Total de ocorrências</span></div><strong class="kv">' + num(total, 0) + "</strong>" + delta(total, totalAnt) + '<span class="ks">vs. período anterior</span></article>' +
+    var kpis = '<div class="kpis"><article class="kpi c-total"><div class="kh">' + ico(TOTAL_ICONE) + '<span class="kl">Total de ocorrências</span></div><strong class="kv">' + num(total, 0) + "</strong>" + dl(total, totalAnt) + '<span class="ks">' + (temBase ? "vs. período anterior" : "&nbsp;") + "</span></article>" +
       CATS.map(function (c) {
-        return '<article class="kpi c-' + c.id + '"><div class="kh">' + ico(c.icone) + '<span class="kl">' + esc(c.nome).replace("Ultrapassagem", "Ultra&shy;passagem") + '</span></div><strong class="kv">' + num(c.n, 0) + "</strong>" + delta(c.n, c.ant) + '<span class="ks">vs. período anterior</span></article>';
+        return '<article class="kpi c-' + c.id + '"><div class="kh">' + ico(c.icone) + '<span class="kl">' + esc(c.nome) + '</span></div><strong class="kv">' + num(c.n, 0) + "</strong>" + dl(c.n, c.ant) + '<span class="ks">' + (temBase ? "vs. período anterior" : "&nbsp;") + "</span></article>";
       }).join("") + "</div>";
 
-    // Evolução (colunas empilhadas)
-    var dados = D.dias.map(function (d, i) { return { d: d, partes: CATS.map(function (c) { return c.dia[i]; }), total: sum(CATS, function (c) { return c.dia[i]; }) }; });
+    // Evolução: por dia até 14 dias, senão por semana.
+    var dados = [];
+    if (J <= 14) {
+      for (k = a0; k < N; k++) dados.push({ d: rot(k), partes: CATS.map(function (c) { return sum(c.ix, function (i) { return porDia[k][i]; }); }) });
+    } else {
+      for (var s = a0; s < N; s += 7) {
+        var e2 = Math.min(s + 7, N), partes = CATS.map(function (c) { var t = 0; for (var q = s; q < e2; q++) t += sum(c.ix, function (i) { return porDia[q][i]; }); return t; });
+        dados.push({ d: rot(s), partes: partes });
+      }
+      if (dados.length > 14) { // muitas semanas: agrupa de duas em duas
+        var d2 = []; for (k = 0; k < dados.length; k += 2) { var b = dados[k + 1]; d2.push({ d: dados[k].d, partes: dados[k].partes.map(function (v, i) { return v + (b ? b.partes[i] : 0); }) }); } dados = d2;
+      }
+    }
+    dados.forEach(function (x) { x.total = sum(x.partes, function (v) { return v; }); });
     var leg = CATS.map(function (c) { return '<li><i class="c-' + c.id + '"></i>' + esc(c.nome) + "</li>"; }).join("");
-    var evolucao = '<section class="card"><h3>Evolução das ocorrências</h3><ul class="legend">' + leg + "</ul>" + empilhado(dados) + "</section>";
+    var evolucao = '<section class="card"><h3>Evolução das ocorrências</h3><p class="cs">' + (J <= 14 ? "Por dia." : "Por semana, a partir da data indicada.") + '</p><ul class="legend">' + leg + "</ul>" + empilhado(dados) + "</section>";
 
-    // Participação por tipo
     var ord = CATS.slice().sort(function (a, b) { return b.n - a.n; });
     var part = '<section class="card"><h3>Participação por tipo</h3><div class="rosca-w">' + rosca(ord, total) + '<ul class="rleg">' + ord.map(function (c) {
       return '<li><i class="c-' + c.id + '"></i><span>' + esc(c.nome) + "</span><b>" + (total ? num(c.n / total * 100, 1) : "0,0") + "%</b></li>";
     }).join("") + "</ul></div></section>";
 
-    // Tendência semanal (colunas)
-    var tend = '<section class="card"><h3>Tendência das ocorrências</h3><p class="cs">Total por semana. A semana 4 é o período atual.</p>' + empilhado(["Semana 1", "Semana 2", "Semana 3", "Semana 4"].map(function (d, i) { return { d: d, partes: [], total: sem[i] }; }), true, 300) + "</section>";
+    // Tendência: totais das últimas 8 semanas completas até o último dia.
+    var sem = [];
+    for (k = N; k - 7 >= 0 && sem.length < 8; k -= 7) { var t2 = 0; for (var q = k - 7; q < k; q++) t2 += sum(porDia[q], function (v) { return v; }); sem.unshift({ d: rot(k - 7), partes: [], total: t2 }); }
+    var tend = '<section class="card"><h3>Tendência semanal</h3><p class="cs">Total por semana nas últimas ' + sem.length + " semanas. A última termina em " + rot(N - 1) + ".</p>" + empilhado(sem, true, 360) + "</section>";
 
-    // Excesso de velocidade por faixa
-    var velC = CATS[0], velTipos = T.filter(function (t) { return t.grupo === "vel"; }), mxV = Math.max.apply(null, [1].concat(velTipos.map(function (t) { return cont[t.id]; })));
-    var velCard = '<section class="card"><h3>Excesso de velocidade por faixa</h3><p class="cs">' + num(velC.n, 0) + " " + plural(velC.n, "ocorrência", "ocorrências") + " no período</p>" + velTipos.map(function (t, k) {
-      return '<div class="li"><span class="t">' + esc(t.nome) + '</span><span class="n">' + num(cont[t.id], 0) + '<small>' + (velC.n ? num(cont[t.id] / velC.n * 100, 0) + "%" : "") + '</small></span><div class="bb"><div class="ff v' + (k + 1) + '" style="width:' + (cont[t.id] / mxV * 100).toFixed(1) + '%;--i:' + k + '"></div></div></div>';
+    var velC = CATS[0], velIx = velC.ix, mxV = Math.max.apply(null, [1].concat(velIx.map(function (i) { return cur[i]; })));
+    var velCard = '<section class="card"><h3>Excesso de velocidade por faixa</h3><p class="cs">Quanto passou do limite da via. ' + num(velC.n, 0) + " " + plural(velC.n, "ocorrência", "ocorrências") + " no período.</p>" + velIx.map(function (i, kk) {
+      return '<div class="li"><span class="t">' + esc(T[i].nome) + '</span><span class="n">' + num(cur[i], 0) + "<small>" + (velC.n ? num(cur[i] / velC.n * 100, 0) + "%" : "") + '</small></span><div class="bb"><div class="ff v' + (kk + 1) + '" style="width:' + (cur[i] / mxV * 100).toFixed(1) + "%;--i:" + kk + '"></div></div></div>';
     }).join("") + "</section>";
 
-    // Concentração por processo ou responsável (clicável)
-    var onde = fil_.processo ? (fil_.responsavel ? "" : "responsavel") : "processo", conc = "", topoConc = null;
-    if (onde) {
-      var mapa = {};
-      linhas.forEach(function (l) {
-        var m = mapa[l[onde]] || (mapa[l[onde]] = { n: 0, frotas: 0 });
-        m.n += sum(T, function (t) { return sum(l.d[t.id], function (x) { return x; }); }); m.frotas += l.frotas;
-      });
-      var lista = Object.keys(mapa).map(function (k) { return { nome: k, n: mapa[k].n, frotas: mapa[k].frotas }; }).sort(function (a, b) { return b.n - a.n; });
-      topoConc = lista[0];
-      var mx = Math.max.apply(null, [1].concat(lista.map(function (x) { return x.n; })));
-      conc = '<section class="card"><h3>Onde se concentram</h3><p class="cs">Por ' + (onde === "processo" ? "processo" : "responsável") + ". Clique para filtrar.</p><div class=\"rolagem\">" + lista.map(function (x, k) {
-        return '<button type="button" class="li lib" data-set="' + onde + ":" + esc(x.nome) + '"><span class="t">' + esc(x.nome) + '<small>' + x.frotas + " " + plural(x.frotas, "veículo", "veículos") + '</small></span><span class="n">' + num(x.n, 0) +
-          '<small>' + num(x.n / x.frotas, 1) + ' por veículo</small></span><div class="bb"><div class="ff" style="width:' + (x.n / mx * 100).toFixed(1) + '%;--i:' + k + '"></div></div></button>';
-      }).join("") + "</div></section>";
-    } else {
-      conc = '<section class="card"><h3>Onde se concentram</h3><p class="cs">Há um processo e um responsável escolhidos. Use "Limpar filtros" para ver a distribuição.</p></section>';
-    }
+    // Onde se concentram: por processo; com processo escolhido, por veículo.
+    var porVeic = !!fil_.processo, mapa = {};
+    Object.keys(porFrota).forEach(function (f) {
+      var chave = porVeic ? f : F[f].processo, m = mapa[chave] || (mapa[chave] = { n: 0, v: {} });
+      m.n += porFrota[f]; m.v[f] = 1;
+    });
+    var lista = Object.keys(mapa).map(function (kx) { return { nome: kx, n: mapa[kx].n, nv: Object.keys(mapa[kx].v).length }; }).sort(function (a, b) { return b.n - a.n; });
+    var mx = Math.max.apply(null, [1].concat(lista.map(function (x) { return x.n; })));
+    var conc = '<section class="card"><h3>Onde se concentram</h3><p class="cs">' + (porVeic ? "Por veículo do processo." : "Por processo. Clique para filtrar.") + '</p><div class="rolagem">' + lista.map(function (x, kk) {
+      var sub = porVeic ? esc([F[x.nome].placa, F[x.nome].grupo].filter(Boolean).join(" · ")) : x.nv + " " + plural(x.nv, "veículo", "veículos") + " · " + num(x.n / x.nv, 1) + " por veículo";
+      var corpo = '<span class="t">' + esc(x.nome) + "<small>" + sub + '</small></span><span class="n">' + num(x.n, 0) + "<small>" + (total ? num(x.n / total * 100, 0) + "%" : "") + '</small></span><div class="bb"><div class="ff" style="width:' + (x.n / mx * 100).toFixed(1) + "%;--i:" + kk + '"></div></div>';
+      return porVeic ? '<div class="li">' + corpo + "</div>" : '<button type="button" class="li lib" data-set="processo:' + esc(x.nome) + '">' + corpo + "</button>";
+    }).join("") + "</div></section>";
 
-    // Principais alertas
-    var com = CATS.filter(function (c) { return variacao(c.n, c.ant) !== null; });
+    var com = temBase ? CATS.filter(function (c) { return variacao(c.n, c.ant) !== null && (c.n + c.ant) >= 10; }) : [];
     var sobe = com.slice().sort(function (a, b) { return variacao(b.n, b.ant) - variacao(a.n, a.ant); })[0];
     var desce = com.slice().sort(function (a, b) { return variacao(a.n, a.ant) - variacao(b.n, b.ant); })[0];
     var alertas = [];
     if (total) alertas.push(["ruim", "!", "<b>" + esc(ord[0].nome) + "</b> é o tipo mais frequente, com " + num(ord[0].n / total * 100, 0) + "% das ocorrências."]);
-    if (topoConc && total && lista.length > 1) alertas.push(["atencao", "▲", "<b>" + esc(topoConc.nome) + "</b> concentra " + num(topoConc.n / total * 100, 0) + "% das ocorrências."]);
+    if (lista.length > 1 && total) alertas.push(["atencao", "▲", "<b>" + esc(lista[0].nome) + "</b> concentra " + num(lista[0].n / total * 100, 0) + "% das ocorrências."]);
+    if (velC.n && cur[velIx[2]]) alertas.push(["ruim", "!", "<b>" + num(cur[velIx[2]], 0) + "</b> " + plural(cur[velIx[2]], "excesso", "excessos") + " de velocidade acima de 27% do limite."]);
     if (sobe && variacao(sobe.n, sobe.ant) > 0) alertas.push(["atencao", "↑", "Aumento de <b>" + esc(sobe.nome.toLowerCase()) + "</b> (+" + num(variacao(sobe.n, sobe.ant), 0) + "%) vs. período anterior."]);
     if (desce && variacao(desce.n, desce.ant) < 0) alertas.push(["bom", "↓", "Redução de <b>" + num(-variacao(desce.n, desce.ant), 0) + "%</b> em " + esc(desce.nome.toLowerCase()) + " vs. período anterior."]);
     if (!alertas.length) alertas.push(["bom", "✓", "Nenhuma ocorrência para esse filtro."]);
@@ -451,7 +475,7 @@ window.iniciarPainel = function (D) {
     painel.innerHTML = VIEWS[id]();
     if (id === "permanencia") montarMapa();
     fil.hidden = true;
-    var blocos = { "motor-ocioso": D.motorOcioso, "permanencia": D.permanencia }, b = blocos[id], real = b && b.real;
+    var blocos = { "comportamento": D.comportamento, "motor-ocioso": D.motorOcioso, "permanencia": D.permanencia }, b = blocos[id], real = b && b.real;
     document.getElementById("periodo").textContent = real ? b.periodo + " · dados reais" : D.periodo;
     document.getElementById("aviso").hidden = real || !D.exemplo;
   }
@@ -481,7 +505,8 @@ window.iniciarPainel = function (D) {
       var n2 = document.querySelector('input[data-frota="' + fr.dataset.frota + '"]'); if (n2) n2.focus();
       return;
     }
-    var sel = e.target.closest("select[data-fil], select[data-pm]"); if (!sel) return;
+    var sel = e.target.closest("select[data-fil], select[data-pm], select[data-comp]"); if (!sel) return;
+    if (sel.dataset.comp) { fil_.comp[sel.dataset.comp] = sel.dataset.comp === "janela" ? +sel.value : sel.value; render(); var n3 = document.getElementById(sel.id); if (n3) n3.focus(); return; }
     if (sel.dataset.pm) pm[sel.dataset.pm] = +sel.value;
     else { fil_[sel.dataset.fil] = sel.value; if (sel.dataset.fil === "processo") { fil_.responsavel = ""; pm.frotas = []; } }
     pm.refit = true;
@@ -490,7 +515,9 @@ window.iniciarPainel = function (D) {
   });
   painel.addEventListener("click", function (e) {
     var l = e.target.closest("[data-limpar]");
-    if (l) { fil_.processo = ""; fil_.responsavel = ""; pm.frotas = []; pm.dias = 0; pm.refit = true; render(); return; }
+    if (l) { fil_.processo = ""; fil_.responsavel = ""; if (fil_.comp) { fil_.comp.frota = ""; fil_.comp.gerencia = ""; } pm.frotas = []; pm.dias = 0; pm.refit = true; render(); return; }
+    var cf = e.target.closest("[data-cfrota]");
+    if (cf) { fil_.comp.frota = cf.dataset.cfrota; render(); return; }
     var md = e.target.closest("[data-medida]");
     if (md) { pm.medida = md.dataset.medida; render(); return; }
     var fa = e.target.closest("[data-frotas]");

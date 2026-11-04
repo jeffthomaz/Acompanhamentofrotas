@@ -9,7 +9,7 @@
 :root{
   --bg:#EDF0EA;--ink:#16251E;--muted:#5A6A61;--line:#CBD3CB;--soft:#E2E7E0;
   --folha:#3E9B34;--maq:#E9A800;--maq-ink:#16251E;
-  --card:#FFFFFF;--c-total:#16251E;--c-vel:#0F4A2A;--c-celular:#3E9B34;--c-cinto:#8CC63F;--c-distracao:#E9A800;--c-cigarro:#5E9C8A;--c-faixa:#9AA9A0;--v1:#E9A800;--v2:#E2701B;--v3:#C23B2B;
+  --card:#FFFFFF;--c-total:#16251E;--c-vel:#0F4A2A;--c-celular:#3E9B34;--c-cinto:#8CC63F;--c-distracao:#E9A800;--c-cigarro:#5E9C8A;--c-faixa:#9AA9A0;--c-outros:#8C6D46;--v1:#E9A800;--v2:#E2701B;--v3:#C23B2B;
   --s1:#0F4A2A;--s2:#E9A800;--s3:#5E9C8A;--s4:#AEBBB2;--on3:#16251E;--on4:#16251E;
   --bom:#2C7A4B;--atencao:#8F6200;--critico:#C23B2B;
   --bom-bg:#D9ECDF;--atencao-bg:#F6E7B8;--critico-bg:#F6D9D4;
@@ -19,13 +19,13 @@
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   --bg:#0F1914;--ink:#E6EEE8;--muted:#9BAAA1;--line:#2A3A32;--soft:#1A2820;
   --folha:#6FBF99;--maq:#F2B90F;--maq-ink:#16251E;
-  --card:#16241C;--c-total:#E6EEE8;--c-vel:#2F8F5B;--c-celular:#5FC24F;--c-cinto:#A9D95C;--c-distracao:#F2B90F;--c-cigarro:#7CC2AE;--c-faixa:#8D9C93;--v1:#F2B90F;--v2:#F08C3C;--v3:#F2807A;--s1:#6FBF99;--s2:#F2B90F;--s3:#3F8A78;--s4:#55655C;--on3:#FFFFFF;--on4:#FFFFFF;
+  --card:#16241C;--c-total:#E6EEE8;--c-vel:#2F8F5B;--c-celular:#5FC24F;--c-cinto:#A9D95C;--c-distracao:#F2B90F;--c-cigarro:#7CC2AE;--c-faixa:#8D9C93;--c-outros:#C9A47C;--v1:#F2B90F;--v2:#F08C3C;--v3:#F2807A;--s1:#6FBF99;--s2:#F2B90F;--s3:#3F8A78;--s4:#55655C;--on3:#FFFFFF;--on4:#FFFFFF;
   --bom:#6FD09A;--atencao:#F2C24D;--critico:#F2807A;
   --bom-bg:#173325;--atencao-bg:#3A2F10;--critico-bg:#3B1E1B;color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#0F1914;--ink:#E6EEE8;--muted:#9BAAA1;--line:#2A3A32;--soft:#1A2820;
   --folha:#6FBF99;--maq:#F2B90F;--maq-ink:#16251E;
-  --card:#16241C;--c-total:#E6EEE8;--c-vel:#2F8F5B;--c-celular:#5FC24F;--c-cinto:#A9D95C;--c-distracao:#F2B90F;--c-cigarro:#7CC2AE;--c-faixa:#8D9C93;--v1:#F2B90F;--v2:#F08C3C;--v3:#F2807A;--s1:#6FBF99;--s2:#F2B90F;--s3:#3F8A78;--s4:#55655C;--on3:#FFFFFF;--on4:#FFFFFF;
+  --card:#16241C;--c-total:#E6EEE8;--c-vel:#2F8F5B;--c-celular:#5FC24F;--c-cinto:#A9D95C;--c-distracao:#F2B90F;--c-cigarro:#7CC2AE;--c-faixa:#8D9C93;--c-outros:#C9A47C;--v1:#F2B90F;--v2:#F08C3C;--v3:#F2807A;--s1:#6FBF99;--s2:#F2B90F;--s3:#3F8A78;--s4:#55655C;--on3:#FFFFFF;--on4:#FFFFFF;
   --bom:#6FD09A;--atencao:#F2C24D;--critico:#F2807A;
   --bom-bg:#173325;--atencao-bg:#3A2F10;--critico-bg:#3B1E1B;color-scheme:dark}
 *{box-sizing:border-box}
@@ -100,7 +100,7 @@ select:focus-visible{outline:3px solid var(--maq);outline-offset:2px}
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(9.2rem,1fr));gap:.75rem}
 .kpi{position:relative;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:.9rem .8rem 1.15rem;display:grid;gap:.2rem;justify-items:center;text-align:center;box-shadow:0 1px 4px rgba(10,42,25,.1);overflow:hidden}
 .kpi::after{content:"";position:absolute;left:0;right:0;bottom:0;height:6px;background:var(--cc)}
-@media (min-width:1000px){.kpis{grid-template-columns:repeat(7,minmax(0,1fr))}.kpis{gap:.55rem}.kpi{padding-inline:.5rem}.kpi .ic{width:1.45rem;height:1.45rem}.kh{gap:.35rem}.kl{font-size:.68rem;letter-spacing:-.01em}.kv{font-size:2.1rem}}
+@media (min-width:1000px){.kpis{grid-template-columns:repeat(8,minmax(0,1fr))}.kpis{gap:.55rem}.kpi{padding-inline:.5rem}.kpi .ic{width:1.45rem;height:1.45rem}.kh{gap:.35rem}.kl{font-size:.68rem;letter-spacing:-.01em}.kv{font-size:1.75rem}}
 .kl{min-width:0}
 .kh{display:flex;align-items:center;gap:.5rem;justify-self:stretch;text-align:left;min-height:2.9rem;margin-bottom:.2rem}
 .kpi .ic{width:2.1rem;height:2.1rem;flex:none;color:var(--cc);stroke-width:1.6}
@@ -108,7 +108,7 @@ select:focus-visible{outline:3px solid var(--maq);outline-offset:2px}
 .kv{font-family:var(--display);font-weight:800;font-size:2.4rem;line-height:1.1;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
 .dl{font-size:.9rem;font-weight:700;font-variant-numeric:tabular-nums}.dl.bom{color:var(--bom)}.dl.ruim{color:var(--critico)}.dl.neutro{color:var(--muted)}
 .ks{font-size:.72rem;color:var(--muted)}
-.c-total{--cc:var(--c-total)}.c-vel{--cc:var(--c-vel)}.c-celular{--cc:var(--c-celular)}.c-cinto{--cc:var(--c-cinto)}.c-distracao{--cc:var(--c-distracao)}.c-cigarro{--cc:var(--c-cigarro)}.c-faixa{--cc:var(--c-faixa)}
+.c-total{--cc:var(--c-total)}.c-vel{--cc:var(--c-vel)}.c-celular{--cc:var(--c-celular)}.c-cinto{--cc:var(--c-cinto)}.c-distracao{--cc:var(--c-distracao)}.c-cigarro{--cc:var(--c-cigarro)}.c-faixa{--cc:var(--c-faixa)}.c-fadiga{--cc:var(--c-cigarro)}.c-camera{--cc:var(--c-faixa)}.c-outros{--cc:var(--c-outros)}
 .g3{display:grid;gap:1rem}
 .g-a{grid-template-columns:minmax(0,1.55fr) minmax(0,1.1fr) minmax(0,1fr)}
 .g-b{grid-template-columns:repeat(3,minmax(0,1fr))}
@@ -122,7 +122,7 @@ select:focus-visible{outline:3px solid var(--maq);outline-offset:2px}
 rect.seg.c-total{fill:var(--folha)}
 .grade{stroke:var(--line);stroke-width:1}
 .seg{stroke:var(--card);stroke-width:1;transform-box:fill-box;transform-origin:bottom;animation:up .7s cubic-bezier(.2,.8,.2,1) backwards}
-rect.seg.c-vel{fill:var(--c-vel)}rect.seg.c-celular{fill:var(--c-celular)}rect.seg.c-cinto{fill:var(--c-cinto)}rect.seg.c-distracao{fill:var(--c-distracao)}rect.seg.c-cigarro{fill:var(--c-cigarro)}rect.seg.c-faixa{fill:var(--c-faixa)}
+rect.seg.c-vel{fill:var(--c-vel)}rect.seg.c-celular{fill:var(--c-celular)}rect.seg.c-cinto{fill:var(--c-cinto)}rect.seg.c-distracao{fill:var(--c-distracao)}rect.seg.c-cigarro{fill:var(--c-cigarro)}rect.seg.c-faixa{fill:var(--c-faixa)}rect.seg.c-fadiga{fill:var(--c-cigarro)}rect.seg.c-camera{fill:var(--c-faixa)}rect.seg.c-outros{fill:var(--c-outros)}
 .legend i{background:var(--cc)}
 .rosca-w{display:grid;gap:1rem;justify-items:center}
 .rosca{width:min(100%,13rem);height:auto}
@@ -250,7 +250,7 @@ rect.seg.c-vel{fill:var(--c-vel)}rect.seg.c-celular{fill:var(--c-celular)}rect.s
 </div>
 <footer class="foot gut">Bioenergética Aroeira S/A, Tupaciguara/MG. <a href="https://www.bioaroeira.com.br" target="_blank" rel="noopener">www.bioaroeira.com.br</a></footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" defer></script>
-<script src="acesso.js?v=202611041125"></script>
-<script src="app.js?v=202611041125"></script>
-<script src="login.js?v=202611041125"></script>
+<script src="acesso.js?v=202611041140"></script>
+<script src="app.js?v=202611041140"></script>
+<script src="login.js?v=202611041140"></script>
 </body></html>

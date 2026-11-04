@@ -42,9 +42,13 @@
   }
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
   function nomeProc(D, k) {
-    var l = D.ocorrencias.linhas.filter(function (x) { return x.processo.toLowerCase() === k; })[0];
-    return l ? l.processo : k;
+    var nomes = [];
+    if (D.comportamento) Object.keys(D.comportamento.frotas).forEach(function (f) { nomes.push(D.comportamento.frotas[f].processo); });
+    if (D.motorOcioso) D.motorOcioso.veiculos.forEach(function (v) { nomes.push(v.processo); });
+    if (D.permanencia) Object.keys(D.permanencia.veiculos).forEach(function (f) { nomes.push(D.permanencia.veiculos[f].processo); });
+    return nomes.filter(function (x) { return x.toLowerCase() === k; })[0] || k.toUpperCase();
   }
+
 
   function sessao(v) {
     try { if (v === undefined) return JSON.parse(sessionStorage.getItem(CHAVE_SESSAO)); if (v) sessionStorage.setItem(CHAVE_SESSAO, JSON.stringify(v)); else sessionStorage.removeItem(CHAVE_SESSAO); } catch (e) { return null; }

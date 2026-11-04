@@ -62,7 +62,12 @@ def recorte(D, procs):
     d["escopo"] = "todos" if procs is None else sorted(procs)
     if procs is None:
         return d
-    d["ocorrencias"]["linhas"] = [l for l in d["ocorrencias"]["linhas"] if chave_proc(l["processo"]) in procs]
+    if "comportamento" in d:
+        C = d["comportamento"]
+        C["frotas"] = {f: v for f, v in C["frotas"].items() if chave_proc(v["processo"]) in procs}
+        C["ev"] = [e for e in C["ev"] if e[2] in C["frotas"]]
+        if not C["ev"]:
+            d.pop("comportamento")
     if "motorOcioso" in d:
         d["motorOcioso"]["veiculos"] = [v for v in d["motorOcioso"]["veiculos"] if chave_proc(v["processo"]) in procs]
         if not d["motorOcioso"]["veiculos"]:
@@ -78,7 +83,7 @@ def recorte(D, procs):
 
 def main(cad, fonte, saida):
     D = json.load(open(fonte, encoding="utf-8"))
-    conhecidos = {chave_proc(l["processo"]): l["processo"] for l in D["ocorrencias"]["linhas"]}
+    conhecidos = {chave_proc(v["processo"]): v["processo"] for v in D.get("comportamento", {}).get("frotas", {}).values()}
     conhecidos.update({chave_proc(v["processo"]): v["processo"] for v in D.get("motorOcioso", {}).get("veiculos", [])})
     conhecidos.update({chave_proc(v["processo"]): v["processo"] for v in D.get("permanencia", {}).get("veiculos", {}).values()})
     grupos, usuarios, avisos = {}, {}, []
