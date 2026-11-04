@@ -27,5 +27,7 @@ Atualizar usuários ou dados:
 
 - Motor ocioso: dados reais do Power BI "Ociosidade Frota Leve" (veículos leves), extraídos com a
   consulta DAX descrita em `ferramentas/ociosidade_do_powerbi.py`. Filtrada por processo para cada grupo.
-- Comportamento e Permanência: ainda dados de exemplo. Permanência só aparece para quem vê todos os
-  processos enquanto não houver processo por equipamento.
+- Permanência: mapa de calor com dados reais da tabela Ocorrências (eventos PERMANENCIA_CERCA e
+  PERMANENCIA_PONTO) do mesmo Power BI, extraídos com `ferramentas/permanencia_do_powerbi.py`.
+  Não leva motorista nem CPF; alarmes falsos ficam de fora. Mapa com Leaflet (CDN) e camada de calor própria.
+- Comportamento: ainda dados de exemplo.

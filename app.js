@@ -266,35 +266,171 @@ window.iniciarPainel = function (D) {
     return filtros + '<div class="head"><p class="lead">' + lead + "</p>" + dias(porSem, "%", meta, "Motor ocioso por semana (linha tracejada: meta de " + meta + "%)", m.semanas) + "</div>" + secoes;
   }
 
-  // ---------- Permanência ----------
+  // ---------- Permanência: mapa de calor (dados reais da tabela Ocorrências do Power BI) ----------
+  var pm = { frotas: [], medida: "tempo", dias: 0, abertoFrotas: false, refit: true, mapa: null, vista: null, marcas: {} };
+  function permFiltrados() {
+    var P = D.permanencia, V = P.veiculos;
+    var processos = unicos(Object.keys(V).map(function (f) { return V[f].processo; }));
+    if (fil_.processo && processos.indexOf(fil_.processo) < 0) fil_.processo = "";
+    var frotasProc = Object.keys(V).filter(function (f) { return !fil_.processo || V[f].processo === fil_.processo; }).sort();
+    pm.frotas = pm.frotas.filter(function (f) { return frotasProc.indexOf(f) >= 0; });
+    var sel = pm.frotas.length ? pm.frotas : frotasProc, set = {};
+    sel.forEach(function (f) { set[f] = 1; });
+    var ultimo = P.eventos.length ? P.eventos[P.eventos.length - 1][5] : "";
+    var corte = "";
+    if (pm.dias && ultimo) { var d = new Date(ultimo + "T12:00:00"); d.setDate(d.getDate() - pm.dias + 1); corte = d.toISOString().slice(0, 10); }
+    var ev = P.eventos.filter(function (e) { return set[e[0]] && (!corte || e[5] >= corte); });
+    return { P: P, V: V, processos: processos, frotasProc: frotasProc, ev: ev };
+  }
+  function dataBR(s) { return s.slice(8, 10) + "/" + s.slice(5, 7) + "/" + s.slice(0, 4); }
+  function hmin(m) { return m >= 6000 ? num(m / 60, 0) + " h" : m >= 60 ? dur(Math.round(m)) : num(m, 0) + " min"; }
+
   function abaPermanencia() {
-    var p = D.permanencia, ids = equips().map(function (e) { return e.id; });
-    var lim = {}; p.locais.forEach(function (l) { lim[l.nome] = l.limiteMin; });
-    var est = p.estadias.filter(function (x) { return ids.indexOf(x.equip) >= 0; });
-    var acima = est.filter(function (x) { return x.min > lim[x.local]; }).length;
-    var visitas = sum(p.locais, function (l) { return l.visitas; });
-    var media = Math.round(sum(p.locais, function (l) { return l.visitas * l.mediaMin; }) / visitas);
-    var locais = p.locais.slice().sort(function (a, b) { return b.mediaMin / b.limiteMin - a.mediaMin / a.limiteMin; });
-    var maxM = Math.max.apply(null, p.locais.map(function (l) { return Math.max(l.mediaMin, l.limiteMin); })) * 1.1;
-    var lead = est.length
-      ? "<b>" + acima + " de " + est.length + "</b> estadias recentes passaram do limite do local. A permanência média na frota é de <b>" + dur(media) + "</b>."
-      : "Nenhuma estadia registrada para esse filtro.";
-    var corpo = locais.map(function (l, i) {
-      var over = l.mediaMin > l.limiteMin;
-      return linha(i, "<b>" + esc(l.nome) + "</b><span>" + l.visitas + " visitas</span>",
-        '<div class="bar solo' + (over ? " over" : "") + '" style="width:' + (l.mediaMin / maxM * 100).toFixed(1) + '%;--i:' + i + '"></div><i class="mk" style="left:' + (l.limiteMin / maxM * 100).toFixed(1) + '%"></i>',
-        '<strong class="' + (over ? "n-critico" : "n-bom") + '">' + dur(l.mediaMin) + "</strong><small>limite " + dur(l.limiteMin) + "</small>");
+    var F = permFiltrados(), P = F.P, V = F.V, ev = F.ev;
+    var porLocal = {};
+    ev.forEach(function (e) {
+      var x = porLocal[e[4]] || (porLocal[e[4]] = { i: e[4], n: 0, min: 0, lat: 0, lon: 0, fr: {} });
+      x.n++; x.min += e[3]; x.lat += e[1]; x.lon += e[2]; x.fr[e[0]] = 1;
+    });
+    var locais = Object.keys(porLocal).map(function (k) { return porLocal[k]; })
+      .sort(function (a, b) { return pm.medida === "tempo" ? b.min - a.min : b.n - a.n; });
+    var totMin = sum(ev, function (e) { return e[3]; });
+    var nFrotas = Object.keys(ev.reduce(function (o, e) { o[e[0]] = 1; return o; }, {})).length;
+
+    var listaFrotas = F.frotasProc.map(function (f) {
+      var v = V[f], on = !pm.frotas.length || pm.frotas.indexOf(f) >= 0;
+      return '<label class="chk"><input type="checkbox" data-frota="' + esc(f) + '"' + (pm.frotas.length && on ? " checked" : "") + "><span><b>" + esc(f) + "</b> " + esc([v.placa, fil_.processo ? v.responsavel : v.processo].filter(Boolean).join(" · ")) + "</span></label>";
     }).join("");
-    var rows = est.map(function (x) { return { equip: x.equip, local: x.local, entrada: x.entrada, min: x.min, lim: lim[x.local] }; });
-    var tabela = sortable(rows, "pm").map(function (r) {
-      var ac = r.min > r.lim;
-      return '<tr><th scope="row">' + r.equip + "</th><td>" + esc(r.local) + "</td><td>" + r.entrada + '</td><td class="r">' + dur(r.min) + '</td><td class="r">' + dur(r.lim) +
-        '</td><td class="r"><span class="b ' + (ac ? "critico" : "bom") + '" style="padding:.05rem .5rem;border-radius:999px;font-size:.78rem;font-weight:600">' + (ac ? "Acima do limite" : "Dentro do limite") + "</span></td></tr>";
-    }).join("");
-    return '<div class="head"><p class="lead">' + lead + "</p></div>" +
-      '<section class="sec"><h2>Permanência média por local</h2><p class="sub">A barra é o tempo médio de cada visita. A linha vertical marca o limite esperado para o local.</p><div class="board">' + corpo + "</div></section>" +
-      (est.length ? '<section class="sec"><h2>Últimas estadias</h2><p class="sub">Clique no título de uma coluna para ordenar.</p><div class="scroll"><table class="tb"><thead><tr>' +
-        th("pm", "equip", "Equipamento") + th("pm", "local", "Local") + th("pm", "entrada", "Entrada") + th("pm", "min", "Tempo", 1) + th("pm", "lim", "Limite", 1) + '<th scope="col" class="r">Situação</th></tr></thead><tbody>' + tabela + "</tbody></table></div></section>" : "");
+    var rotFrotas = pm.frotas.length ? pm.frotas.length + " de " + F.frotasProc.length + " selecionadas" : "Todas (" + F.frotasProc.length + ")";
+    var filtros = '<div class="filtros"><label>Processo<select data-fil="processo" id="p-processo">' + opcoes(F.processos, fil_.processo, D.escopo && D.escopo !== "todos" ? "Todos os meus processos" : "Todos os processos") + "</select></label>" +
+      '<div class="campo"><span class="rot">Frotas</span><details class="frotas" id="p-frotas"' + (pm.abertoFrotas ? " open" : "") + '><summary>' + rotFrotas + '</summary><div class="fl-acoes"><button type="button" data-frotas="todas">Marcar todas</button><button type="button" data-frotas="limpar">Ver todas sem filtro</button></div><div class="fl-lista">' + listaFrotas + "</div></details></div>" +
+      '<label>Período<select data-pm="dias" id="p-dias">' + [[0, "Todo o período"], [30, "Últimos 30 dias"], [7, "Últimos 7 dias"]].map(function (o) { return '<option value="' + o[0] + '"' + (pm.dias === o[0] ? " selected" : "") + ">" + o[1] + "</option>"; }).join("") + "</select></label>" +
+      '<div class="campo"><span class="rot">Calor por</span><div class="pills" role="group" aria-label="Medida do mapa de calor"><button type="button" data-medida="tempo" aria-pressed="' + (pm.medida === "tempo") + '">Tempo parado</button><button type="button" data-medida="vezes" aria-pressed="' + (pm.medida === "vezes") + '">Nº de permanências</button></div></div>' +
+      (fil_.processo || pm.frotas.length || pm.dias ? '<button type="button" class="limpar" data-limpar="1">Limpar filtros</button>' : "") + "</div>";
+
+    var topo = locais[0] ? P.locais[locais[0].i] : null;
+    var lead = ev.length ? "<b>" + num(ev.length, 0) + "</b> " + plural(ev.length, "permanência", "permanências") + " de " + nFrotas + " " + plural(nFrotas, "frota", "frotas") + ", somando <b>" + hmin(totMin) + "</b> parados em " + locais.length + " " + plural(locais.length, "local", "locais") + "." +
+      (topo ? " O local com " + (pm.medida === "tempo" ? "mais tempo" : "mais permanências") + " é <b>" + esc(topo.nome) + "</b>." : "")
+      : "Nenhuma permanência para esse filtro.";
+
+    var mx = Math.max.apply(null, [1].concat(locais.map(function (x) { return pm.medida === "tempo" ? x.min : x.n; })));
+    var ranking = '<section class="card"><h3>Locais de permanência</h3><p class="cs">Clique para ver no mapa.</p><div class="rolagem alta">' + locais.map(function (x, k) {
+      var L0 = P.locais[x.i], val = pm.medida === "tempo" ? x.min : x.n;
+      return '<button type="button" class="li lib" data-local="' + x.i + '"><span class="t">' + esc(L0.nome) + "<small>" + esc([L0.cidade, Object.keys(x.fr).length + " " + plural(Object.keys(x.fr).length, "frota", "frotas")].filter(Boolean).join(" · ")) + '</small></span><span class="n">' +
+        (pm.medida === "tempo" ? hmin(x.min) + "<small>" + x.n + " " + plural(x.n, "vez", "vezes") + "</small>" : x.n + "<small>" + hmin(x.min) + "</small>") +
+        '</span><div class="bb"><div class="ff" style="width:' + (val / mx * 100).toFixed(1) + "%;--i:" + k + '"></div></div></button>';
+    }).join("") + "</div></section>";
+
+    var longas = ev.slice().sort(function (a, b) { return b[3] - a[3]; }).slice(0, 8);
+    var tabela = longas.length ? '<section class="card"><h3>Permanências mais longas</h3><ul class="longas">' + longas.map(function (e) {
+      return "<li><span><b>" + esc(e[0]) + "</b> em " + esc(P.locais[e[4]].nome) + "<small>" + dataBR(e[5]) + " às " + e[6] + " · " + esc(V[e[0]].processo) + "</small></span><strong>" + hmin(e[3]) + "</strong></li>";
+    }).join("") + "</ul></section>" : "";
+
+    pm.ultimo = { ev: ev, locais: locais };
+    return filtros + '<div class="head"><p class="lead">' + lead + "</p></div>" +
+      '<div class="mapa-g"><section class="card mapa-card"><div id="mapa" class="mapa" role="region" aria-label="Mapa de calor das permanências"><p class="mapa-msg">Carregando mapa…</p></div>' +
+      '<div class="escala"><span>Menos</span><i></i><span>Mais ' + (pm.medida === "tempo" ? "tempo parado" : "permanências") + "</span></div></section>" +
+      '<div class="mapa-lado">' + ranking + tabela + "</div></div>";
+  }
+
+  // Camada de calor simples (canvas), sem plugin.
+  function camadaCalor(L, pontos, raio) {
+    var Calor = L.Layer.extend({
+      onAdd: function (map) {
+        this._map = map;
+        this._c = L.DomUtil.create("canvas", "calor leaflet-zoom-hide");
+        map.getPanes().overlayPane.appendChild(this._c);
+        map.on("moveend zoomend resize", this._desenha, this);
+        this._desenha();
+      },
+      onRemove: function (map) { map.off("moveend zoomend resize", this._desenha, this); L.DomUtil.remove(this._c); },
+      _desenha: function () {
+        var map = this._map, c = this._c, sz = map.getSize();
+        L.DomUtil.setPosition(c, map.containerPointToLayerPoint([0, 0]));
+        c.width = sz.x; c.height = sz.y;
+        var g = c.getContext("2d"), r = raio + Math.max(0, map.getZoom() - 11) * 4, blur = r * .9;
+        if (!this._pincel || this._r !== r) {
+          var b = this._pincel = document.createElement("canvas"), rr = r + blur; this._r = r;
+          b.width = b.height = rr * 2;
+          var bg = b.getContext("2d");
+          bg.shadowOffsetX = bg.shadowOffsetY = rr * 2; bg.shadowBlur = blur; bg.shadowColor = "#000";
+          bg.beginPath(); bg.arc(-rr, -rr, r, 0, Math.PI * 2, true); bg.closePath(); bg.fill();
+        }
+        var rr2 = r + blur, mx = 0;
+        pontos.forEach(function (p) { if (p[2] > mx) mx = p[2]; });
+        pontos.forEach(function (p) {
+          var q = map.latLngToContainerPoint([p[0], p[1]]);
+          if (q.x < -rr2 || q.y < -rr2 || q.x > sz.x + rr2 || q.y > sz.y + rr2) return;
+          g.globalAlpha = Math.min(Math.max(Math.sqrt(p[2] / mx), .08), 1);
+          g.drawImage(this._pincel, q.x - rr2, q.y - rr2);
+        }, this);
+        var img = g.getImageData(0, 0, sz.x, sz.y), px = img.data, pal = paleta();
+        for (var i = 0; i < px.length; i += 4) {
+          var a = px[i + 3]; if (!a) continue;
+          var j = a * 4; px[i] = pal[j]; px[i + 1] = pal[j + 1]; px[i + 2] = pal[j + 2]; px[i + 3] = Math.min(255, a * 1.15);
+        }
+        g.putImageData(img, 0, 0);
+      }
+    });
+    return new Calor();
+  }
+  var _pal;
+  function paleta() {
+    if (_pal) return _pal;
+    var c = document.createElement("canvas"); c.width = 256; c.height = 1;
+    var g = c.getContext("2d"), gr = g.createLinearGradient(0, 0, 256, 0);
+    gr.addColorStop(0, "#3E9B34"); gr.addColorStop(.35, "#8CC63F"); gr.addColorStop(.6, "#E9A800"); gr.addColorStop(.8, "#E2701B"); gr.addColorStop(1, "#C23B2B");
+    g.fillStyle = gr; g.fillRect(0, 0, 256, 1);
+    return (_pal = g.getImageData(0, 0, 256, 1).data);
+  }
+
+  function montarMapa() {
+    var el = document.getElementById("mapa"); if (!el) return;
+    var L = window.L;
+    if (!L || !L.map) {
+      var t = (montarMapa.t = (montarMapa.t || 0) + 1);
+      if (t > 60) { el.innerHTML = '<p class="mapa-msg">Não foi possível carregar o mapa. Verifique a internet e atualize a página.</p>'; return; }
+      return setTimeout(montarMapa, 150);
+    }
+    montarMapa.t = 0;
+    if (pm.mapa && !pm.refit) pm.vista = { c: pm.mapa.getCenter(), z: pm.mapa.getZoom() };
+    if (pm.mapa) { pm.mapa.remove(); pm.mapa = null; }
+    el.innerHTML = "";
+    var P = D.permanencia, U = pm.ultimo;
+    var mapa = pm.mapa = L.map(el, { scrollWheelZoom: false, zoomControl: true });
+    var ruas = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, attribution: "&copy; OpenStreetMap" });
+    var sat = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", { maxZoom: 19, attribution: "Imagens &copy; Esri" });
+    (pm.base === "sat" ? sat : ruas).addTo(mapa);
+    L.control.layers({ "Mapa": ruas, "Satélite": sat }, null, { position: "topright" }).addTo(mapa);
+    mapa.on("baselayerchange", function (e) { pm.base = e.layer === sat ? "sat" : "ruas"; });
+    mapa.on("focus", function () { mapa.scrollWheelZoom.enable(); });
+    mapa.on("blur", function () { mapa.scrollWheelZoom.disable(); });
+
+    // Agrupa pontos próximos (~10 m) para o calor.
+    var cel = {};
+    U.ev.forEach(function (e) {
+      var k = e[1].toFixed(4) + "," + e[2].toFixed(4), x = cel[k] || (cel[k] = [0, 0, 0, 0]);
+      x[0] += e[1]; x[1] += e[2]; x[2] += pm.medida === "tempo" ? e[3] : 1; x[3]++;
+    });
+    var pontos = Object.keys(cel).map(function (k) { var x = cel[k]; return [x[0] / x[3], x[1] / x[3], x[2]]; });
+    if (pontos.length) camadaCalor(L, pontos, 14).addTo(mapa);
+
+    pm.marcas = {};
+    var mxMin = Math.max.apply(null, [1].concat(U.locais.map(function (x) { return x.min; })));
+    U.locais.forEach(function (x) {
+      var L0 = P.locais[x.i];
+      if (/^Sem ponto/.test(L0.nome)) return;
+      var m = L.circleMarker([x.lat / x.n, x.lon / x.n], { radius: 5 + Math.sqrt(x.min / mxMin) * 9, color: "#16251E", weight: 1.5, fillColor: "#FFFFFF", fillOpacity: .85 })
+        .bindPopup("<b>" + esc(L0.nome) + "</b><br>" + esc(L0.cidade) + "<br>" + x.n + " " + plural(x.n, "permanência", "permanências") + ", " + hmin(x.min) + "<br>Média de " + hmin(x.min / x.n) + " · " + Object.keys(x.fr).length + " " + plural(Object.keys(x.fr).length, "frota", "frotas"))
+        .bindTooltip(esc(L0.nome), { direction: "top", offset: [0, -6] })
+        .addTo(mapa);
+      pm.marcas[x.i] = m;
+    });
+
+    if (!pm.refit && pm.vista) mapa.setView(pm.vista.c, pm.vista.z);
+    else if (pontos.length) mapa.fitBounds(L.latLngBounds(pontos.map(function (p) { return [p[0], p[1]]; })).pad(.15), { maxZoom: 15 });
+    else mapa.setView([-18.6, -48.6], 10);
+    pm.refit = false;
   }
 
   var VIEWS = { "comportamento": abaComportamento, "motor-ocioso": abaOcioso, "permanencia": abaPermanencia };
@@ -307,10 +443,12 @@ window.iniciarPainel = function (D) {
       return '<button role="tab" id="tab-' + a.id + '" aria-selected="' + (a.id === id) + '" aria-controls="painel" tabindex="' + (a.id === id ? 0 : -1) + '" data-tab="' + a.id + '">' + a.nome + "</button>";
     }).join("");
     painel.setAttribute("aria-labelledby", "tab-" + id);
+    if (pm.mapa && id !== "permanencia") { pm.mapa.remove(); pm.mapa = null; }
     painel.innerHTML = VIEWS[id]();
-    fil.hidden = id !== "permanencia";
-    var real = id === "motor-ocioso" && D.motorOcioso && D.motorOcioso.real;
-    document.getElementById("periodo").textContent = real ? D.motorOcioso.periodo + " · dados reais" : D.periodo;
+    if (id === "permanencia") montarMapa();
+    fil.hidden = true;
+    var blocos = { "motor-ocioso": D.motorOcioso, "permanencia": D.permanencia }, b = blocos[id], real = b && b.real;
+    document.getElementById("periodo").textContent = real ? b.periodo + " · dados reais" : D.periodo;
     document.getElementById("aviso").hidden = real || !D.exemplo;
   }
   function ir(id) { if (location.hash === "#" + id) render(); else location.hash = id; }
@@ -329,18 +467,35 @@ window.iniciarPainel = function (D) {
     render();
   });
   painel.addEventListener("change", function (e) {
-    var sel = e.target.closest("select[data-fil]"); if (!sel) return;
-    fil_[sel.dataset.fil] = sel.value;
-    if (sel.dataset.fil === "processo") fil_.responsavel = "";
+    var fr = e.target.closest("input[data-frota]");
+    if (fr) {
+      var todas = permFiltrados().frotasProc, atuais = pm.frotas.length ? pm.frotas.slice() : [];
+      if (fr.checked) { if (atuais.indexOf(fr.dataset.frota) < 0) atuais.push(fr.dataset.frota); }
+      else atuais = atuais.filter(function (f) { return f !== fr.dataset.frota; });
+      pm.frotas = atuais.length === todas.length ? [] : atuais; pm.refit = true; pm.abertoFrotas = true;
+      render();
+      var n2 = document.querySelector('input[data-frota="' + fr.dataset.frota + '"]'); if (n2) n2.focus();
+      return;
+    }
+    var sel = e.target.closest("select[data-fil], select[data-pm]"); if (!sel) return;
+    if (sel.dataset.pm) pm[sel.dataset.pm] = +sel.value;
+    else { fil_[sel.dataset.fil] = sel.value; if (sel.dataset.fil === "processo") { fil_.responsavel = ""; pm.frotas = []; } }
+    pm.refit = true;
     render();
     var n = document.getElementById(sel.id); if (n) n.focus();
   });
   painel.addEventListener("click", function (e) {
     var l = e.target.closest("[data-limpar]");
-    if (l) { fil_.processo = ""; fil_.responsavel = ""; render(); return; }
+    if (l) { fil_.processo = ""; fil_.responsavel = ""; pm.frotas = []; pm.dias = 0; pm.refit = true; render(); return; }
+    var md = e.target.closest("[data-medida]");
+    if (md) { pm.medida = md.dataset.medida; render(); return; }
+    var fa = e.target.closest("[data-frotas]");
+    if (fa) { pm.frotas = fa.dataset.frotas === "todas" ? permFiltrados().frotasProc.slice() : []; if (pm.frotas.length === permFiltrados().frotasProc.length && fa.dataset.frotas !== "todas") pm.frotas = []; pm.refit = true; pm.abertoFrotas = true; render(); return; }
+    var lc = e.target.closest("[data-local]");
+    if (lc && pm.mapa && pm.marcas[lc.dataset.local]) { var mk = pm.marcas[lc.dataset.local]; pm.mapa.flyTo(mk.getLatLng(), 15); mk.openPopup(); document.getElementById("mapa").scrollIntoView({ behavior: "smooth", block: "center" }); return; }
     var b = e.target.closest("[data-set]"); if (!b) return;
     var p = b.dataset.set, k = p.indexOf(":");
-    fil_[p.slice(0, k)] = p.slice(k + 1); render();
+    fil_[p.slice(0, k)] = p.slice(k + 1); pm.frotas = []; pm.refit = true; render();
   });
   fil.addEventListener("click", function (e) {
     var b = e.target.closest("[data-f]"); if (!b) return;
@@ -348,6 +503,11 @@ window.iniciarPainel = function (D) {
     Array.prototype.forEach.call(fil.children, function (c) { c.setAttribute("aria-pressed", c === b); });
     render();
   });
+  document.addEventListener("click", function (e) {
+    var d = document.getElementById("p-frotas");
+    if (d && d.open && !d.contains(e.target)) { d.open = false; pm.abertoFrotas = false; }
+  });
+  painel.addEventListener("toggle", function (e) { if (e.target.id === "p-frotas") pm.abertoFrotas = e.target.open; }, true);
   window.addEventListener("hashchange", render);
   render();
 };
