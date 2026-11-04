@@ -14,7 +14,8 @@ Consulta DAX usada:
         "dur", HOUR([DURACAO])*3600+MINUTE([DURACAO])*60+SECOND([DURACAO]),
         "d", FORMAT([DATA], "yyyy-mm-dd"), "h", FORMAT([HORA], "hh:nn"))
 
-Alarmes marcados como "ALARME FALSO" ficam de fora.
+Ficam de fora: alarmes marcados como "ALARME FALSO" e os pontos de "Liberação"
+(Liberação Uberlândia, Liberação de velocidade, Liberação MG 223 etc.).
 """
 import html, json, sys
 from collections import Counter
@@ -30,9 +31,11 @@ def main(origem, destino):
     rows = [{k.strip("[]"): v for k, v in l.items()} for l in json.load(open(origem, encoding="utf-8"))["data"]["rows"]]
     rows = [r for r in rows if limpo(r["rot"]) != "ALARME FALSO" and r["lat"] and r["lon"]]
     locais, idx, veiculos, eventos, cidades = [], {}, {}, [], {}
-    datas = sorted({r["d"] for r in rows})
+    datas = sorted({r["d"] for r in rows})  # período completo do relatório
     for r in rows:
         nome = limpo(r["ponto"]) or limpo(r["cerca"]) or ("Sem ponto de referência, " + limpo(r["cid"]).title())
+        if nome.upper().startswith(("LIBERAÇÃO", "LIBERACAO")):
+            continue
         chave = nome
         cidades.setdefault(chave, Counter())[limpo(r["cid"]).title()] += 1
         if chave not in idx:
