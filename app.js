@@ -308,9 +308,11 @@ window.iniciarPainel = function (D) {
       '<div class="campo"><span class="rot">Calor por</span><div class="pills" role="group" aria-label="Medida do mapa de calor"><button type="button" data-medida="tempo" aria-pressed="' + (pm.medida === "tempo") + '">Tempo parado</button><button type="button" data-medida="vezes" aria-pressed="' + (pm.medida === "vezes") + '">Nº de permanências</button></div></div>' +
       (fil_.processo || pm.frotas.length || pm.dias ? '<button type="button" class="limpar" data-limpar="1">Limpar filtros</button>' : "") + "</div>";
 
-    var topo = locais[0] ? P.locais[locais[0].i] : null;
+    // Nas observações, só estabelecimentos (posto, padaria, restaurante...), nunca cercas com nome de colaborador.
+    var topoX = locais.filter(function (x) { return P.locais[x.i].tipo === "estabelecimento"; })[0];
+    var topo = topoX ? P.locais[topoX.i] : null;
     var lead = ev.length ? "<b>" + num(ev.length, 0) + "</b> " + plural(ev.length, "permanência", "permanências") + " de " + nFrotas + " " + plural(nFrotas, "frota", "frotas") + ", somando <b>" + hmin(totMin) + "</b> parados em " + locais.length + " " + plural(locais.length, "local", "locais") + "." +
-      (topo ? " O local com " + (pm.medida === "tempo" ? "mais tempo" : "mais permanências") + " é <b>" + esc(topo.nome) + "</b>." : "")
+      (topo ? " O estabelecimento com " + (pm.medida === "tempo" ? "mais tempo parado" : "mais permanências") + " é <b>" + esc(topo.nome) + "</b>, com " + (pm.medida === "tempo" ? hmin(topoX.min) : topoX.n + " " + plural(topoX.n, "vez", "vezes")) + "." : "")
       : "Nenhuma permanência para esse filtro.";
 
     var mx = Math.max.apply(null, [1].concat(locais.map(function (x) { return pm.medida === "tempo" ? x.min : x.n; })));

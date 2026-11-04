@@ -22,6 +22,24 @@ from collections import Counter
 from datetime import date
 
 
+import re
+
+# Locais comerciais (aparecem nas observações do painel).
+ESTABELECIMENTO = re.compile(r"\b(POSTO|PADARIA|RESTAURANTE|SUPERMERCADO|MERCADO|LANCHONETE|BAR|HOTEL|FARM[AÁ]CIA|LOJA|CONVENI[EÊ]NCIA|A[CÇ]OUGUE)\b")
+# Áreas operacionais e referências de estrada.
+AREA = re.compile(r"\b(PER[IÍ]METRO|TREVO|XAPETUBA|MOITINHA|CARREGAMENTO|ENTRADA|FAZENDA|USINA|BR|MG)\b|^Sem cerca")
+
+
+def classifica(nome):
+    """Cerca com nome de pessoa vira "Colaborador F. M. L." para não expor o nome completo."""
+    if ESTABELECIMENTO.search(nome.upper()):
+        return nome, "estabelecimento"
+    if AREA.search(nome.upper()) or AREA.search(nome):
+        return re.sub(r"\s*\([^)]*\)\s*$", "", nome), "area"  # tira nome de pessoa entre parênteses
+    ini = [p[0] + "." for p in re.split(r"\s+", nome) if p and p.upper() not in ("DA", "DE", "DO", "DAS", "DOS", "E")]
+    return "Colaborador " + " ".join(ini), "colaborador"
+
+
 def limpo(s):
     s = html.unescape(s or "").strip().rstrip(".").strip()
     return "" if s in ("-", "") else s
@@ -36,13 +54,13 @@ def main(origem, destino):
         if limpo(r["ponto"]).upper().startswith(("LIBERAÇÃO", "LIBERACAO")):
             continue
         # O local é a CERCA ELETRÔNICA; sem cerca, usa o ponto de referência.
-        nome = limpo(r["cerca"]) or limpo(r["ponto"]) or ("Sem cerca, " + limpo(r["cid"]).title())
+        nome, tipo = classifica(limpo(r["cerca"]) or limpo(r["ponto"]) or ("Sem cerca, " + limpo(r["cid"]).title()))
         chave = nome
         cidades.setdefault(chave, Counter())[limpo(r["cid"]).title()] += 1
         if chave not in idx:
             idx[chave] = len(locais)
             locais.append({"nome": nome, "cidade": limpo(r["cid"]).title(), "categoria": limpo(r["cat"]).title(),
-                           "cerca": bool(limpo(r["cerca"]))})
+                           "cerca": bool(limpo(r["cerca"])), "tipo": tipo})
         f = r["f"]
         veiculos.setdefault(f, {"placa": r["placa"] or "", "processo": r["proc"] or "Sem processo",
                                 "responsavel": (r["resp"] or "").title()})
