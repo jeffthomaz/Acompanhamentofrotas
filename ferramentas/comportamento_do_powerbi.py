@@ -20,8 +20,8 @@ Uso:
 <base-processos.xlsx>: "Ocorrências monitoramento 2026.B.xlsx"; a 3ª aba (BASE DE INFORMAÇÃO) dá o
 processo de cada frota pesada (a tabela da frota pesada não tem processo).
 
-Excesso de velocidade em faixas pelo % acima do limite: até 7%, de 7% até 27%, acima de 27%
-(mesmo critério dos comentários do monitoramento).
+Excesso de velocidade nas faixas da nova política de frotas, pelo % acima do limite da via
+(EXCESSO / LIMIAR): até 20%, de 20% até 50%, acima de 50%. A política antiga (7% / 27% / 57%) não é usada.
 """
 import json, re, sys
 from collections import Counter, defaultdict
@@ -30,9 +30,9 @@ from datetime import date
 import openpyxl
 
 TIPOS = [
-    {"id": "vel1", "nome": "Até 7%", "grupo": "vel"},
-    {"id": "vel2", "nome": "De 7% até 27%", "grupo": "vel"},
-    {"id": "vel3", "nome": "Acima de 27%", "grupo": "vel"},
+    {"id": "vel1", "nome": "Até 20%", "grupo": "vel"},
+    {"id": "vel2", "nome": "De 20% até 50%", "grupo": "vel"},
+    {"id": "vel3", "nome": "Acima de 50%", "grupo": "vel"},
     {"id": "celular", "nome": "Uso de celular"},
     {"id": "cinto", "nome": "Sem cinto de segurança"},
     {"id": "distracao", "nome": "Distração"},
@@ -59,7 +59,7 @@ def tipo_id(r):
     if t == "EXCESSO_VELOCIDADE":
         lim, exc = kmh(r["lim"]), kmh(r["exc"])
         p = (exc / lim - 1) * 100 if lim and exc else 0
-        return "vel1" if p <= 7 else "vel2" if p <= 27 else "vel3"
+        return "vel1" if p <= 20 else "vel2" if p <= 50 else "vel3"
     return POR_TIPO.get(t)
 
 

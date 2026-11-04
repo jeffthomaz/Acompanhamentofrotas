@@ -33,5 +33,6 @@ Atualizar usuários ou dados:
   nem CPF; alarmes falsos e pontos de Liberação ficam de fora. Mapa com Leaflet (CDN) e camada de calor própria.
 - Comportamento: dados reais dos Power BI "Dados Monitoramento Comportamental Frotas Leves 2026"
   (tabela OCORRÊNCIAS FROTA LEVA PO.GE.03) e "... Frotas Pesadas 2026" (tabela Frota Pesada POLGE03),
-  extraídos com `ferramentas/comportamento_do_powerbi.py`. O processo da frota pesada vem da aba
+  extraídos com `ferramentas/comportamento_do_powerbi.py`. Excesso de velocidade nas faixas da nova
+  política (até 20%, 20% a 50%, acima de 50%). O processo da frota pesada vem da aba
   BASE DE INFORMAÇÃO da planilha "Ocorrências monitoramento 2026.B". Não leva motorista nem CPF.

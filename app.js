@@ -195,7 +195,7 @@ window.iniciarPainel = function (D) {
     var tend = '<section class="card"><h3>Tendência semanal</h3><p class="cs">Total por semana nas últimas ' + sem.length + " semanas. A última termina em " + rot(N - 1) + ".</p>" + empilhado(sem, true, 360) + "</section>";
 
     var velC = CATS[0], velIx = velC.ix, mxV = Math.max.apply(null, [1].concat(velIx.map(function (i) { return cur[i]; })));
-    var velCard = '<section class="card"><h3>Excesso de velocidade por faixa</h3><p class="cs">Quanto passou do limite da via. ' + num(velC.n, 0) + " " + plural(velC.n, "ocorrência", "ocorrências") + " no período.</p>" + velIx.map(function (i, kk) {
+    var velCard = '<section class="card"><h3>Excesso de velocidade por faixa</h3><p class="cs">Faixas da nova política de frotas, pelo quanto passou do limite da via. ' + num(velC.n, 0) + " " + plural(velC.n, "ocorrência", "ocorrências") + " no período.</p>" + velIx.map(function (i, kk) {
       return '<div class="li"><span class="t">' + esc(T[i].nome) + '</span><span class="n">' + num(cur[i], 0) + "<small>" + (velC.n ? num(cur[i] / velC.n * 100, 0) + "%" : "") + '</small></span><div class="bb"><div class="ff v' + (kk + 1) + '" style="width:' + (cur[i] / mxV * 100).toFixed(1) + "%;--i:" + kk + '"></div></div></div>';
     }).join("") + "</section>";
 
@@ -219,7 +219,7 @@ window.iniciarPainel = function (D) {
     var alertas = [];
     if (total) alertas.push(["ruim", "!", "<b>" + esc(ord[0].nome) + "</b> é o tipo mais frequente, com " + num(ord[0].n / total * 100, 0) + "% das ocorrências."]);
     if (lista.length > 1 && total) alertas.push(["atencao", "▲", "<b>" + esc(lista[0].nome) + "</b> concentra " + num(lista[0].n / total * 100, 0) + "% das ocorrências."]);
-    if (velC.n && cur[velIx[2]]) alertas.push(["ruim", "!", "<b>" + num(cur[velIx[2]], 0) + "</b> " + plural(cur[velIx[2]], "excesso", "excessos") + " de velocidade acima de 27% do limite."]);
+    if (velC.n && cur[velIx[2]]) alertas.push(["ruim", "!", "<b>" + num(cur[velIx[2]], 0) + "</b> " + plural(cur[velIx[2]], "excesso", "excessos") + " de velocidade acima de 50% do limite."]);
     if (sobe && variacao(sobe.n, sobe.ant) > 0) alertas.push(["atencao", "↑", "Aumento de <b>" + esc(sobe.nome.toLowerCase()) + "</b> (+" + num(variacao(sobe.n, sobe.ant), 0) + "%) vs. período anterior."]);
     if (desce && variacao(desce.n, desce.ant) < 0) alertas.push(["bom", "↓", "Redução de <b>" + num(-variacao(desce.n, desce.ant), 0) + "%</b> em " + esc(desce.nome.toLowerCase()) + " vs. período anterior."]);
     if (!alertas.length) alertas.push(["bom", "✓", "Nenhuma ocorrência para esse filtro."]);
