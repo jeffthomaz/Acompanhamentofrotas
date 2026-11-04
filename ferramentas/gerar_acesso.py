@@ -151,6 +151,12 @@ def main(cad, fonte, saida):
     with open(saida, "w", encoding="utf-8") as f:
         f.write("// Gerado por ferramentas/gerar_acesso.py. Não edite à mão.\n")
         f.write("window.ACESSO = " + json.dumps(pacote, separators=(",", ":")) + ";\n")
+    # Muda a versão dos scripts no index.html para o navegador baixar os dados novos.
+    idx = os.path.join(os.path.dirname(os.path.abspath(saida)), "index.html")
+    if os.path.exists(idx):
+        import re
+        h = open(idx, encoding="utf-8").read()
+        open(idx, "w", encoding="utf-8").write(re.sub(r"\?v=\d{12}", "?v=" + datetime.now().strftime("%Y%m%d%H%M"), h))
     print("%d usuário(s), %d grupo(s) -> %s" % (len(usuarios), len(grupos), saida))
     for a in avisos:
         print("AVISO:", a)
