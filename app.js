@@ -77,7 +77,8 @@ window.iniciarPainel = function (D) {
     return '<span class="dl ' + (ig ? "neutro" : queda ? "bom" : "ruim") + '"><span aria-hidden="true">' + (ig ? "=" : queda ? "↓" : "↑") + "</span> " + (v > 0 ? "+" : "") + num(v, 1) + "%</span>";
   }
 
-  function empilhado(dados, simples, largura) {
+  function empilhado(dados, simples, largura, series) {
+    var SR = series || CATS;
     // dados: [{d:'28/10', partes:[n por categoria], total}]
     var W = largura || 520, H = 290, pl = 32, pr = 6, pt = 26, pb = 28, ih = H - pt - pb;
     var max = Math.max.apply(null, [1].concat(dados.map(function (x) { return x.total; })));
@@ -93,7 +94,7 @@ window.iniciarPainel = function (D) {
       (simples ? [x.total] : x.partes).forEach(function (n, k) {
         if (!n) return;
         var h = n / topo * ih, yy = pt + ih - (acum + n) / topo * ih; acum += n;
-        sv += '<rect class="seg c-' + (simples ? "total" : CATS[k].id) + '" x="' + xx.toFixed(1) + '" y="' + yy.toFixed(1) + '" width="' + w.toFixed(1) + '" height="' + Math.max(h, 0).toFixed(1) + '" style="animation-delay:' + i * 45 + 'ms"><title>' + esc((simples ? "Total" : CATS[k].nome) + ": " + n) + "</title></rect>";
+        sv += '<rect class="seg c-' + (simples ? "total" : SR[k].id) + '" x="' + xx.toFixed(1) + '" y="' + yy.toFixed(1) + '" width="' + w.toFixed(1) + '" height="' + Math.max(h, 0).toFixed(1) + '" style="animation-delay:' + i * 45 + 'ms"><title>' + esc((simples ? "Total" : SR[k].nome) + ": " + n) + "</title></rect>";
       });
       sv += '<text class="tv" x="' + (xx + w / 2).toFixed(1) + '" y="' + (pt + ih - x.total / topo * ih - 5).toFixed(1) + '" text-anchor="middle">' + x.total + "</text>" +
         '<text class="tl" x="' + (xx + w / 2).toFixed(1) + '" y="' + (H - 7) + '" text-anchor="middle">' + x.d + "</text>";
@@ -470,7 +471,7 @@ window.iniciarPainel = function (D) {
     { id: "man", l: "M", nome: "Manutenção", um: "Manutenção", icone: "M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.4-.6-.6-2.4z" },
     { id: "par", l: "P", nome: "Parados", um: "Parado", icone: "M12 3a9 9 0 1 1 0 18 9 9 0 0 1 0-18zM10 9v6M14 9v6" }
   ];
-  var fco = { grupo: "", dia: -1 };
+  var fco = { grupo: "", dia: -1, mes: "", todos: false };
   function letraSt(c) { return c === "m" ? "M" : c === "p" ? "P" : c; }
   function abaConectividade() {
     var K = D.conectividade, F = K.frotas, nd = K.dias.length;
@@ -572,7 +573,41 @@ window.iniciarPainel = function (D) {
       return "<li><span><b>" + esc(p.f) + "</b> " + esc(p.oc) + "<small>" + esc([p.equip, p.d ? dbr(p.d) : "", p.obs].filter(Boolean).join(" · ")) + "</small></span><strong>" + esc(p.status) + "</strong></li>";
     }).join("") + "</ul></section>";
 
-    return filtros + kpis + avisos + '<div class="g3 g-a">' + evol + sit + sis + '</div><div class="g2">' + tab + porProc + "</div>";
+
+    // Histórico do mês (como a página de histórico do BI): status por dia e por veículo.
+    var meses = unicos(K.dias.map(function (d) { return d.slice(0, 7); }));
+    if (meses.indexOf(fco.mes) < 0) fco.mes = meses[meses.length - 1];
+    var NOMES_MES = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
+    function nomeMes(m) { return NOMES_MES[+m.slice(5, 7) - 1] + " de " + m.slice(0, 4); }
+    var dm = []; K.dias.forEach(function (d, i) { if (d.slice(0, 7) === fco.mes) dm.push(i); });
+    var porDiaSt = dm.map(function (i) {
+      var o = { C: 0, O: 0, M: 0, P: 0 };
+      ids.forEach(function (f) { var c = letraSt((K.hist[f] || "")[i] || "."); if (o[c] !== undefined) o[c]++; });
+      return { d: K.dias[i].slice(8, 10) + "/" + K.dias[i].slice(5, 7), partes: [o.C, o.O, o.M, o.P], total: o.C + o.O + o.M + o.P, o: o };
+    });
+    var somaMes = porDiaSt.reduce(function (a, x) { a.C += x.o.C; a.O += x.o.O; a.M += x.o.M; a.P += x.o.P; return a; }, { C: 0, O: 0, M: 0, P: 0 });
+    var tMes = somaMes.C + somaMes.O + somaMes.M + somaMes.P;
+    var veic = ids.map(function (f) {
+      var h = K.hist[f] || "", cel = dm.map(function (i) { return h[i] || "."; }), n = { C: 0, O: 0, M: 0, P: 0 };
+      cel.forEach(function (c) { var s2 = letraSt(c); if (n[s2] !== undefined) n[s2]++; });
+      return { f: f, cel: cel, n: n, prob: n.O + n.M + n.P, temDado: n.C + n.O + n.M + n.P > 0 };
+    }).filter(function (v) { return v.temDado && (fco.todos || v.prob > 0); })
+      .sort(function (a, b) { return b.n.O - a.n.O || b.prob - a.prob || a.f.localeCompare(b.f); });
+    var nomeLetra = { C: "Conectado", O: "Offline", M: "Manutenção", P: "Parado", m: "Manutenção (planilha)", p: "Parado (planilha)", ".": "Sem registro" };
+    var clsLetra = { C: "con", O: "off", M: "man", P: "par", m: "man pl", p: "par pl", ".": "nd" };
+    var historico = '<section class="card hist"><div class="hist-cab"><h3>Histórico de ' + nomeMes(fco.mes) + '</h3><label class="mes">Mês<select data-kon="mes" id="k-mes">' + meses.map(function (m) {
+      return '<option value="' + m + '"' + (m === fco.mes ? " selected" : "") + ">" + nomeMes(m) + "</option>";
+    }).join("") + "</select></label></div>" +
+      '<p class="cs">Quantos veículos estiveram em cada situação, dia a dia. No mês: ' + ST.map(function (s2) { return s2.nome.toLowerCase() + " " + (tMes ? num(somaMes[s2.l] / tMes * 100, 1) : "0") + "%"; }).join(", ") + '.</p><ul class="legend">' + ST.map(function (s2) { return '<li><i class="c-' + s2.id + '"></i>' + s2.nome + "</li>"; }).join("") + "</ul>" +
+      empilhado(porDiaSt, false, Math.max(520, porDiaSt.length * 34), ST) +
+      '<h4 class="sub-h">Situação de cada veículo no mês</h4><p class="cs">' + (fco.todos ? "Todos os veículos." : "Só os veículos que tiveram algum dia offline, parado ou em manutenção.") + ' Cada quadrado é um dia. Hachurado = informado na planilha. <button type="button" class="limpar" data-ktodos="1">' + (fco.todos ? "Mostrar só com problema" : "Mostrar todos os veículos") + "</button></p>" +
+      (veic.length ? '<div class="scroll mapa-st"><table class="tb tb-h"><thead><tr><th scope="col">Frota</th><th scope="col" class="r" title="Dias offline no mês">Off.</th>' + dm.map(function (i) { return '<th scope="col" class="dd">' + K.dias[i].slice(8, 10) + "</th>"; }).join("") + "</tr></thead><tbody>" + veic.map(function (v) {
+        var fr = F[v.f];
+        return '<tr><th scope="row">' + esc(v.f) + "<small>" + esc(fr.processo) + '</small></th><td class="r">' + v.n.O + "</td>" + v.cel.map(function (c, k) {
+          return '<td class="dd"><i class="q ' + clsLetra[c] + '" title="' + esc(v.f + " em " + K.dias[dm[k]].slice(8, 10) + "/" + K.dias[dm[k]].slice(5, 7) + ": " + nomeLetra[c]) + '"></i></td>';
+        }).join("") + "</tr>";
+      }).join("") + "</tbody></table></div>" : '<p class="cs">Nenhum veículo com problema nesse mês.</p>') + "</section>";
+    return filtros + kpis + avisos + '<div class="g3 g-a">' + evol + sit + sis + '</div><div class="g2">' + tab + porProc + "</div>" + historico;
   }
 
   function linhaDias(serie, dias, sel) {
@@ -651,6 +686,8 @@ window.iniciarPainel = function (D) {
   painel.addEventListener("click", function (e) {
     var l = e.target.closest("[data-limpar]");
     if (l) { fil_.processo = ""; fil_.responsavel = ""; if (fil_.comp) { fil_.comp.frota = ""; fil_.comp.gerencia = ""; } fco.grupo = ""; fco.dia = -1; pm.frotas = []; pm.dias = 0; pm.refit = true; render(); return; }
+    var kt = e.target.closest("[data-ktodos]");
+    if (kt) { fco.todos = !fco.todos; render(); return; }
     var kd = e.target.closest("[data-kdia]");
     if (kd) { fco.dia = +kd.getAttribute("data-kdia"); render(); return; }
     var cf = e.target.closest("[data-cfrota]");
