@@ -159,6 +159,21 @@ rect.seg.c-vel{fill:var(--c-vel)}rect.seg.c-celular{fill:var(--c-celular)}rect.s
 .tb tbody th{font-family:var(--display);font-weight:700}.r{text-align:right!important;padding-right:0!important}
 .rodape{margin:0;font-size:.8rem;color:var(--muted);max-width:75ch}
 [hidden]{display:none!important}
+.c-con{--cc:var(--folha)}.c-off{--cc:var(--critico)}.c-man{--cc:var(--s3)}.c-par{--cc:var(--maq)}.c-pen{--cc:var(--c-outros)}
+.c-lib{--cc:var(--folha)}.c-ava{--cc:var(--maq)}.c-ate{--cc:var(--critico)}
+@media (min-width:1000px){.kpis.kpis5{grid-template-columns:repeat(5,minmax(0,1fr))}.kpis5 .kv{font-size:2.4rem}.kpis5 .kl{font-size:.85rem}.kpis5 .kpi .ic{width:1.8rem;height:1.8rem}}
+.g2{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:1rem;align-items:start}
+@media (max-width:980px){.g2{grid-template-columns:minmax(0,1fr)}}
+.ln{stroke-width:2.5;stroke-linejoin:round;stroke-linecap:round}.ln-C{stroke:var(--folha)}.ln-O{stroke:var(--critico)}
+.pt{fill:var(--card);stroke:var(--folha);stroke-width:2;cursor:pointer}.pt.on{fill:var(--folha)}.pt:hover{fill:var(--folha)}
+.pilha{grid-column:1/-1;display:flex;height:.7rem;border-radius:3px;overflow:hidden;min-width:4px}
+.pilha i{display:block;background:var(--cc)}
+.tb-k{min-width:0}.tb-k th small,.tb-k td small{display:block;font-family:var(--text);font-weight:400;font-size:.74rem;color:var(--muted)}
+.tb-k .b{display:inline-block;font-size:.76rem;font-weight:600;padding:.05rem .5rem;border-radius:999px}
+.b.man{background:color-mix(in srgb,var(--s3) 22%,transparent);color:var(--ink)}
+.tag-m{display:inline-block;font-size:.68rem;font-weight:700;letter-spacing:.02em;text-transform:uppercase;padding:0 .4rem;border-radius:4px;border:1px solid var(--line);color:var(--muted)}
+.tab-card .rolagem.alta{max-height:24rem}
+.tb-k th,.tb-k td{padding-right:.9rem;vertical-align:top}.tb-k .r{padding-right:.9rem!important}.tb-k td.st{white-space:nowrap}.tb-k td.st small{white-space:normal}
 .campo{display:grid;gap:.25rem}.campo .rot{font-size:.8rem;font-weight:600;color:var(--muted)}
 .frotas{position:relative}
 .frotas summary{list-style:none;font-size:.92rem;font-weight:500;color:var(--ink);background:var(--bg);border:1px solid var(--ink);border-radius:6px;padding:.45rem 2rem .45rem .7rem;min-width:min(100%,15rem);cursor:pointer;position:relative}
@@ -222,7 +237,7 @@ rect.seg.c-vel{fill:var(--c-vel)}rect.seg.c-celular{fill:var(--c-celular)}rect.s
 </style>
 </head><body>
 <header class="band"><div class="band-in gut">
-  <img class="logo" src="logo-branco.png?v=202611041124" alt="Bioenergética Aroeira" width="67" height="92">
+  <img class="logo" src="logo-branco.png?v=202611041320" alt="Bioenergética Aroeira" width="67" height="92">
   <div><h1>Acompanhamento de frotas</h1><p class="per" id="periodo"></p></div>
   <div class="quem" id="quem" hidden><span><b id="quem-nome"></b><small id="quem-escopo"></small></span><button type="button" id="sair">Sair</button></div>
 </div></header>
@@ -251,7 +266,7 @@ rect.seg.c-vel{fill:var(--c-vel)}rect.seg.c-celular{fill:var(--c-celular)}rect.s
 </div>
 <footer class="foot gut">Bioenergética Aroeira S/A, Tupaciguara/MG. <a href="https://www.bioaroeira.com.br" target="_blank" rel="noopener">www.bioaroeira.com.br</a></footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" defer></script>
-<script src="acesso.js?v=202611041124"></script>
-<script src="app.js?v=202611041124"></script>
-<script src="login.js?v=202611041124"></script>
+<script src="acesso.js?v=202611041320"></script>
+<script src="app.js?v=202611041320"></script>
+<script src="login.js?v=202611041320"></script>
 </body></html>

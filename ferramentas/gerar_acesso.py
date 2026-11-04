@@ -72,6 +72,14 @@ def recorte(D, procs):
         d["motorOcioso"]["veiculos"] = [v for v in d["motorOcioso"]["veiculos"] if chave_proc(v["processo"]) in procs]
         if not d["motorOcioso"]["veiculos"]:
             d.pop("motorOcioso")
+    if "conectividade" in d:
+        K = d["conectividade"]
+        K["frotas"] = {f: v for f, v in K["frotas"].items() if chave_proc(v["processo"]) in procs}
+        K["hist"] = {f: h for f, h in K["hist"].items() if f in K["frotas"]}
+        K["atual"] = {f: a for f, a in K["atual"].items() if f in K["frotas"]}
+        K["pendencias"] = [p for p in K["pendencias"] if p["f"] in K["frotas"]]
+        if not K["frotas"]:
+            d.pop("conectividade")
     if "permanencia" in d:
         P = d["permanencia"]
         P["veiculos"] = {f: v for f, v in P["veiculos"].items() if chave_proc(v["processo"]) in procs}
@@ -86,6 +94,7 @@ def main(cad, fonte, saida):
     conhecidos = {chave_proc(v["processo"]): v["processo"] for v in D.get("comportamento", {}).get("frotas", {}).values()}
     conhecidos.update({chave_proc(v["processo"]): v["processo"] for v in D.get("motorOcioso", {}).get("veiculos", [])})
     conhecidos.update({chave_proc(v["processo"]): v["processo"] for v in D.get("permanencia", {}).get("veiculos", {}).values()})
+    conhecidos.update({chave_proc(v["processo"]): v["processo"] for v in D.get("conectividade", {}).get("frotas", {}).values()})
     grupos, usuarios, avisos = {}, {}, []
 
     for n, u, p, s in ler_cadastros(cad):
