@@ -315,12 +315,14 @@ window.iniciarPainel = function (D) {
       (topo ? " O estabelecimento com " + (pm.medida === "tempo" ? "mais tempo parado" : "mais permanências") + " é <b>" + esc(topo.nome) + "</b>, com " + (pm.medida === "tempo" ? hmin(topoX.min) : topoX.n + " " + plural(topoX.n, "vez", "vezes")) + "." : "")
       : "Nenhuma permanência para esse filtro.";
 
-    var mx = Math.max.apply(null, [1].concat(locais.map(function (x) { return pm.medida === "tempo" ? x.min : x.n; })));
-    var ranking = '<section class="card"><h3>Locais de permanência</h3><p class="cs">Clique para ver no mapa.</p><div class="rolagem alta">' + locais.map(function (x, k) {
-      var L0 = P.locais[x.i], val = pm.medida === "tempo" ? x.min : x.n;
-      return '<button type="button" class="li lib" data-local="' + x.i + '"><span class="t">' + esc(L0.nome) + "<small>" + esc([L0.cidade, Object.keys(x.fr).length + " " + plural(Object.keys(x.fr).length, "frota", "frotas")].filter(Boolean).join(" · ")) + '</small></span><span class="n">' +
-        (pm.medida === "tempo" ? hmin(x.min) + "<small>" + x.n + " " + plural(x.n, "vez", "vezes") + "</small>" : x.n + "<small>" + hmin(x.min) + "</small>") +
-        '</span><div class="bb"><div class="ff" style="width:' + (val / mx * 100).toFixed(1) + "%;--i:" + k + '"></div></div></button>';
+    // Lista: quantidade de paradas e tempo médio por parada (sem total de horas).
+    var porParadas = locais.slice().sort(function (a, b) { return b.n - a.n || b.min / b.n - a.min / a.n; });
+    var mx = Math.max.apply(null, [1].concat(porParadas.map(function (x) { return x.n; })));
+    var ranking = '<section class="card"><h3>Locais de permanência</h3><p class="cs">Quantidade de paradas e tempo médio de cada parada. Clique para ver no mapa.</p><div class="rolagem alta">' + porParadas.map(function (x, k) {
+      var L0 = P.locais[x.i], nf = Object.keys(x.fr).length;
+      return '<button type="button" class="li lib" data-local="' + x.i + '"><span class="t">' + esc(L0.nome) + "<small>" + esc([L0.cidade, nf + " " + plural(nf, "frota", "frotas")].filter(Boolean).join(" · ")) + '</small></span><span class="n">' +
+        num(x.n, 0) + " " + plural(x.n, "parada", "paradas") + "<small>média de " + hmin(x.min / x.n) + "</small>" +
+        '</span><div class="bb"><div class="ff" style="width:' + (x.n / mx * 100).toFixed(1) + "%;--i:" + k + '"></div></div></button>';
     }).join("") + "</div></section>";
 
     var longas = ev.slice().sort(function (a, b) { return b[3] - a[3]; }).slice(0, 8);
