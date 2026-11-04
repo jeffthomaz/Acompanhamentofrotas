@@ -532,29 +532,24 @@ window.iniciarPainel = function (D) {
     });
     var evol = '<section class="card"><h3>Conexão por dia</h3><p class="cs">Veículos conectados e offline em cada dia. Clique num ponto para ver o dia.</p>' + linhaDias(serie, K.dias, di) + "</section>";
 
-    // Equipamentos sem conectividade no dia (offline, parados e manutenção).
-    var sem = linhasDia.filter(function (x) { return x.s !== "C"; }).map(function (x) {
+    // Equipamentos offline no dia, do que tem menos dias para o que tem mais.
+    var sem = linhasDia.filter(function (x) { return x.s === "O"; }).map(function (x) {
       var a = ehHoje ? K.atual[x.f] : null, h = K.hist[x.f], diasOff = 0;
-      for (var k = di; k >= 0 && h[k] !== "C" && h[k] !== "."; k--) diasOff++;
-      return { f: x.f, s: x.s, manual: x.c === "m" || x.c === "p", dias: a ? a.dias : diasOff, ult: a ? a.ult : "", obs: a && a.manual ? a.manual.obs : "" };
-    }).sort(function (a, b) { return "OMP".indexOf(a.s) - "OMP".indexOf(b.s) || b.dias - a.dias; });
-    var nomeSt = { O: "Offline", M: "Manutenção", P: "Parado" }, clsSt = { O: "critico", M: "man", P: "atencao" };
-    var tab = '<section class="card tab-card"><h3>Equipamentos sem conectividade</h3><p class="cs">Offline, parados e em manutenção em ' + dbr(K.dias[di]) + '. <span class="tag-m">planilha</span> = informado por você.</p>' +
-      (sem.length ? '<div class="scroll rolagem alta"><table class="tb tb-k"><thead><tr><th scope="col">Frota</th><th scope="col">Status</th><th scope="col">Processo</th><th scope="col" class="r">Dias</th>' + (ehHoje ? '<th scope="col">Última conexão</th>' : "") + "</tr></thead><tbody>" + sem.map(function (x) {
+      for (var k = di; k >= 0 && h[k] === "O"; k--) diasOff++;
+      return { f: x.f, dias: a ? a.dias : diasOff, ult: a ? a.ult : "" };
+    }).sort(function (a, b) { return a.dias - b.dias || a.f.localeCompare(b.f); });
+    var tab = '<section class="card tab-card"><h3>Equipamentos offline <span class="cnt off">' + sem.length + '</span></h3><p class="cs">Em ' + dbr(K.dias[di]) + ", do que está há menos dias sem comunicar para o que está há mais.</p>" +
+      (sem.length ? '<div class="scroll rolagem alta"><table class="tb tb-k"><thead><tr><th scope="col">Frota</th><th scope="col">Processo</th><th scope="col" class="r">Dias offline</th>' + (ehHoje ? '<th scope="col">Última conexão</th>' : "") + "</tr></thead><tbody>" + sem.map(function (x) {
         var v = F[x.f];
-        return '<tr><th scope="row">' + esc(x.f) + "<small>" + esc([v.placa, v.grupo].filter(Boolean).join(" · ")) + '</small></th><td><span class="b ' + clsSt[x.s] + '">' + nomeSt[x.s] + "</span>" + (x.manual ? ' <span class="tag-m">planilha</span>' : "") + (x.obs ? "<small>" + esc(x.obs) + "</small>" : "") + "</td><td>" + esc(v.processo) + '</td><td class="r">' + num(x.dias, 0) + "</td>" +
+        return '<tr><th scope="row">' + esc(x.f) + "<small>" + esc([v.placa, v.grupo].filter(Boolean).join(" · ")) + "</small></th><td>" + esc(v.processo) + '</td><td class="r"><span class="b critico">' + num(x.dias, 0) + "</span></td>" +
           (ehHoje ? "<td>" + (x.ult ? esc(x.ult.slice(8, 10) + "/" + x.ult.slice(5, 7) + " " + x.ult.slice(11)) : "") + "</td>" : "") + "</tr>";
-      }).join("") + "</tbody></table></div>" : '<p class="cs">Todos os veículos conectados nesse dia.</p>') + "</section>";
+      }).join("") + "</tbody></table></div>" : '<p class="cs">Nenhum equipamento offline nesse dia.</p>') + "</section>";
 
-    // Status por processo (barras empilhadas horizontais).
+    // Status por processo: colunas empilhadas (para cima). Clique para filtrar.
     var porP = {};
     linhasDia.forEach(function (x) { var p = F[x.f].processo, o = porP[p] || (porP[p] = { C: 0, O: 0, M: 0, P: 0, t: 0 }); o[x.s]++; o.t++; });
     var lp = Object.keys(porP).map(function (p) { return { p: p, o: porP[p] }; }).sort(function (a, b) { return b.o.t - a.o.t; });
-    var mxp = Math.max.apply(null, [1].concat(lp.map(function (x) { return x.o.t; })));
-    var porProc = '<section class="card"><h3>Status por processo</h3><ul class="legend">' + ST.map(function (s) { return '<li><i class="c-' + s.id + '"></i>' + s.nome + "</li>"; }).join("") + '</ul><div class="rolagem alta">' + lp.map(function (x) {
-      return '<button type="button" class="li lib" data-set="processo:' + esc(x.p) + '"><span class="t">' + esc(x.p) + "<small>" + x.o.t + " " + plural(x.o.t, "veículo", "veículos") + (x.o.O ? " · " + x.o.O + " offline" : "") + '</small></span><span class="n">' + num(x.o.t ? x.o.C / x.o.t * 100 : 0, 0) + '%<small>conectados</small></span><div class="pilha" style="width:' + (x.o.t / mxp * 100).toFixed(1) + '%">' +
-        ST.map(function (s) { return x.o[s.l] ? '<i class="c-' + s.id + '" style="flex:' + x.o[s.l] + '" title="' + s.nome + ": " + x.o[s.l] + '"></i>' : ""; }).join("") + "</div></button>";
-    }).join("") + "</div></section>";
+    var porProc = '<section class="card"><h3>Status por processo</h3><ul class="legend">' + ST.map(function (s) { return '<li><i class="c-' + s.id + '"></i>' + s.nome + "</li>"; }).join("") + "</ul>" + colunasProc(lp) + "</section>";
 
     // Confirmar status: está como manutenção ou parado (no rastreador ou na planilha),
     // mas comunicou há menos de 2 dias. Pode já ter voltado a operar.
@@ -571,9 +566,6 @@ window.iniciarPainel = function (D) {
         return "<li><span><b>" + esc(x.f) + "</b> " + esc(v.processo) + "<small>" + esc([v.placa, v.grupo, "marcado como " + x.st.toLowerCase() + (x.fonte === "planilha" ? " na planilha" : " no rastreador"), x.a.manual && x.a.manual.obs].filter(Boolean).join(" · ")) + "</small></span><strong>" +
           (u ? "Comunicou em " + esc(u.slice(8, 10) + "/" + u.slice(5, 7) + " " + u.slice(11)) : "Comunicando") + (x.a.mov === "Movimento" ? '<small class="mov">em movimento</small>' : "") + "</strong></li>";
       }).join("") + "</ul></section>";
-    if (pend.length) avisos += '<section class="card"><h3>Pendências em campo</h3><ul class="longas">' + pend.map(function (p) {
-      return "<li><span><b>" + esc(p.f) + "</b> " + esc(p.oc) + "<small>" + esc([p.equip, p.d ? dbr(p.d) : "", p.obs].filter(Boolean).join(" · ")) + "</small></span><strong>" + esc(p.status) + "</strong></li>";
-    }).join("") + "</ul></section>";
 
 
     // Histórico do mês (como a página de histórico do BI): status por dia e por veículo.
@@ -610,7 +602,31 @@ window.iniciarPainel = function (D) {
         }).join("") + "</tr>";
       }).join("") + "</tbody></table></div>" : '<p class="cs">Nenhum veículo com problema nesse mês.</p>') + "</section>";
     var informar = '<div class="informar"><p><b>Algum equipamento parado ou em manutenção?</b> Informe na planilha de status. O painel passa a mostrar na próxima atualização.</p><a class="btn" href="' + LINK_STATUS + '" target="_blank" rel="noopener">Informar parado/manutenção <span aria-hidden="true">↗</span></a></div>';
-    return filtros + kpis + informar + avisos + '<div class="g3 g-a">' + evol + sit + sis + '</div><div class="g2">' + tab + porProc + "</div>" + historico;
+    return filtros + kpis + informar + avisos + '<div class="g2 g2k">' + tab + porProc + '</div><div class="g3 g-a">' + evol + sit + sis + "</div>" + historico;
+  }
+
+  function colunasProc(lp) {
+    var n = lp.length; if (!n) return '<p class="cs">Sem veículos nesse filtro.</p>';
+    var bw = 36, W = Math.max(360, n * bw + 90), H = 330, pl = 70, pt = 22, pb = 104, ih = H - pt - pb;
+    var mx = Math.max.apply(null, lp.map(function (x) { return x.o.t; }));
+    var passo = [1, 2, 5, 10, 20, 25, 50, 100].filter(function (p) { return mx / p <= 6; })[0] || 200, topo = Math.ceil(mx / passo) * passo;
+    var y = function (v) { return pt + ih - v / topo * ih; };
+    var sv = '<div class="scroll"><svg viewBox="0 0 ' + W + " " + H + '" class="chart colp" width="' + W + '" height="' + H + '" role="img" aria-label="Status dos veículos por processo">';
+    for (var g = 0; g <= topo; g += passo) sv += '<line class="grade" x1="' + pl + '" x2="' + W + '" y1="' + y(g).toFixed(1) + '" y2="' + y(g).toFixed(1) + '"/><text class="tl" x="' + (pl - 5) + '" y="' + (y(g) + 3).toFixed(1) + '" text-anchor="end">' + g + "</text>";
+    lp.forEach(function (x, i) {
+      var cx = pl + 8 + i * bw, w = bw - 10, acum = 0;
+      sv += '<g class="colg" data-set="processo:' + esc(x.p) + '" tabindex="0" role="button" aria-label="' + esc(x.p + ": " + x.o.t + " veículos, " + x.o.C + " conectados") + '"><rect class="hit" x="' + (cx - 4) + '" y="' + pt + '" width="' + bw + '" height="' + (ih + 30) + '" fill="transparent"/>';
+      ST.forEach(function (s) {
+        var v = x.o[s.l]; if (!v) return;
+        sv += '<rect class="seg c-' + s.id + '" x="' + cx + '" y="' + y(acum + v).toFixed(1) + '" width="' + w + '" height="' + (v / topo * ih).toFixed(1) + '" style="animation-delay:' + i * 40 + 'ms"><title>' + esc(x.p + " · " + s.nome + ": " + v) + "</title></rect>";
+        acum += v;
+      });
+      sv += '<text class="tv" x="' + (cx + w / 2) + '" y="' + (y(x.o.t) - 5).toFixed(1) + '" text-anchor="middle">' + x.o.t + "</text>";
+      // rótulo inclinado embaixo da coluna
+      var rot = x.p.length > 17 ? x.p.slice(0, 16) + "…" : x.p, lx = cx + w / 2 + 3, ly = pt + ih + 10;
+      sv += '<text class="tl tp" x="' + lx + '" y="' + ly + '" text-anchor="end" transform="rotate(-40 ' + lx + " " + ly + ')">' + esc(rot) + "</text></g>";
+    });
+    return sv + "</svg></div>";
   }
 
   function linhaDias(serie, dias, sel) {
@@ -714,6 +730,10 @@ window.iniciarPainel = function (D) {
   document.addEventListener("click", function (e) {
     var d = document.getElementById("p-frotas");
     if (d && d.open && !d.contains(e.target)) { d.open = false; pm.abertoFrotas = false; }
+  });
+  painel.addEventListener("keydown", function (e) {
+    var g = e.target.closest && e.target.closest("g[data-set]");
+    if (g && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); g.dispatchEvent(new MouseEvent("click", { bubbles: true })); }
   });
   painel.addEventListener("toggle", function (e) { if (e.target.id === "p-frotas") pm.abertoFrotas = e.target.open; }, true);
   window.addEventListener("hashchange", render);
