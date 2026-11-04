@@ -31,9 +31,11 @@ Atualizar usuários ou dados:
   PERMANENCIA_PONTO) do mesmo Power BI, extraídos com `ferramentas/permanencia_do_powerbi.py`.
   O local é a coluna CERCA ELETRÔNICA (sem cerca, usa o ponto de referência). Não leva motorista
   nem CPF; alarmes falsos e pontos de Liberação ficam de fora. Mapa com Leaflet (CDN) e camada de calor própria.
-- Conectividade: Power BI "Conectividade" (foto diária por veículo), extraído com
-  `ferramentas/conectividade_do_powerbi.py`. A planilha local `status_frotas.xlsx` (FROTA, STATUS, DESDE, ATÉ,
-  OBSERVAÇÃO) troca OFFLINE por PARADO ou MANUTENÇÃO nos dias informados. Não leva motorista, telefone nem apelido.
+- Conectividade: base diária por veículo (`ferramentas/conectividade.py`), iniciada pelo Power BI "Conectividade"
+  e atualizada com o arquivo "Localização da Frota" exportado do vFleets. Regras do BI: inativos fora, apelido
+  MANUTENÇÃO/PARADO, OFFLINE com 2 dias ou mais sem conexão, processo pela tabela Frotas. O último dia é a
+  referência para manutenção/parado; a planilha local `status_frotas.xlsx` informa quem entrou (PARADO/MANUTENÇÃO)
+  ou saiu (OPERANDO). A base em texto puro fica só na pasta local do usuário (painel-dados).
 - Comportamento: dados reais dos Power BI "Dados Monitoramento Comportamental Frotas Leves 2026"
   (tabela OCORRÊNCIAS FROTA LEVA PO.GE.03) e "... Frotas Pesadas 2026" (tabela Frota Pesada POLGE03),
   extraídos com `ferramentas/comportamento_do_powerbi.py`. Excesso de velocidade nas faixas da nova
