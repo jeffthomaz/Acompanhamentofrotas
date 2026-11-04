@@ -21,9 +21,26 @@
       document.getElementById("quem").hidden = false;
       document.getElementById("quem-nome").textContent = nome;
       document.getElementById("quem-escopo").textContent = D.escopo === "todos" ? "Todos os processos" : D.escopo.length === 1 ? "Processo: " + nomeProc(D, D.escopo[0]) : D.escopo.length + " processos";
+      saudar(nome, D);
       window.iniciarPainel(D);
     });
   }
+  // "Bom dia" até 11:59, "Boa tarde" até 17:59, "Boa noite" no resto; muda sozinha com o relógio.
+  function saudar(nome, D) {
+    var el = document.getElementById("saudacao");
+    var procs = D.escopo === "todos" ? null : D.escopo.map(function (k) { return nomeProc(D, k); });
+    var txt = !procs ? "Você tem acesso a todos os processos."
+      : procs.length === 1 ? "Seu processo é: <b>" + esc(procs[0]) + "</b>"
+      : "Seus processos são: <b>" + procs.slice(0, -1).map(esc).join("</b>, <b>") + "</b> e <b>" + esc(procs[procs.length - 1]) + "</b>";
+    function pinta() {
+      var h = new Date().getHours(), oi = h >= 5 && h < 12 ? "Bom dia" : h >= 12 && h < 18 ? "Boa tarde" : "Boa noite";
+      var html = '<strong>' + oi + ", " + esc(nome) + "!</strong> <span>" + txt + "</span>";
+      if (el.innerHTML !== html) el.innerHTML = html;
+    }
+    pinta();
+    setInterval(pinta, 60000);
+  }
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
   function nomeProc(D, k) {
     var l = D.ocorrencias.linhas.filter(function (x) { return x.processo.toLowerCase() === k; })[0];
     return l ? l.processo : k;
