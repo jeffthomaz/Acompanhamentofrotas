@@ -1,7 +1,27 @@
 # Painel de monitoramento
 
 Site em JavaScript com três abas: comportamental, motor ocioso e tempo de permanência.
+O acesso é por login: cada usuário só consegue abrir os dados dos processos do grupo dele.
 
-- `index.html`: página e estilos
+- `index.html`: página, tela de login e estilos
+- `login.js`: confere usuário e senha e destranca os dados do grupo no navegador
 - `app.js`: monta as abas, gráficos e tabelas
-- `dados.js`: dados (atualmente FICTÍCIOS, só para o visual)
+- `acesso.js`: dados criptografados por grupo (gerado, não editar à mão)
+- `ferramentas/gerar_acesso.py`: gera o `acesso.js` a partir da planilha de cadastros
+
+## Como funciona o controle de acesso
+
+A planilha `cadastros.xlsx` (fica só no computador, nunca no repositório) tem as colunas
+USUARIO, PROCESSO e SENHA. PROCESSO = `todos` vê tudo; vários processos são separados por `;`.
+Senhas precisam de pelo menos 10 caracteres.
+
+Os dados de cada grupo são trancados com AES-256-GCM, e a chave do grupo é trancada com a
+senha de cada usuário (PBKDF2-SHA256, 600 mil iterações). O `acesso.js` público não contém
+senhas, nomes de usuário nem dados legíveis.
+
+Atualizar usuários ou dados:
+
+    python ferramentas/gerar_acesso.py cadastros.xlsx dados-fonte.json acesso.js
+
+As abas Motor ocioso e Permanência só aparecem para quem vê todos os processos enquanto os
+equipamentos não tiverem o campo `processo` nos dados.

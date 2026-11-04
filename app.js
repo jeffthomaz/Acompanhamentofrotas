@@ -1,12 +1,10 @@
-(function () {
-  var D = window.DADOS;
-  if (!D) return;
-
+window.iniciarPainel = function (D) {
+  // Abas sem dados para o grupo do usuário não aparecem.
   var ABAS = [
-    { id: "comportamento", nome: "Comportamento" },
-    { id: "motor-ocioso", nome: "Motor ocioso" },
-    { id: "permanencia", nome: "Permanência" }
-  ];
+    { id: "comportamento", nome: "Comportamento", tem: "ocorrencias" },
+    { id: "motor-ocioso", nome: "Motor ocioso", tem: "motorOcioso" },
+    { id: "permanencia", nome: "Permanência", tem: "permanencia" }
+  ].filter(function (a) { return D[a.tem]; });
   var filtro = "Todos";
   var ordem = {};
 
@@ -141,7 +139,7 @@
     var sem = [0, 1, 2].map(function (k) { return sum(linhas, function (l) { return l.sem[k]; }); }).concat([total]);
 
     // Filtros
-    var filtros = '<div class="filtros"><label>Processo<select data-fil="processo" id="f-processo">' + opcoes(processos, fil_.processo, "Todos os processos") + "</select></label>" +
+    var filtros = '<div class="filtros"><label>Processo<select data-fil="processo" id="f-processo">' + opcoes(processos, fil_.processo, D.escopo && D.escopo !== "todos" ? "Todos os meus processos" : "Todos os processos") + "</select></label>" +
       '<label>Responsável<select data-fil="responsavel" id="f-responsavel">' + opcoes(resps, fil_.responsavel, "Todos os responsáveis") + "</select></label>" +
       (fil_.processo || fil_.responsavel ? '<button type="button" class="limpar" data-limpar="1">Limpar filtros</button>' : "") +
       '<p class="ctx">' + num(frotas, 0) + " " + plural(frotas, "veículo", "veículos") + " no filtro, " + esc(D.periodo) + "</p></div>";
@@ -268,7 +266,7 @@
   var VIEWS = { "comportamento": abaComportamento, "motor-ocioso": abaOcioso, "permanencia": abaPermanencia };
   var tabs = document.getElementById("tabs"), painel = document.getElementById("painel"), fil = document.getElementById("filtro");
 
-  function atual() { var h = (location.hash || "").replace("#", ""); return VIEWS[h] ? h : ABAS[0].id; }
+  function atual() { var h = (location.hash || "").replace("#", ""); return ABAS.some(function (a) { return a.id === h; }) ? h : ABAS[0].id; }
   function render() {
     var id = atual();
     tabs.innerHTML = ABAS.map(function (a) {
@@ -317,4 +315,4 @@
   document.getElementById("periodo").textContent = D.periodo;
   document.getElementById("aviso").hidden = !D.exemplo;
   render();
-})();
+};

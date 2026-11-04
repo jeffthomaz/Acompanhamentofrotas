@@ -1,0 +1,5 @@
+# Nunca publicar dados em texto puro nem a planilha de senhas
+dados-fonte*.json
+cadastros*.xlsx
+*.xlsx
+__pycache__/

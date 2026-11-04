@@ -157,6 +157,21 @@ rect.seg.c-vel{fill:var(--c-vel)}rect.seg.c-celular{fill:var(--c-celular)}rect.s
 .tb tbody th{font-family:var(--display);font-weight:700}.r{text-align:right!important;padding-right:0!important}
 .rodape{margin:0;font-size:.8rem;color:var(--muted);max-width:75ch}
 [hidden]{display:none!important}
+.quem{margin-left:auto;display:flex;align-items:center;gap:.9rem;text-align:right}
+.quem b{display:block;font-weight:600}.quem small{display:block;font-size:.8rem;color:#BFD3C6}
+.quem button{font:inherit;font-size:.85rem;font-weight:600;color:#fff;background:transparent;border:1px solid rgba(255,255,255,.55);border-radius:6px;padding:.3rem .9rem;cursor:pointer}
+.quem button:hover{background:rgba(255,255,255,.12)}
+.acesso{display:grid;place-items:start center;padding-top:3rem;min-height:60vh}
+.login{width:min(100%,24rem);background:var(--card);border:1px solid var(--line);border-top:6px solid var(--maq);border-radius:12px;padding:1.5rem 1.4rem;display:grid;gap:.9rem;box-shadow:0 2px 10px rgba(10,42,25,.12)}
+.login h2{font-family:var(--display);font-weight:800;font-size:1.5rem;letter-spacing:-.02em;margin:0}
+.login .sub{margin:-.5rem 0 .2rem;color:var(--muted);font-size:.88rem}
+.login label{display:grid;gap:.3rem;font-size:.82rem;font-weight:600;color:var(--muted)}
+.login input{font:inherit;font-size:1rem;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:.6rem .75rem}
+.login input:focus-visible{outline:3px solid var(--maq);outline-offset:1px;border-color:var(--ink)}
+.login button{font:inherit;font-weight:700;font-size:1rem;color:var(--maq-ink);background:var(--maq);border:0;border-radius:6px;padding:.7rem;cursor:pointer}
+.login button:disabled{opacity:.6;cursor:progress}
+.erro{margin:0;min-height:1.2em;color:var(--critico);font-size:.88rem;font-weight:600}
+@media (max-width:560px){.quem{margin-left:0;width:100%;justify-content:space-between;text-align:left}}
 @keyframes grow{from{transform:scaleX(0)}}@keyframes up{from{transform:scaleY(0)}}
 @media (prefers-reduced-motion:reduce){.bar,.col{animation:none}}
 @media (max-width:720px){.head{grid-template-columns:minmax(0,1fr)}}
@@ -171,8 +186,19 @@ rect.seg.c-vel{fill:var(--c-vel)}rect.seg.c-celular{fill:var(--c-celular)}rect.s
 <header class="band"><div class="band-in gut">
   <img class="logo" src="logo-branco.png?v=202611031446" alt="Bioenergética Aroeira" width="67" height="92">
   <div><h1>Acompanhamento de frotas</h1><p class="per" id="periodo"></p></div>
+  <div class="quem" id="quem" hidden><span><b id="quem-nome"></b><small id="quem-escopo"></small></span><button type="button" id="sair">Sair</button></div>
 </div></header>
-<div class="wrap gut">
+<main class="acesso gut" id="acesso">
+  <form class="login" id="login" autocomplete="on" novalidate>
+    <h2>Entrar no painel</h2>
+    <p class="sub">Cada acesso mostra só os processos liberados para o seu grupo.</p>
+    <label>Usuário<input name="usuario" autocomplete="username" autocapitalize="none" spellcheck="false" required></label>
+    <label>Senha<input name="senha" type="password" autocomplete="current-password" required></label>
+    <p class="erro" id="login-erro" role="alert"></p>
+    <button type="submit">Entrar</button>
+  </form>
+</main>
+<div class="wrap gut" id="app" hidden>
   <p class="aviso" id="aviso" role="note">Dados de exemplo para definir o visual. Os números reais entram quando a fonte estiver definida.</p>
   <div class="nav">
     <div id="tabs" role="tablist" aria-label="Áreas do painel"></div>
@@ -182,9 +208,10 @@ rect.seg.c-vel{fill:var(--c-vel)}rect.seg.c-celular{fill:var(--c-celular)}rect.s
       <button type="button" data-f="Caminhão" aria-pressed="false">Caminhões</button>
     </div>
   </div>
-  <main id="painel" role="tabpanel" tabindex="0"></main>
+  <section id="painel" role="tabpanel" tabindex="0"></section>
 </div>
 <footer class="foot gut">Bioenergética Aroeira S/A, Tupaciguara/MG. <a href="https://www.bioaroeira.com.br" target="_blank" rel="noopener">www.bioaroeira.com.br</a></footer>
-<script src="dados.js?v=202611031446"></script>
-<script src="app.js?v=202611031446"></script>
+<script src="acesso.js?v=202611040930"></script>
+<script src="app.js?v=202611040930"></script>
+<script src="login.js?v=202611040930"></script>
 </body></html>
