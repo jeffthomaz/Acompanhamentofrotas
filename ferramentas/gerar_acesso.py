@@ -89,8 +89,24 @@ def recorte(D, procs):
     return d
 
 
+def unificar_processos(D):
+    """Aplica o de-para de ferramentas/processos.json em todas as abas."""
+    caminho = os.path.join(os.path.dirname(os.path.abspath(__file__)), "processos.json")
+    if not os.path.exists(caminho):
+        return
+    mapa = {chave_proc(k): v for k, v in json.load(open(caminho, encoding="utf-8")).items() if not k.startswith("_")}
+    def troca(x):
+        if isinstance(x, dict) and "processo" in x:
+            x["processo"] = mapa.get(chave_proc(x["processo"]), x["processo"])
+    for v in D.get("comportamento", {}).get("frotas", {}).values(): troca(v)
+    for v in D.get("motorOcioso", {}).get("veiculos", []): troca(v)
+    for v in D.get("permanencia", {}).get("veiculos", {}).values(): troca(v)
+    for v in D.get("conectividade", {}).get("frotas", {}).values(): troca(v)
+
+
 def main(cad, fonte, saida):
     D = json.load(open(fonte, encoding="utf-8"))
+    unificar_processos(D)
     conhecidos = {chave_proc(v["processo"]): v["processo"] for v in D.get("comportamento", {}).get("frotas", {}).values()}
     conhecidos.update({chave_proc(v["processo"]): v["processo"] for v in D.get("motorOcioso", {}).get("veiculos", [])})
     conhecidos.update({chave_proc(v["processo"]): v["processo"] for v in D.get("permanencia", {}).get("veiculos", {}).values()})
