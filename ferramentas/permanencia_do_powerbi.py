@@ -30,6 +30,16 @@ ESTABELECIMENTO = re.compile(r"\b(POSTO|PADARIA|RESTAURANTE|SUPERMERCADO|MERCADO
 AREA = re.compile(r"\b(PER[IÍ]METRO|TREVO|XAPETUBA|MOITINHA|CARREGAMENTO|ENTRADA|FAZENDA|USINA|BR|MG)\b|^Sem cerca")
 
 
+# Cercas removidas a pedido (guardadas como hash para o nome não ficar no repositório público).
+# Para incluir outra: hashlib.sha256("NOME DA CERCA".encode()).hexdigest()[:16]
+CERCAS_EXCLUIDAS = {"84e44df87bc067d7"}
+
+
+def excluida(cerca):
+    import hashlib
+    return hashlib.sha256(cerca.upper().encode()).hexdigest()[:16] in CERCAS_EXCLUIDAS
+
+
 def classifica(nome):
     """Cerca com nome de pessoa vira "Colaborador F. M. L." para não expor o nome completo."""
     if ESTABELECIMENTO.search(nome.upper()):
@@ -51,7 +61,7 @@ def main(origem, destino):
     locais, idx, veiculos, eventos, cidades = [], {}, {}, [], {}
     datas = sorted({r["d"] for r in rows})  # período completo do relatório
     for r in rows:
-        if limpo(r["ponto"]).upper().startswith(("LIBERAÇÃO", "LIBERACAO")):
+        if limpo(r["ponto"]).upper().startswith(("LIBERAÇÃO", "LIBERACAO")) or excluida(limpo(r["cerca"])):
             continue
         # O local é a CERCA ELETRÔNICA; sem cerca, usa o ponto de referência.
         nome, tipo = classifica(limpo(r["cerca"]) or limpo(r["ponto"]) or ("Sem cerca, " + limpo(r["cid"]).title()))
