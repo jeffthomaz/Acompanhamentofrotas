@@ -737,7 +737,7 @@ window.iniciarPainel = function (D) {
         }).join("") + "</tr>";
       }).join("") + "</tbody></table></div>" : '<p class="cs">Nenhum veículo com problema nesse mês.</p>') + "</section>";
     var informar = '<div class="informar"><p><b>Algum equipamento parado ou em manutenção?</b> Informe na planilha de status. O painel passa a mostrar na próxima atualização.</p><a class="btn" href="' + LINK_STATUS + '" target="_blank" rel="noopener">Informar parado/manutenção <span aria-hidden="true">↗</span></a></div>';
-    return filtros + kpis + informar + avisos + '<div class="g2 g2k">' + tab + porProc + '</div><div class="g3 g-a">' + evol + sit + sis + "</div>" + historico + secaoEnvio("conectividade", dbr(K.dias[nd - 1]));
+    return filtros + kpis + '<div class="g2 g2k">' + tab + porProc + '</div><div class="g3 g-a">' + evol + sit + sis + "</div>" + historico + avisos + informar + secaoEnvio("conectividade", dbr(K.dias[nd - 1]));
   }
 
   function colunasProc(lp) {
