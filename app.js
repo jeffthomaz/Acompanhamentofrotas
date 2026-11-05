@@ -746,7 +746,7 @@ window.iniciarPainel = function (D) {
         }).join("") + "</table>" : '<p class="cm-vazio">Nenhum veículo.</p>') + "</section>";
     }).join("");
 
-    return filtros + kpis + '<p class="cs cm-nota">Se a câmera estiver ok e for só erro do sistema, troque o status embaixo do veículo: ele sai da contagem daquele quadro. Fica salvo neste navegador e vale para o relatório deste dia.</p><div class="cm-grade">' + quadros + '</div><div class="g2 g2-eq">' + saude + gps + "</div>";
+    return filtros + kpis + '<div class="cm-grade">' + quadros + '</div><div class="g2 g2-eq">' + saude + gps + "</div>";
   }
   function camBaixar() {
     var M = D.cameras, obs = obsTodas(), nomes = {};
