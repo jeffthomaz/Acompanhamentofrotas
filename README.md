@@ -1,6 +1,6 @@
 # Painel de monitoramento
 
-Site em JavaScript com três abas: comportamental, motor ocioso e tempo de permanência.
+Site em JavaScript com as abas Comportamento, Motor ocioso, Permanência, Conectividade e Câmeras.
 O acesso é por login: cada usuário só consegue abrir os dados dos processos do grupo dele.
 
 - `index.html`: página, tela de login e estilos
@@ -41,3 +41,12 @@ Atualizar usuários ou dados:
   extraídos com `ferramentas/comportamento_do_powerbi.py`. Excesso de velocidade nas faixas da nova
   política (até 20%, 20% a 50%, acima de 50%). O processo da frota pesada vem da aba
   BASE DE INFORMAÇÃO da planilha "Ocorrências monitoramento 2026.B". Não leva motorista nem CPF.
+- Câmeras: visualizador só do dia (sem histórico), alimentado pelo CSV "Saúde do Veículo - Análise"
+  exportado do sistema, com `ferramentas/cameras.py`. Um quadro por tipo de câmera (motorista, pista,
+  auditoria) e a lista de veículos com defeito ("Sim" ou quantidade acima de zero). O processo vem do
+  cadastro de frotas já presente no dados-fonte.json, pelo prefixo. Na lista, a coluna Observação
+  (Câmera ok, Intermitência temporária, Erro no relatório, Defeito confirmado) fica salva no navegador
+  de quem marcou e vale para o relatório daquele dia; as três primeiras tiram a linha das pendências.
+
+      python ferramentas/cameras.py "Saude_do_Veiculo_-_Analise_....csv" dados-fonte.json
+      python ferramentas/gerar_acesso.py cadastros.xlsx dados-fonte.json acesso.js

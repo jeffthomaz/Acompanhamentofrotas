@@ -4,7 +4,8 @@ window.iniciarPainel = function (D) {
     { id: "comportamento", nome: "Comportamento", tem: "comportamento" },
     { id: "motor-ocioso", nome: "Motor ocioso", tem: "motorOcioso" },
     { id: "permanencia", nome: "Permanência", tem: "permanencia" },
-    { id: "conectividade", nome: "Conectividade", tem: "conectividade" }
+    { id: "conectividade", nome: "Conectividade", tem: "conectividade" },
+    { id: "cameras", nome: "Câmeras", tem: "cameras" }
   ].filter(function (a) { return D[a.tem]; });
   var filtro = "Todos";
   var ordem = {};
@@ -647,7 +648,98 @@ window.iniciarPainel = function (D) {
     return sv + '</svg><ul class="legend"><li><i class="c-con"></i>Conectados</li><li><i class="c-off"></i>Offline</li></ul>';
   }
 
-  var VIEWS = { "comportamento": abaComportamento, "motor-ocioso": abaOcioso, "permanencia": abaPermanencia, "conectividade": abaConectividade };
+  // Câmeras: visualizador do relatório do dia (sem histórico). Observação por linha,
+  // salva só neste navegador e só para o relatório deste dia.
+  var fcm = { tipo: "" };
+  var OBS = [["", "Pendente"], ["ok", "Câmera ok"], ["int", "Intermitência temporária"], ["rel", "Erro no relatório"], ["def", "Defeito confirmado"]];
+  var OBS_RESOLVE = { ok: 1, int: 1, rel: 1 };
+  var CHAVE_OBS = "painel-frotas-cameras-obs";
+  var ICO_CAM = { motorista: "M12 12a4 4 0 100-8 4 4 0 000 8M4 21a8 8 0 0116 0", pista: "M5 21L10 3M19 21L14 3M12 6v2M12 11v2M12 16v3", auditoria: "M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12zM12 15a3 3 0 100-6 3 3 0 000 6" };
+  function obsLer() {
+    try { var o = JSON.parse(localStorage.getItem(CHAVE_OBS) || "{}"); return o && o.dia === D.cameras.dia ? o.obs || {} : {}; } catch (e) { return {}; }
+  }
+  function obsGravar(k, v) {
+    var o = obsLer(); if (v) o[k] = v; else delete o[k];
+    try { localStorage.setItem(CHAVE_OBS, JSON.stringify({ dia: D.cameras.dia, obs: o })); return true; } catch (e) { return false; }
+  }
+  var obsMem = null; // usado se o navegador não deixar salvar
+  function obsTodas() { var o = obsLer(); if (obsMem) for (var k in obsMem) o[k] = obsMem[k]; return o; }
+  function camLinhas() {
+    var M = D.cameras, nomes = {};
+    M.tipos.forEach(function (t) { nomes[t.id] = t.nome; });
+    var linhas = [];
+    M.lista.forEach(function (v) {
+      M.tipos.forEach(function (t) {
+        var ds = v.d.filter(function (d) { return d[0] === t.id; }); if (!ds.length) return;
+        linhas.push({ k: v.f + "|" + t.id, v: v, tipo: t.id, nomeTipo: nomes[t.id], ds: ds });
+      });
+    });
+    return linhas;
+  }
+  function hbr(s) { return s ? s.slice(8, 10) + "/" + s.slice(5, 7) + " " + s.slice(11) : "—"; }
+  function abaCameras() {
+    var M = D.cameras, obs = obsTodas();
+    var processos = unicos(Object.keys(M.total));
+    if (fil_.processo && processos.indexOf(fil_.processo) < 0) fil_.processo = "";
+    var todas = camLinhas().filter(function (l) { return !fil_.processo || l.v.processo === fil_.processo; });
+    var monit = fil_.processo ? (M.total[fil_.processo] || 0) : sum(processos, function (p) { return M.total[p]; });
+    function pendente(l) { return !OBS_RESOLVE[obs[l.k]]; }
+
+    var filtros = '<div class="filtros"><label>Processo<select data-fil="processo" id="cm-processo">' + opcoes(processos, fil_.processo, D.escopo && D.escopo !== "todos" ? "Todos os meus processos" : "Todos os processos") + "</select></label>" +
+      '<label>Câmera<select data-cam="tipo" id="cm-tipo"><option value="">Todas as câmeras</option>' + M.tipos.map(function (t) { return '<option value="' + t.id + '"' + (fcm.tipo === t.id ? " selected" : "") + ">" + esc(t.nome) + "</option>"; }).join("") + "</select></label>" +
+      (fil_.processo || fcm.tipo ? '<button type="button" class="limpar" data-limpar="1">Limpar filtros</button>' : "") +
+      '<p class="ctx">' + num(monit, 0) + " " + plural(monit, "veículo monitorado", "veículos monitorados") + " no relatório de " + M.dia.slice(8, 10) + "/" + M.dia.slice(5, 7) + " às " + esc(M.hora) + "</p></div>";
+
+    // Um quadro por tipo de câmera: pendentes, com o detalhe de cada defeito.
+    var cards = M.tipos.map(function (t) {
+      var ls = todas.filter(function (l) { return l.tipo === t.id; }), pend = ls.filter(pendente);
+      var det = t.defeitos.map(function (nome) {
+        var n = pend.filter(function (l) { return l.ds.some(function (d) { return d[1] === nome; }); }).length;
+        return "<span>" + esc(nome) + " <b>" + num(n, 0) + "</b></span>";
+      }).join("");
+      var rev = ls.length - pend.length;
+      return '<button type="button" class="kpi kpi-btn c-cm-' + t.id + '" data-cmtipo="' + t.id + '" aria-pressed="' + (fcm.tipo === t.id) + '"><div class="kh">' + ico(ICO_CAM[t.id] || ICO_CAM.auditoria) + '<span class="kl">' + esc(t.nome) + '</span></div><strong class="kv">' + num(pend.length, 0) + '</strong><span class="kp">' + det + '</span><span class="ks">' + plural(pend.length, "veículo pendente", "veículos pendentes") + (rev ? " · " + rev + " " + plural(rev, "revisado", "revisados") : "") + "</span></button>";
+    }).join("");
+    var veicPend = unicos(todas.filter(pendente).map(function (l) { return l.v.f; })).length;
+    var veicTot = unicos(todas.map(function (l) { return l.v.f; })).length;
+    cards += '<article class="kpi c-cm-total"><div class="kh">' + ico("M12 3l9 16H3zM12 10v4M12 17h.01") + '<span class="kl">Veículos com pendência</span></div><strong class="kv">' + num(veicPend, 0) + '</strong><span class="ks">' + num(veicTot, 0) + " com alerta no relatório" + (monit ? " · " + num(veicTot / monit * 100, 1) + "% da frota" : "") + "</span></article>";
+    var kpis = '<div class="kpis kpis4">' + cards + "</div>";
+
+    // Lista de pendências, com a observação ao lado (como uma coluna de planilha).
+    var ls = todas.filter(function (l) { return !fcm.tipo || l.tipo === fcm.tipo; });
+    var nPend = ls.filter(pendente).length;
+    var tab = '<section class="card tab-card"><div class="cm-cab"><h3>Pendências de câmera <span class="cnt off">' + nPend + "</span></h3>" +
+      (ls.length ? '<button type="button" class="limpar" data-cbaixar="1">Baixar lista (Excel)</button>' : "") + "</div>" +
+      '<p class="cs">Veículos com câmera acusando defeito. Se a câmera estiver ok e for só erro do sistema, escolha a observação na última coluna: a linha sai das pendências. As observações ficam salvas neste navegador e valem para o relatório deste dia.</p>' +
+      (ls.length ? '<div class="scroll rolagem alta"><table class="tb tb-k tb-cm"><thead><tr><th scope="col">Frota</th><th scope="col">Processo</th><th scope="col">Câmera</th><th scope="col">Ticket</th><th scope="col">Última foto · vídeo</th><th scope="col">Observação</th></tr></thead><tbody>' + ls.map(function (l, i) {
+        var v = l.v, o = obs[l.k] || "", res = !!OBS_RESOLVE[o];
+        var defs = l.ds.map(function (d) { return esc(d[1]) + (l.tipo === "auditoria" ? " (" + d[2] + ")" : ""); }).join(", ");
+        var tk = v.ticket ? '<a href="' + esc(v.ticket) + '" target="_blank" rel="noopener">' + esc(v.ticket.split("/").pop()) + "</a><small>" + esc(v.tst || "") + "</small>" : '<span class="mut">Sem ticket</span>';
+        return '<tr class="' + (res ? "cm-ok" : "") + '"><th scope="row">' + esc(v.f) + "<small>" + esc([v.placa, v.sit && v.sit !== "Em operação" ? v.sit : ""].filter(Boolean).join(" · ")) + "</small></th><td>" + esc(v.processo) + "</td>" +
+          "<td>" + esc(l.nomeTipo) + '<small><span class="b ' + (res ? "bom" : "critico") + '">' + defs + "</span></small></td><td>" + tk + "</td>" +
+          "<td>" + hbr(v.foto) + "<small>" + hbr(v.video) + "</small></td>" +
+          '<td><select class="obs obs-' + (o || "pen") + '" data-obs="' + esc(l.k) + '" id="cm-obs-' + i + '" aria-label="Observação de ' + esc(v.f) + ", " + esc(l.nomeTipo) + '">' + OBS.map(function (x) { return '<option value="' + x[0] + '"' + (x[0] === o ? " selected" : "") + ">" + x[1] + "</option>"; }).join("") + "</select></td></tr>";
+      }).join("") + "</tbody></table></div>" : '<p class="cs">Nenhuma câmera com defeito' + (fcm.tipo || fil_.processo ? " nesse filtro" : " no relatório") + ".</p>") + "</section>";
+
+    return filtros + kpis + tab;
+  }
+  function camBaixar() {
+    var M = D.cameras, obs = obsTodas(), nomes = {};
+    OBS.forEach(function (x) { nomes[x[0]] = x[1]; });
+    var ls = camLinhas().filter(function (l) { return (!fil_.processo || l.v.processo === fil_.processo) && (!fcm.tipo || l.tipo === fcm.tipo); });
+    function c(x) { x = String(x == null ? "" : x); return /[;"\n]/.test(x) ? '"' + x.replace(/"/g, '""') + '"' : x; }
+    var linhas = [["Frota", "Placa", "Processo", "Situação", "Câmera", "Defeito", "Ticket", "Status do ticket", "Última foto", "Último vídeo", "Observação"]].concat(ls.map(function (l) {
+      var v = l.v;
+      return [v.f, v.placa, v.processo, v.sit, l.nomeTipo, l.ds.map(function (d) { return d[1] + (l.tipo === "auditoria" ? " (" + d[2] + ")" : ""); }).join(", "), v.ticket, v.tst, hbr(v.foto), hbr(v.video), nomes[obs[l.k] || ""]];
+    }));
+    var blob = new Blob(["﻿" + linhas.map(function (r) { return r.map(c).join(";"); }).join("\r\n")], { type: "text/csv;charset=utf-8" });
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob); a.download = "pendencias-cameras-" + M.dia + ".csv";
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+  }
+
+  var VIEWS = { "comportamento": abaComportamento, "motor-ocioso": abaOcioso, "permanencia": abaPermanencia, "conectividade": abaConectividade, "cameras": abaCameras };
   var tabs = document.getElementById("tabs"), painel = document.getElementById("painel"), fil = document.getElementById("filtro");
 
   function atual() { var h = (location.hash || "").replace("#", ""); return ABAS.some(function (a) { return a.id === h; }) ? h : ABAS[0].id; }
@@ -661,7 +753,7 @@ window.iniciarPainel = function (D) {
     painel.innerHTML = VIEWS[id]();
     if (id === "permanencia") montarMapa();
     fil.hidden = true;
-    var blocos = { "comportamento": D.comportamento, "motor-ocioso": D.motorOcioso, "permanencia": D.permanencia, "conectividade": D.conectividade }, b = blocos[id], real = b && b.real;
+    var blocos = { "comportamento": D.comportamento, "motor-ocioso": D.motorOcioso, "permanencia": D.permanencia, "conectividade": D.conectividade, "cameras": D.cameras }, b = blocos[id], real = b && b.real;
     document.getElementById("periodo").textContent = real ? b.periodo + " · dados reais" : D.periodo;
     document.getElementById("aviso").hidden = real || !D.exemplo;
   }
@@ -702,7 +794,7 @@ window.iniciarPainel = function (D) {
   });
   painel.addEventListener("click", function (e) {
     var l = e.target.closest("[data-limpar]");
-    if (l) { fil_.processo = ""; fil_.responsavel = ""; if (fil_.comp) { fil_.comp.frota = ""; fil_.comp.gerencia = ""; } fco.grupo = ""; fco.dia = -1; pm.frotas = []; pm.dias = 0; pm.refit = true; render(); return; }
+    if (l) { fil_.processo = ""; fil_.responsavel = ""; if (fil_.comp) { fil_.comp.frota = ""; fil_.comp.gerencia = ""; } fco.grupo = ""; fco.dia = -1; fcm.tipo = ""; pm.frotas = []; pm.dias = 0; pm.refit = true; render(); return; }
     var kt = e.target.closest("[data-ktodos]");
     if (kt) { fco.todos = !fco.todos; render(); return; }
     var kd = e.target.closest("[data-kdia]");
@@ -734,6 +826,20 @@ window.iniciarPainel = function (D) {
     if (g && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); g.dispatchEvent(new MouseEvent("click", { bubbles: true })); }
   });
   painel.addEventListener("toggle", function (e) { if (e.target.id === "p-frotas") pm.abertoFrotas = e.target.open; }, true);
+  painel.addEventListener("change", function (e) {
+    var o = e.target.closest("select[data-obs]");
+    if (o) {
+      if (!obsGravar(o.dataset.obs, o.value)) { obsMem = obsMem || {}; obsMem[o.dataset.obs] = o.value; }
+      var id = o.id; render(); var n = document.getElementById(id); if (n) n.focus(); return;
+    }
+    var t = e.target.closest("select[data-cam]");
+    if (t) { fcm.tipo = t.value; render(); var n2 = document.getElementById(t.id); if (n2) n2.focus(); }
+  });
+  painel.addEventListener("click", function (e) {
+    var t = e.target.closest("[data-cmtipo]");
+    if (t) { fcm.tipo = fcm.tipo === t.dataset.cmtipo ? "" : t.dataset.cmtipo; render(); var n = document.querySelector('[data-cmtipo="' + t.dataset.cmtipo + '"]'); if (n) n.focus(); return; }
+    if (e.target.closest("[data-cbaixar]")) camBaixar();
+  });
   window.addEventListener("hashchange", render);
   render();
 };
