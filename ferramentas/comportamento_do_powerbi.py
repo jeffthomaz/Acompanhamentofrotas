@@ -22,10 +22,14 @@ processo de cada frota pesada (a tabela da frota pesada não tem processo).
 
 Excesso de velocidade nas faixas da nova política de frotas, pelo % acima do limite da via
 (EXCESSO / LIMIAR): até 20%, de 20% até 50%, acima de 50%. A política antiga (7% / 27% / 57%) não é usada.
+
+Acumulado: a extração substitui só os dias que ela cobre (do primeiro dia dela em diante). Os dias
+anteriores já salvos no dados-fonte.json ficam guardados, então a consulta pode trazer só os últimos
+dias e o histórico não se perde se o BI mudar.
 """
 import json, re, sys
 from collections import Counter, defaultdict
-from datetime import date
+from datetime import date, timedelta
 
 import openpyxl
 
@@ -95,6 +99,21 @@ def main(leves, pesadas, base_xlsx, destino):
     for f, x in frotas.items():
         x["processo"] = proc_v[f].most_common(1)[0][0]
         x["gerencia"] = ger_v[f].most_common(1)[0][0]
+    D = json.load(open(destino, encoding="utf-8"))
+    # Acumulado: a extração vale para o período que ela cobre (do primeiro dia dela em diante);
+    # os dias anteriores já salvos no dados-fonte.json continuam como estavam.
+    corte, mantidos = min(dias), 0
+    velho = D.get("comportamento")
+    if velho and velho.get("ev"):
+        ini_v = date.fromisoformat(velho["inicio"])
+        ids_v = [t["id"] for t in velho["tipos"]]
+        validos = {t["id"] for t in TIPOS}
+        for d0, ti, f, n in velho["ev"]:
+            d = (ini_v + timedelta(days=d0)).isoformat()
+            if d < corte and ids_v[ti] in validos:
+                cont[(d, ids_v[ti], f)] += n; dias.add(d); mantidos += n
+                if f not in frotas and f in velho["frotas"]:
+                    frotas[f] = velho["frotas"][f]
 
     dias = sorted(dias)
     ini = date.fromisoformat(dias[0])
@@ -102,7 +121,6 @@ def main(leves, pesadas, base_xlsx, destino):
     # [dia (0 = primeiro dia), tipo, frota, quantidade]
     ev = sorted([[(date.fromisoformat(d) - ini).days, tid[t], f, n] for (d, t, f), n in cont.items()])
     fim = date.fromisoformat(dias[-1])
-    D = json.load(open(destino, encoding="utf-8"))
     D["comportamento"] = {
         "real": True,
         "fonte": "Power BI Monitoramento Comportamental Frotas Leves e Pesadas 2026",
@@ -115,6 +133,7 @@ def main(leves, pesadas, base_xlsx, destino):
     print("%d ocorrências, %d frotas, %d linhas, %s" % (tot, len(frotas), len(ev), D["comportamento"]["periodo"]))
     print("por tipo:", {t["id"]: sum(n for (d, tt, f), n in cont.items() if tt == t["id"]) for t in TIPOS})
     print("fora:", dict(ignorados))
+    print("acumulado: %d ocorrências salvas antes de %s mantidas; dali em diante vale o Power BI" % (mantidos, corte))
 
 
 if __name__ == "__main__":

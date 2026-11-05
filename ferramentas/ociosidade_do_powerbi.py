@@ -1,7 +1,11 @@
 """Converte a extração do Power BI "Ociosidade Frota Leve" no bloco motorOcioso do dados-fonte.json.
 
 Uso:
-    python ociosidade_do_powerbi.py <resultado-dax.json> <dados-fonte.json>
+    python ociosidade_do_powerbi.py <resultado-dax.json> <dados-fonte.json> [ociosidade_base.json]
+
+Acumulado: com o terceiro argumento, os dias de cada veículo ficam guardados em ociosidade_base.json
+(na pasta local, nunca no repositório). A extração substitui só os dias que ela cobre (do primeiro
+dia dela em diante); os anteriores continuam salvos. Assim a consulta pode trazer só os últimos dias.
 
 <resultado-dax.json> é o resultado (JSON com data.rows) desta consulta DAX no modelo:
 
@@ -26,9 +30,23 @@ from datetime import date, timedelta
 META_PCT = 15  # meta provisória de motor ocioso (%)
 
 
-def main(origem, destino):
+def acumular(linhas, base):
+    """Junta a extração com os dias já guardados em base (JSON {"linhas": [...]}) e grava a base."""
+    import os
+    corte = min(l["d"] for l in linhas)
+    antigas = json.load(open(base, encoding="utf-8"))["linhas"] if os.path.exists(base) else []
+    mantidas = [l for l in antigas if l["d"] < corte]
+    todas = mantidas + linhas
+    json.dump({"linhas": todas}, open(base, "w", encoding="utf-8"), ensure_ascii=False)
+    print("acumulado: %d dias-veículo salvos antes de %s mantidos" % (len(mantidas), corte))
+    return todas
+
+
+def main(origem, destino, base=None):
     linhas = json.load(open(origem, encoding="utf-8"))["data"]["rows"]
     linhas = [{k.strip("[]"): v for k, v in l.items()} for l in linhas]
+    if base:
+        linhas = acumular(linhas, base)
     dias = sorted({date.fromisoformat(l["d"]) for l in linhas})
     ini, fim = dias[0], dias[-1]
     # Semanas de segunda a domingo, rotuladas pelo primeiro dia dentro do período.
@@ -67,6 +85,6 @@ def main(origem, destino):
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 3:
+    if len(sys.argv) not in (3, 4):
         sys.exit(__doc__)
     main(*sys.argv[1:])
