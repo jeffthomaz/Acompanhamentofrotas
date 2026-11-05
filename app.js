@@ -477,7 +477,7 @@ window.iniciarPainel = function (D) {
     var e = ENVIO[qual], pv = previa[qual];
     return '<section class="envio"><div><h3>Atualizar a aba ' + e.aba + "</h3>" +
       '<p>Exporte o arquivo <b>' + esc(e.arq) + "</b> no " + esc(e.sis) + " e carregue aqui, sem mudar o nome (a data da exportação vai no nome). A aba atualiza na hora, para você. " +
-      "Para todos verem, envie o mesmo arquivo para a pasta do painel: ela é conferida a cada hora, em dias úteis, das 7h às 18h.</p>" +
+      "Os dados publicados para todos são atualizados automaticamente a cada hora, em dias úteis, das 7h às 18h.</p>" +
       (pv ? '<p class="envio-pv" role="status">Mostrando o arquivo <b>' + esc(pv.nome) + "</b> só neste navegador. " + esc(pv.msg) + ' <button type="button" class="limpar" data-desfazer="' + qual + '">Voltar aos dados publicados</button></p>' : "") +
       '<p class="envio-at">Dados ' + (pv ? "do arquivo" : "publicados") + ": <b>" + esc(dados) + "</b></p></div>" +
       '<div class="envio-bt"><label class="btn btn-arq">Carregar arquivo<input type="file" accept=".csv,text/csv" data-carregar="' + qual + '"></label>' +
