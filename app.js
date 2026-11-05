@@ -465,6 +465,22 @@ window.iniciarPainel = function (D) {
     pm.refit = false;
   }
 
+  // Pasta de envio no OneDrive ("Solicitar arquivos"): qualquer usuário salva ali o arquivo exportado.
+  // Uma tarefa agendada confere a pasta a cada hora (dias úteis, 7h às 18h), aplica as regras e publica para todos.
+  var LINK_ENVIO = "";
+  var ENVIO = {
+    conectividade: { arq: "Localização da Frota", sis: "vFleets", aba: "Conectividade" },
+    cameras: { arq: "Saúde do Veículo - Análise", sis: "Platform Science", aba: "Câmeras" }
+  };
+  function secaoEnvio(qual, dados) {
+    var e = ENVIO[qual];
+    return '<section class="envio"><div><h3>Atualizar a aba ' + e.aba + "</h3>" +
+      '<p>Exporte o arquivo <b>' + esc(e.arq) + "</b> no " + esc(e.sis) + " e envie sem mudar o nome (a data da exportação vai no nome). " +
+      "O painel confere os arquivos enviados a cada hora, em dias úteis, das 7h às 18h, aplica as regras e publica para todos.</p>" +
+      '<p class="envio-at">Dados atuais: <b>' + esc(dados) + "</b></p></div>" +
+      (LINK_ENVIO ? '<a class="btn" href="' + LINK_ENVIO + '" target="_blank" rel="noopener">Enviar arquivo <span aria-hidden="true">↗</span></a>' : "") + "</section>";
+  }
+
   // ---------- Conectividade (Power BI "Conectividade" + planilha manual de parados e manutenção) ----------
   var ST = [
     { id: "con", l: "C", nome: "Conectados", um: "Conectado", icone: "M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0M12 19.5h.01M2 9a14.5 14.5 0 0 1 20 0" },
@@ -601,7 +617,7 @@ window.iniciarPainel = function (D) {
         }).join("") + "</tr>";
       }).join("") + "</tbody></table></div>" : '<p class="cs">Nenhum veículo com problema nesse mês.</p>') + "</section>";
     var informar = '<div class="informar"><p><b>Algum equipamento parado ou em manutenção?</b> Informe na planilha de status. O painel passa a mostrar na próxima atualização.</p><a class="btn" href="' + LINK_STATUS + '" target="_blank" rel="noopener">Informar parado/manutenção <span aria-hidden="true">↗</span></a></div>';
-    return filtros + kpis + informar + avisos + '<div class="g2 g2k">' + tab + porProc + '</div><div class="g3 g-a">' + evol + sit + sis + "</div>" + historico;
+    return filtros + kpis + informar + avisos + '<div class="g2 g2k">' + tab + porProc + '</div><div class="g3 g-a">' + evol + sit + sis + "</div>" + historico + secaoEnvio("conectividade", dbr(K.dias[nd - 1]));
   }
 
   function colunasProc(lp) {
@@ -746,7 +762,7 @@ window.iniciarPainel = function (D) {
         }).join("") + "</table>" : '<p class="cm-vazio">Nenhum veículo.</p>') + "</section>";
     }).join("");
 
-    return filtros + kpis + '<div class="cm-grade">' + quadros + '</div><div class="g2 g2-eq">' + saude + gps + "</div>";
+    return filtros + kpis + '<div class="cm-grade">' + quadros + '</div><div class="g2 g2-eq">' + saude + gps + "</div>" + secaoEnvio("cameras", M.dia.slice(8, 10) + "/" + M.dia.slice(5, 7) + "/" + M.dia.slice(0, 4) + " às " + M.hora);
   }
   function camBaixar() {
     var M = D.cameras, obs = obsTodas(), nomes = {};

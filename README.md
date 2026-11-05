@@ -50,3 +50,14 @@ Atualizar usuários ou dados:
 
       python ferramentas/cameras.py "Saude_do_Veiculo_-_Analise_....csv" dados-fonte.json
       python ferramentas/gerar_acesso.py cadastros.xlsx dados-fonte.json acesso.js
+
+## Atualização automática (pasta de envio)
+
+Qualquer usuário pode atualizar as abas Conectividade e Câmeras: no fim de cada aba há o botão
+"Enviar arquivo", que leva à pasta `painel-dados/entrada` (link "Solicitar arquivos" do OneDrive,
+constante `LINK_ENVIO` em `app.js`). Lá vão, sem mudar o nome, o "Localização da Frota" (vFleets)
+e o "Saúde do Veículo - Análise" (Platform Science).
+
+Uma tarefa agendada confere a pasta a cada hora, em dias úteis, das 7h às 18h. Para cada arquivo novo
+(controle em `painel-dados/entrada_processados.json`) roda `conectividade.py vfleets` + `montar` ou
+`cameras.py`, depois `gerar_acesso.py`, e publica o `acesso.js`. Depende do computador ligado.
