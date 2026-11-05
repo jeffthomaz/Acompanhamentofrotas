@@ -687,10 +687,11 @@ window.iniciarPainel = function (D) {
       (fil_.processo || fco.grupo || !ehHoje ? '<button type="button" class="limpar" data-limpar="1">Limpar filtros</button>' : "") +
       '<p class="ctx">' + total + " " + plural(total, "veículo", "veículos") + " em " + dbr(K.dias[di]) + (manuais ? ". " + manuais + " " + plural(manuais, "informado", "informados") + " na planilha de parados e manutenção" : "") + "</p></div>";
 
-    var kpis = '<div class="kpis kpis5">' + ST.map(function (s) {
-      var n = cont[s.l];
-      return '<article class="kpi c-' + s.id + '"><div class="kh">' + ico(s.icone) + '<span class="kl">' + s.nome + '</span></div><strong class="kv">' + num(n, 0) + '</strong><span class="ks">' + (total ? num(n / total * 100, 1) + "% da frota" : "&nbsp;") + "</span></article>";
-    }).join("") + '<article class="kpi c-pen"><div class="kh">' + ico("M12 3l9 16H3zM12 10v4M12 17h.01") + '<span class="kl">Pendências</span></div><strong class="kv">' + num(pend.length, 0) + '</strong><span class="ks">em campo</span></article></div>';
+    var kpis = '<div class="kpis kpis5 kpis-st">' + ST.map(function (s) {
+      var n = cont[s.l], pc = total ? n / total * 100 : 0;
+      return '<article class="kpi c-' + s.id + '"><div class="kh">' + ico(s.icone) + '<span class="kl">' + s.nome + '</span></div><strong class="kv">' + num(n, 0) + '</strong>' +
+        '<span class="kbar" aria-hidden="true"><i style="width:' + pc.toFixed(1) + '%"></i></span><span class="ks">' + (total ? num(pc, 1) + "% da frota" : "&nbsp;") + "</span></article>";
+    }).join("") + '<article class="kpi c-pen"><div class="kh">' + ico("M12 3l9 16H3zM12 10v4M12 17h.01") + '<span class="kl">Pendências</span></div><strong class="kv">' + num(pend.length, 0) + '</strong><span class="kbar vazio" aria-hidden="true"></span><span class="ks">em campo</span></article></div>';
 
     // Rosca da situação e do status do sistema (só no último dia, que é o que o rastreador informa).
     var cats = ST.map(function (s) { return { id: s.id, nome: s.nome, n: cont[s.l] }; });

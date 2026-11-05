@@ -159,6 +159,19 @@ rect.seg.c-vel{fill:var(--c-vel)}rect.seg.c-celular{fill:var(--c-celular)}rect.s
 .tb tbody th{font-family:var(--display);font-weight:700}.r{text-align:right!important;padding-right:0!important}
 .rodape{margin:0;font-size:.8rem;color:var(--muted);max-width:75ch}
 [hidden]{display:none!important}
+.kpis-st .kpi{background:color-mix(in srgb,var(--cc) 11%,var(--card));border:2px solid color-mix(in srgb,var(--cc) 55%,transparent);border-top:6px solid var(--cc);padding:1rem .8rem .9rem;justify-items:stretch;text-align:left}
+.kpis-st .kpi::after{display:none}
+.kpis-st .kh{min-height:0;margin-bottom:.1rem}
+.kpis-st .kpi .ic{width:1.9rem;height:1.9rem;stroke-width:2}
+.kpis-st .kl{font-family:var(--display);font-size:1.05rem!important;font-weight:800;text-transform:uppercase;letter-spacing:.02em;color:var(--cc)}
+.kpis-st .kv{font-size:3.1rem!important;line-height:1;color:var(--cc)}
+.kpis-st .kbar{display:block;height:.45rem;border-radius:999px;background:color-mix(in srgb,var(--cc) 18%,transparent);overflow:hidden;margin:.35rem 0 .1rem}
+.kpis-st .kbar i{display:block;height:100%;background:var(--cc);border-radius:999px}
+.kpis-st .kbar.vazio{background:transparent}
+.kpis-st .ks{font-size:.82rem;font-weight:600;color:var(--ink)}
+@media (max-width:520px){.kpis-st .kl{font-size:.8rem!important;letter-spacing:0}.kpis-st .kpi .ic{width:1.4rem;height:1.4rem}.kpis-st .kh{gap:.35rem}.kpis-st .kv{font-size:2.5rem!important}}
+.kpis-st .c-par .kl,.kpis-st .c-par .kv{color:color-mix(in srgb,var(--maq) 70%,var(--ink))}
+
 .tb-off th,.tb-off td{padding:.28rem .7rem .28rem 0!important;font-size:.82rem;line-height:1.3;white-space:nowrap}
 .tb-off td:nth-child(2){max-width:11rem;overflow:hidden;text-overflow:ellipsis}
 .tb-off tbody th small{display:inline!important;margin-left:.3rem;font-size:.72rem}
@@ -304,7 +317,7 @@ rect.seg.c-vel{fill:var(--c-vel)}rect.seg.c-celular{fill:var(--c-celular)}rect.s
 </style>
 </head><body>
 <header class="band"><div class="band-in gut">
-  <img class="logo" src="logo-branco.png?v=202611051313" alt="Bioenergética Aroeira" width="67" height="92">
+  <img class="logo" src="logo-branco.png?v=202611051405" alt="Bioenergética Aroeira" width="67" height="92">
   <div><h1>Acompanhamento de frotas</h1><p class="per" id="periodo"></p></div>
   <div class="quem" id="quem" hidden><span><b id="quem-nome"></b><small id="quem-escopo"></small></span><button type="button" id="sair">Sair</button></div>
 </div></header>
@@ -333,7 +346,7 @@ rect.seg.c-vel{fill:var(--c-vel)}rect.seg.c-celular{fill:var(--c-celular)}rect.s
 </div>
 <footer class="foot gut">Bioenergética Aroeira S/A, Tupaciguara/MG. <a href="https://www.bioaroeira.com.br" target="_blank" rel="noopener">www.bioaroeira.com.br</a></footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" defer></script>
-<script src="acesso.js?v=202611051313"></script>
-<script src="app.js?v=202611051313"></script>
-<script src="login.js?v=202611051313"></script>
+<script src="acesso.js?v=202611051405"></script>
+<script src="app.js?v=202611051405"></script>
+<script src="login.js?v=202611051405"></script>
 </body></html>
