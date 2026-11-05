@@ -714,8 +714,8 @@ window.iniciarPainel = function (D) {
     var kpis = '<div class="kpis kpis4">' +
       kpi("c-con", "M12 21a9 9 0 100-18 9 9 0 000 18M3 12h18M12 3c2.5 2.7 3.7 5.7 3.7 9s-1.2 6.3-3.7 9c-2.5-2.7-3.7-5.7-3.7-9S9.5 5.7 12 3", "Frotas monitoradas", num(r.n, 0), "no relatório do dia") +
       kpi("c-vel", "M3 3v18h18M7 15l4-4 3 3 5-6", "Geraram eventos comportamentais hoje", num(r.ev, 0), r.n ? num(r.ev / r.n * 100, 1) + "% da frota" : "&nbsp;") +
-      kpi("c-man", "M22 16.9v3a2 2 0 01-2.2 2 19.8 19.8 0 01-8.6-3.1 19.5 19.5 0 01-6-6A19.8 19.8 0 012.1 4.2 2 2 0 014.1 2h3a2 2 0 012 1.7c.1 1 .4 1.9.7 2.8a2 2 0 01-.5 2.1L8 9.9a16 16 0 006 6l1.3-1.3a2 2 0 012.1-.4c.9.3 1.8.6 2.8.7a2 2 0 011.7 2z", "Chamados em aberto", num(r.tk, 0), "tickets com a Veltec") +
-      kpi("c-off", "M12 3l9 16H3zM12 10v4M12 17h.01", "Câmeras com defeito", num(nPend, 0), plural(nPend, "a confirmar", "a confirmar")) + "</div>";
+      kpi("c-man", "M22 16.9v3a2 2 0 01-2.2 2 19.8 19.8 0 01-8.6-3.1 19.5 19.5 0 01-6-6A19.8 19.8 0 012.1 4.2 2 2 0 014.1 2h3a2 2 0 012 1.7c.1 1 .4 1.9.7 2.8a2 2 0 01-.5 2.1L8 9.9a16 16 0 006 6l1.3-1.3a2 2 0 012.1-.4c.9.3 1.8.6 2.8.7a2 2 0 011.7 2z", "Chamados em aberto", num(r.tk, 0), "tickets com a Platform Science") +
+      kpi("c-off", "M12 3l9 16H3zM12 10v4M12 17h.01", "Câmeras com defeito", num(nPend, 0), nPend ? "a confirmar" : "&nbsp;") + "</div>";
 
     function roscaCard(titulo, sub, cats) {
       var t = sum(cats, function (c) { return c.n; });
