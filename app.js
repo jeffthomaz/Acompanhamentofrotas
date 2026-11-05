@@ -1,7 +1,7 @@
 window.iniciarPainel = function (D) {
   // Abas sem dados para o grupo do usuário não aparecem.
   var ABAS = [
-    { id: "comportamento", nome: "Comportamento", tem: "comportamento" },
+    { id: "comportamento", nome: "Comportamental", tem: "comportamento" },
     { id: "motor-ocioso", nome: "Motor ocioso", tem: "motorOcioso" },
     { id: "permanencia", nome: "Permanência", tem: "permanencia" },
     { id: "conectividade", nome: "Conectividade", tem: "conectividade" },
