@@ -291,7 +291,7 @@ window.iniciarPainel = function (D) {
     secoes += '<section class="sec"><h2>' + (limite < lv.length ? "Os " + limite + " veículos mais ociosos" : "Veículos do mais ocioso ao menos") + "</h2>" +
       '<p class="sub">Horas de motor ligado parado no período.' + (limite < lv.length ? " Escolha um processo para ver todos os veículos dele." : "") + "</p>" + quadro(lv.slice(0, limite)) + "</section>";
 
-    return filtros + '<div class="head"><p class="lead">' + lead + "</p>" + dias(porSem, "%", meta, "Motor ocioso por semana (linha tracejada: meta de " + meta + "%)", m.semanas) + "</div>" + secoes;
+    return filtros + '<div class="head"><p class="lead">' + lead + "</p>" + dias(porSem, "%", meta, "Motor ocioso por semana (linha tracejada: meta de " + meta + "%)", m.semanas) + "</div>" + secoes + (m.diasIncluidos ? secaoEnvio("motorOcioso", m.periodo.replace(" · arquivo carregado", "")) : "");
   }
 
   // ---------- Permanência: mapa de calor (dados reais da tabela Ocorrências do Power BI) ----------
@@ -470,13 +470,14 @@ window.iniciarPainel = function (D) {
   var LINK_ENVIO = "";
   var ENVIO = {
     conectividade: { arq: "Localização da Frota", sis: "vFleets", aba: "Conectividade" },
-    cameras: { arq: "Saúde do Veículo - Análise", sis: "Platform Science", aba: "Câmeras" }
+    cameras: { arq: "Saúde do Veículo - Análise", sis: "Platform Science", aba: "Câmeras" },
+    motorOcioso: { arq: "Boletim do Veículo", aba: "Motor ocioso", obs: "um dia por arquivo" }
   };
   var previa = {}; // abas com arquivo carregado neste navegador: { nome, original }
   function secaoEnvio(qual, dados) {
     var e = ENVIO[qual], pv = previa[qual];
     return '<section class="envio"><div><h3>Atualizar a aba ' + e.aba + "</h3>" +
-      '<p>Exporte o arquivo <b>' + esc(e.arq) + "</b> no " + esc(e.sis) + " e carregue aqui, sem mudar o nome (a data da exportação vai no nome). A aba atualiza na hora, para você. " +
+      '<p>Exporte o arquivo <b>' + esc(e.arq) + "</b>" + (e.sis ? " no " + esc(e.sis) : "") + (e.obs ? " (" + esc(e.obs) + ")" : "") + " e carregue aqui, sem mudar o nome (a data vai no nome). A aba atualiza na hora, para você. " +
       "Os dados publicados para todos são atualizados automaticamente a cada hora, em dias úteis, das 7h às 18h.</p>" +
       (pv ? '<p class="envio-pv" role="status">Mostrando o arquivo <b>' + esc(pv.nome) + "</b> só neste navegador. " + esc(pv.msg) + ' <button type="button" class="limpar" data-desfazer="' + qual + '">Voltar aos dados publicados</button></p>' : "") +
       '<p class="envio-at">Dados ' + (pv ? "do arquivo" : "publicados") + ": <b>" + esc(dados) + "</b></p></div>" +
@@ -555,7 +556,7 @@ window.iniciarPainel = function (D) {
   }
   function conDoArquivo(nome, T) {
     if (T.cab.indexOf("VEÍCULO") < 0 || T.cab.indexOf("ÚLTIMA CONEXÃO") < 0) throw new Error("Esse não parece o arquivo Localização da Frota (faltam as colunas VEÍCULO e ÚLTIMA CONEXÃO).");
-    var K = JSON.parse(JSON.stringify((previa.conectividade && previa.conectividade.original) || D.conectividade));
+    var K = JSON.parse(JSON.stringify(D.conectividade));
     function dataBR(t) { var m = /(\d{2})\/(\d{2})\/(\d{4}) (\d{2}):(\d{2})/.exec(t || ""); return m ? { d: m[3] + "-" + m[2] + "-" + m[1], h: m[4] + ":" + m[5] } : null; }
     var mm = /(\d{4}-\d{2}-\d{2})T\d{2}_\d{2}/.exec(nome), dia = mm ? mm[1] : "";
     if (!dia) T.rows.forEach(function (l) { var u = dataBR(l["ÚLTIMA CONEXÃO"]); if (u && u.d > dia) dia = u.d; });
@@ -586,13 +587,52 @@ window.iniciarPainel = function (D) {
     K.periodo = di.slice(8, 10) + "/" + di.slice(5, 7) + "/" + di.slice(0, 4) + " a " + df.slice(8, 10) + "/" + df.slice(5, 7) + "/" + df.slice(0, 4) + " · arquivo carregado";
     return { bloco: K, msg: n + " " + plural(n, "veículo atualizado", "veículos atualizados") + " em " + dia.slice(8, 10) + "/" + dia.slice(5, 7) + (novos ? "; " + novos + " fora do cadastro ou de outros processos" : "") + "." };
   }
+  function segs(t) { var m = /^(\d+):(\d{2}):(\d{2})/.exec(t || ""); return m ? m[1] * 3600 + m[2] * 60 + +m[3] : 0; }
+  function ocioDoArquivo(nome, T) {
+    if (T.cab.indexOf("PARADO LIGADO") < 0 || T.cab.indexOf("TEMPO IGNIÇÃO LIGADA") < 0) throw new Error("Esse não parece o arquivo Boletim do Veículo (faltam as colunas TEMPO IGNIÇÃO LIGADA e PARADO LIGADO).");
+    var M = JSON.parse(JSON.stringify(D.motorOcioso)) // soma aos arquivos já carregados nesta visita;
+    var mm = /(\d{4}-\d{2}-\d{2})_(\d{4}-\d{2}-\d{2})/.exec(nome), dia = "";
+    if (mm && mm[1] !== mm[2]) throw new Error("O arquivo precisa ser de um dia só.");
+    if (mm) dia = mm[1]; else { var dd = /(\d{2})\/(\d{2})\/(\d{4})/.exec((T.rows[0] || {})["DIA"] || ""); if (dd) dia = dd[3] + "-" + dd[2] + "-" + dd[1]; }
+    if (!dia) throw new Error("Não consegui achar o dia do arquivo.");
+    if (M.diasIncluidos.indexOf(dia) >= 0) throw new Error("O dia " + dia.slice(8, 10) + "/" + dia.slice(5, 7) + " já está no painel.");
+    function utc(s) { return Date.UTC(+s.slice(0, 4), s.slice(5, 7) - 1, +s.slice(8, 10)); }
+    if (utc(dia) < utc(M.inicioSemana)) throw new Error("Esse dia é anterior ao período do painel.");
+    var k = Math.floor((utc(dia) - utc(M.inicioSemana)) / (7 * 86400000));
+    while (M.semanas.length <= k) {
+      var s0 = new Date(utc(M.inicioSemana) + M.semanas.length * 7 * 86400000);
+      M.semanas.push(pad(s0.getUTCDate()) + "/" + pad(s0.getUTCMonth() + 1));
+      M.veiculos.forEach(function (v) { v.ligado.push(0); v.ocioso.push(0); });
+    }
+    var cad = (D.conectividade || {}).frotas || {}, porId = {}, restrito = D.escopo && D.escopo !== "todos", n = 0;
+    M.veiculos.forEach(function (v) { porId[v.id] = v; });
+    T.rows.forEach(function (l) {
+      var f = l["PREFIXO"]; if (!f || f === "-" || EXCLUIR[f.toUpperCase()]) return;
+      var i = segs(l["TEMPO IGNIÇÃO LIGADA"]), p = segs(l["PARADO LIGADO"]); if (i <= 0 && p <= 0) return;
+      var v = porId[f];
+      if (!v) { // veículo leve que ainda não estava na aba (só para quem vê todos os processos)
+        var c = cad[f]; if (restrito || !c || (c.grupo || "").toUpperCase() !== "VEÍCULOS LEVES") return;
+        v = porId[f] = { id: f, placa: l["PLACA"] || c.placa || "", processo: c.processo || "Sem processo", responsavel: c.responsavel || "", dias: 0,
+          ligado: M.semanas.map(function () { return 0; }), ocioso: M.semanas.map(function () { return 0; }) };
+        M.veiculos.push(v);
+      }
+      v.ligado[k] = Math.round((v.ligado[k] + i / 3600) * 100) / 100; v.ocioso[k] = Math.round((v.ocioso[k] + p / 3600) * 100) / 100;
+      if (i > 0) v.dias++;
+      n++;
+    });
+    if (!n) throw new Error("Nenhum veículo leve" + (restrito ? " dos seus processos" : "") + " nesse arquivo.");
+    M.diasIncluidos.push(dia); M.diasIncluidos.sort();
+    var a = M.diasIncluidos[0], b = M.diasIncluidos[M.diasIncluidos.length - 1];
+    M.periodo = a.slice(8, 10) + "/" + a.slice(5, 7) + "/" + a.slice(0, 4) + " a " + b.slice(8, 10) + "/" + b.slice(5, 7) + "/" + b.slice(0, 4) + " · arquivo carregado";
+    return { bloco: M, msg: n + " " + plural(n, "veículo leve", "veículos leves") + " em " + dia.slice(8, 10) + "/" + dia.slice(5, 7) + " somados ao período." };
+  }
   function carregarArquivo(qual, arq) {
     var r = new FileReader();
     r.onload = function () {
       var antes = previa[qual] ? previa[qual].original : D[qual];
       try {
-        var T = lerCSV(decodifica(r.result)), x = qual === "cameras" ? camDoArquivo(arq.name, T) : conDoArquivo(arq.name, T);
-        previa[qual] = { nome: arq.name, original: antes, msg: x.msg };
+        var T = lerCSV(decodifica(r.result)), x = qual === "cameras" ? camDoArquivo(arq.name, T) : qual === "motorOcioso" ? ocioDoArquivo(arq.name, T) : conDoArquivo(arq.name, T);
+        previa[qual] = { nome: (previa[qual] && qual !== "cameras" ? previa[qual].nome + ", " : "") + arq.name, original: antes, msg: x.msg };
         D[qual] = x.bloco; if (qual === "conectividade") fco.dia = -1;
       } catch (err) { alert(err.message || "Não consegui ler esse arquivo."); return; }
       render();

@@ -31,8 +31,11 @@ lista; a constante `EXCLUIR` do `app.js` (leitura de arquivos no navegador) deve
 
 ## Fontes dos dados
 
-- Motor ocioso: dados reais do Power BI "Ociosidade Frota Leve" (veículos leves), extraídos com a
-  consulta DAX descrita em `ferramentas/ociosidade_do_powerbi.py`. Filtrada por processo para cada grupo.
+- Motor ocioso: arquivo diário "Boletim do Veículo" (um dia por arquivo), com `ferramentas/ociosidade.py`
+  (`boletim` guarda TEMPO IGNIÇÃO LIGADA e PARADO LIGADO por veículo e dia em `ociosidade_base.json`, na
+  pasta local; `montar` aplica a regra do relatório: PARADO LIGADO / TEMPO IGNIÇÃO LIGADA, só grupo
+  VEÍCULOS LEVES, processo e responsável pelo cadastro de frotas). Mesmos números do Power BI
+  "Ociosidade Frota Leve" (o `ociosidade_do_powerbi.py` antigo continua no repositório).
 - Permanência: mapa de calor com dados reais da tabela Ocorrências (eventos PERMANENCIA_CERCA e
   PERMANENCIA_PONTO) do mesmo Power BI, extraídos com `ferramentas/permanencia_do_powerbi.py`.
   O local é a coluna CERCA ELETRÔNICA (sem cerca, usa o ponto de referência). Não leva motorista
