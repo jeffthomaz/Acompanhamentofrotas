@@ -69,6 +69,6 @@ consultar a planilha). Para todos verem, o botão "Enviar para todos" leva à pa
 constante `LINK_ENVIO` em `app.js`). Lá vão, sem mudar o nome, o "Localização da Frota" (vFleets)
 e o "Saúde do Veículo - Análise" (Platform Science).
 
-Uma tarefa agendada confere a pasta a cada hora, em dias úteis, das 7h às 18h. Para cada arquivo novo
+Uma tarefa agendada confere a pasta de exportação (EXPORTAR PASTAS, no OneDrive do COA) às 11h e às 14h, em dias úteis. Para cada arquivo novo
 (controle em `painel-dados/entrada_processados.json`) roda `conectividade.py vfleets` + `montar` ou
 `cameras.py`, depois `gerar_acesso.py`, e publica o `acesso.js`. Depende do computador ligado.
