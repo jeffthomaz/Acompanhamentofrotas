@@ -648,77 +648,117 @@ window.iniciarPainel = function (D) {
     return sv + '</svg><ul class="legend"><li><i class="c-con"></i>Conectados</li><li><i class="c-off"></i>Offline</li></ul>';
   }
 
-  // Câmeras: visualizador do relatório do dia (sem histórico). Observação por linha,
-  // salva só neste navegador e só para o relatório deste dia.
+  // Câmeras: visualizador do relatório do dia (sem histórico). A observação de cada veículo
+  // fica salva só neste navegador e só para o relatório deste dia.
   var fcm = { tipo: "" };
   var OBS = [["", "Pendente"], ["ok", "Câmera ok"], ["int", "Intermitência temporária"], ["rel", "Erro no relatório"], ["def", "Defeito confirmado"]];
   var OBS_RESOLVE = { ok: 1, int: 1, rel: 1 };
   var CHAVE_OBS = "painel-frotas-cameras-obs";
-  var ICO_CAM = { motorista: "M12 12a4 4 0 100-8 4 4 0 000 8M4 21a8 8 0 0116 0", pista: "M5 21L10 3M19 21L14 3M12 6v2M12 11v2M12 16v3", auditoria: "M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12zM12 15a3 3 0 100-6 3 3 0 000 6" };
+  // Um quadro por câmera; cada coluna marca o defeito daquela câmera.
+  var QUADROS = [
+    { nome: "Câmera do motorista", tipo: "motorista", cols: ["Intermitente", "Mal posicionada"], rot: ["Intermit.", "Mal posic."] },
+    { nome: "Câmera do motorista não funcionando", tipo: "motorista", cols: ["Não funcionando"], rot: ["Câmera"] },
+    { nome: "Câmera da pista intermitente", tipo: "pista", cols: ["Intermitente"], rot: ["Câmera"] },
+    { nome: "Câmera da pista não funcionando", tipo: "pista", cols: ["Não funcionando"], rot: ["Câmera"] },
+    { nome: "Câmeras de auditoria", tipo: "auditoria", cols: ["Intermitente", "Não funcionando"], rot: ["Intermit.", "Não func."], qtd: true }
+  ];
+  var NOME_OC = { motorista: "Câmera motorista", pista: "Câmera pista", auditoria: "Auditoria", gps: "GPS" };
+  var X_ICO = '<svg class="cm-x" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M8.5 8.5l7 7M15.5 8.5l-7 7"/></svg>';
+  var V_ICO = '<svg class="cm-v-ok" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M7.5 12.5l3 3 6-6.5"/></svg>';
   function obsLer() {
     try { var o = JSON.parse(localStorage.getItem(CHAVE_OBS) || "{}"); return o && o.dia === D.cameras.dia ? o.obs || {} : {}; } catch (e) { return {}; }
   }
+  var obsMem = {}; // vale nesta visita, mesmo se o navegador não deixar salvar
   function obsGravar(k, v) {
+    obsMem[k] = v;
     var o = obsLer(); if (v) o[k] = v; else delete o[k];
-    try { localStorage.setItem(CHAVE_OBS, JSON.stringify({ dia: D.cameras.dia, obs: o })); return true; } catch (e) { return false; }
+    try { localStorage.setItem(CHAVE_OBS, JSON.stringify({ dia: D.cameras.dia, obs: o })); } catch (e) { /* fica só nesta visita */ }
   }
-  var obsMem = null; // usado se o navegador não deixar salvar
-  function obsTodas() { var o = obsLer(); if (obsMem) for (var k in obsMem) o[k] = obsMem[k]; return o; }
-  function camLinhas() {
-    var M = D.cameras, nomes = {};
-    M.tipos.forEach(function (t) { nomes[t.id] = t.nome; });
-    var linhas = [];
-    M.lista.forEach(function (v) {
-      M.tipos.forEach(function (t) {
-        var ds = v.d.filter(function (d) { return d[0] === t.id; }); if (!ds.length) return;
-        linhas.push({ k: v.f + "|" + t.id, v: v, tipo: t.id, nomeTipo: nomes[t.id], ds: ds });
-      });
-    });
-    return linhas;
-  }
+  function obsTodas() { var o = obsLer(); for (var k in obsMem) o[k] = obsMem[k]; return o; }
   function hbr(s) { return s ? s.slice(8, 10) + "/" + s.slice(5, 7) + " " + s.slice(11) : "—"; }
-  function abaCameras() {
-    var M = D.cameras, obs = obsTodas();
-    var processos = unicos(Object.keys(M.total));
+  // "Câmera motorista não funcionando / Câmera pista não funcionando / Auditoria: intermitente (1), não funcionando (1)"
+  function ocorrencias(v) {
+    var g = {}, ordem = [];
+    v.d.forEach(function (d) { if (!g[d[0]]) { g[d[0]] = []; ordem.push(d[0]); } g[d[0]].push(d[1].toLowerCase() + (d[0] === "auditoria" ? " (" + d[2] + ")" : "")); });
+    return ordem.map(function (t) { return NOME_OC[t] + (g[t].length > 1 ? ": " : " ") + g[t].join(", "); });
+  }
+  function camFiltrados() {
+    var M = D.cameras, processos = unicos(Object.keys(M.proc));
     if (fil_.processo && processos.indexOf(fil_.processo) < 0) fil_.processo = "";
-    var todas = camLinhas().filter(function (l) { return !fil_.processo || l.v.processo === fil_.processo; });
-    var monit = fil_.processo ? (M.total[fil_.processo] || 0) : sum(processos, function (p) { return M.total[p]; });
-    function pendente(l) { return !OBS_RESOLVE[obs[l.k]]; }
+    var ps = processos.filter(function (p) { return !fil_.processo || p === fil_.processo; });
+    var r = { n: 0, tk: 0, ev: 0, st: {}, gps: {} };
+    ps.forEach(function (p) {
+      var x = M.proc[p]; r.n += x.n; r.tk += x.tk; r.ev += x.ev;
+      ["st", "gps"].forEach(function (k) { for (var s in x[k]) r[k][s] = (r[k][s] || 0) + x[k][s]; });
+    });
+    return { processos: processos, r: r, lista: M.lista.filter(function (v) { return !fil_.processo || v.processo === fil_.processo; }) };
+  }
+  function abaCameras() {
+    var M = D.cameras, obs = obsTodas(), F = camFiltrados(), r = F.r, lista = F.lista;
+    function pendente(v) { return !OBS_RESOLVE[obs[v.f]]; }
+    var nPend = lista.filter(pendente).length;
 
-    var filtros = '<div class="filtros"><label>Processo<select data-fil="processo" id="cm-processo">' + opcoes(processos, fil_.processo, D.escopo && D.escopo !== "todos" ? "Todos os meus processos" : "Todos os processos") + "</select></label>" +
+    var filtros = '<div class="filtros"><label>Processo<select data-fil="processo" id="cm-processo">' + opcoes(F.processos, fil_.processo, D.escopo && D.escopo !== "todos" ? "Todos os meus processos" : "Todos os processos") + "</select></label>" +
       (fil_.processo ? '<button type="button" class="limpar" data-limpar="1">Limpar filtros</button>' : "") +
-      (todas.length ? '<button type="button" class="limpar" data-cbaixar="1">Baixar lista (Excel)</button>' : "") +
-      '<p class="ctx">' + num(monit, 0) + " " + plural(monit, "veículo monitorado", "veículos monitorados") + " no relatório de " + M.dia.slice(8, 10) + "/" + M.dia.slice(5, 7) + " às " + esc(M.hora) + "</p></div>";
+      (lista.length ? '<button type="button" class="limpar" data-cbaixar="1">Baixar lista (Excel)</button>' : "") +
+      '<p class="ctx">Relatório de ' + M.dia.slice(8, 10) + "/" + M.dia.slice(5, 7) + " às " + esc(M.hora) + "</p></div>";
 
-    // Um KPI por câmera, com os veículos que estão com defeito nela. A observação ao lado
-    // de cada veículo tira ele das pendências quando a câmera está ok (erro do sistema).
-    var k = 0;
-    var cards = M.tipos.map(function (t) {
-      var ls = todas.filter(function (l) { return l.tipo === t.id; }), pend = ls.filter(pendente), rev = ls.length - pend.length;
-      var det = t.defeitos.map(function (nome) {
-        var n = pend.filter(function (l) { return l.ds.some(function (d) { return d[1] === nome; }); }).length;
-        return "<span>" + esc(nome) + " <b>" + num(n, 0) + "</b></span>";
-      }).join("");
-      var itens = ls.length ? '<ul class="cm-lista">' + ls.map(function (l) {
-        var v = l.v, o = obs[l.k] || "", res = !!OBS_RESOLVE[o], i = k++;
-        var defs = l.ds.map(function (d) { return esc(d[1]) + (l.tipo === "auditoria" ? " (" + d[2] + ")" : ""); }).join(", ");
+    var kpi = function (cls, icone, rot, v, sub) {
+      return '<article class="kpi ' + cls + '"><div class="kh">' + ico(icone) + '<span class="kl">' + rot + '</span></div><strong class="kv">' + v + '</strong><span class="ks">' + sub + "</span></article>";
+    };
+    var kpis = '<div class="kpis kpis4">' +
+      kpi("c-con", "M12 21a9 9 0 100-18 9 9 0 000 18M3 12h18M12 3c2.5 2.7 3.7 5.7 3.7 9s-1.2 6.3-3.7 9c-2.5-2.7-3.7-5.7-3.7-9S9.5 5.7 12 3", "Frotas monitoradas", num(r.n, 0), "no relatório do dia") +
+      kpi("c-vel", "M3 3v18h18M7 15l4-4 3 3 5-6", "Geraram eventos comportamentais hoje", num(r.ev, 0), r.n ? num(r.ev / r.n * 100, 1) + "% da frota" : "&nbsp;") +
+      kpi("c-man", "M22 16.9v3a2 2 0 01-2.2 2 19.8 19.8 0 01-8.6-3.1 19.5 19.5 0 01-6-6A19.8 19.8 0 012.1 4.2 2 2 0 014.1 2h3a2 2 0 012 1.7c.1 1 .4 1.9.7 2.8a2 2 0 01-.5 2.1L8 9.9a16 16 0 006 6l1.3-1.3a2 2 0 012.1-.4c.9.3 1.8.6 2.8.7a2 2 0 011.7 2z", "Chamados em aberto", num(r.tk, 0), "tickets com a Veltec") +
+      kpi("c-off", "M12 3l9 16H3zM12 10v4M12 17h.01", "Pendências", num(nPend, 0), plural(nPend, "veículo a tratar", "veículos a tratar")) + "</div>";
+
+    // Pendências: um veículo por linha, ocorrência e status (observação, como coluna de planilha).
+    var pend = '<section class="card tab-card"><h3>Pendências <span class="cnt off">' + nPend + "</span></h3>" +
+      '<p class="cs">Se a câmera estiver ok e for só erro do sistema, troque o status: o veículo sai das pendências. Fica salvo neste navegador e vale para o relatório deste dia.</p>' +
+      (lista.length ? '<div class="scroll rolagem alta"><table class="tb tb-k tb-cm"><thead><tr><th scope="col">Frota</th><th scope="col">Ocorrência</th><th scope="col">Status</th></tr></thead><tbody>' + lista.map(function (v, i) {
+        var o = obs[v.f] || "", res = !!OBS_RESOLVE[o];
         var tk = v.ticket ? '<a href="' + esc(v.ticket) + '" target="_blank" rel="noopener">' + esc(v.ticket.split("/").pop()) + "</a>" + (v.tst ? " · " + esc(v.tst) : "") : "Sem ticket";
-        return '<li class="' + (res ? "cm-ok" : "") + '"><div class="cm-v"><b>' + esc(v.f) + "</b><span>" + esc([v.placa, v.processo, v.sit && v.sit !== "Em operação" ? v.sit : ""].filter(Boolean).join(" · ")) + '</span></div><span class="b ' + (res ? "bom" : "critico") + '">' + defs + "</span>" +
-          '<small class="cm-tk">' + tk + "<br>Foto " + hbr(v.foto) + " · vídeo " + hbr(v.video) + "</small>" +
-          '<select class="obs obs-' + (o || "pen") + '" data-obs="' + esc(l.k) + '" id="cm-obs-' + i + '" aria-label="Observação de ' + esc(v.f) + ", " + esc(t.nome) + '">' + OBS.map(function (x) { return '<option value="' + x[0] + '"' + (x[0] === o ? " selected" : "") + ">" + x[1] + "</option>"; }).join("") + "</select></li>";
-      }).join("") + "</ul>" : '<p class="cm-vazio">Nenhum veículo com defeito nesta câmera.</p>';
-      return '<section class="card cm-card c-cm-' + t.id + '"><div class="kh">' + ico(ICO_CAM[t.id] || ICO_CAM.auditoria) + '<span class="kl">' + esc(t.nome) + '</span></div><strong class="kv">' + num(pend.length, 0) + '</strong><span class="ks">' + plural(pend.length, "veículo com defeito", "veículos com defeito") + (rev ? " · " + rev + " " + plural(rev, "revisado", "revisados") : "") + '</span><span class="kp">' + det + "</span>" + itens + "</section>";
+        return '<tr class="' + (res ? "cm-ok" : "") + '"><th scope="row">' + esc(v.f) + "<small>" + esc(v.placa) + "<br>" + esc(v.processo) + "</small></th>" +
+          "<td>" + ocorrencias(v).map(esc).join(" / ") + "<small>" + tk + "</small></td>" +
+          '<td><select class="obs obs-' + (o || "pen") + '" data-obs="' + esc(v.f) + '" id="cm-obs-' + i + '" aria-label="Status de ' + esc(v.f) + '">' + OBS.map(function (x) { return '<option value="' + x[0] + '"' + (x[0] === o ? " selected" : "") + ">" + x[1] + "</option>"; }).join("") + "</select></td></tr>";
+      }).join("") + "</tbody></table></div>" : '<p class="cm-vazio">Nenhuma pendência no relatório.</p>') + "</section>";
+
+    function roscaCard(titulo, sub, cats) {
+      var t = sum(cats, function (c) { return c.n; });
+      return '<section class="card"><h3>' + titulo + '</h3><p class="cs">' + sub + '</p><div class="rosca-w">' + rosca(cats.filter(function (c) { return c.n; }), t) + '<ul class="rleg">' + cats.map(function (c) {
+        return '<li><i class="c-' + c.id + '"></i><span>' + c.nome + "</span><b>" + num(c.n, 0) + "</b></li>";
+      }).join("") + "</ul></div></section>";
+    }
+    var st = r.st;
+    var saude = roscaCard("Saúde da frota", "Status geral do equipamento no relatório.", [
+      { id: "lib", nome: "Saudável", n: st["Saudável"] || 0 }, { id: "ava", nome: "Avalie", n: st["Avalie"] || 0 },
+      { id: "ate", nome: "Atenção", n: st["Atenção"] || 0 }, { id: "na", nome: "N/A", n: st["N/A"] || 0 }]);
+    var gps = roscaCard("Status GPS", "Sinal de GPS de cada equipamento.", [
+      { id: "lib", nome: "Saudável", n: r.gps["Saudável"] || 0 }, { id: "ate", nome: "Não saudável", n: r.gps["Não Saudável"] || 0 }]);
+
+    // Um quadro por câmera, com os veículos com defeito nela.
+    var quadros = QUADROS.map(function (q) {
+      var vs = lista.filter(function (v) { return v.d.some(function (d) { return d[0] === q.tipo && q.cols.indexOf(d[1]) >= 0; }); });
+      var np = vs.filter(pendente).length;
+      return '<section class="card cm-q"><h3>' + esc(q.nome) + ' <span class="cnt ' + (np ? "off" : "zero") + '">' + np + "</span></h3>" +
+        (vs.length ? '<table class="tb tb-q"><thead><tr><th scope="col">Frota</th>' + (q.rot || q.cols).map(function (c, j) { return '<th scope="col" class="c" title="' + esc(q.cols[j]) + '">' + esc(c) + "</th>"; }).join("") + "</tr></thead><tbody>" + vs.map(function (v) {
+          var res = !pendente(v);
+          return '<tr class="' + (res ? "cm-ok" : "") + '"><th scope="row">' + esc(v.f) + "<small>" + esc(v.processo) + "</small></th>" + q.cols.map(function (c) {
+            var d = v.d.filter(function (x) { return x[0] === q.tipo && x[1] === c; })[0];
+            if (!d) return '<td class="c"></td>';
+            return '<td class="c">' + (res ? V_ICO : X_ICO) + (q.qtd && d[2] > 1 ? "<b>" + d[2] + "</b>" : "") + '<span class="sr">' + (res ? "revisado" : "com defeito") + "</span></td>";
+          }).join("") + "</tr>";
+        }).join("") + "</tbody></table>" : '<p class="cm-vazio">Nenhum veículo.</p>') + "</section>";
     }).join("");
-    return filtros + '<p class="cs cm-nota">Se a câmera estiver ok e for só erro do sistema, escolha a observação ao lado do veículo: ele sai da contagem. As observações ficam salvas neste navegador e valem para o relatório deste dia.</p><div class="cm-grade">' + cards + "</div>";
+
+    return filtros + kpis + '<div class="g3 g-cm">' + pend + saude + gps + "</div>" + '<div class="cm-grade">' + quadros + "</div>";
   }
   function camBaixar() {
     var M = D.cameras, obs = obsTodas(), nomes = {};
     OBS.forEach(function (x) { nomes[x[0]] = x[1]; });
-    var ls = camLinhas().filter(function (l) { return (!fil_.processo || l.v.processo === fil_.processo) && (!fcm.tipo || l.tipo === fcm.tipo); });
     function c(x) { x = String(x == null ? "" : x); return /[;"\n]/.test(x) ? '"' + x.replace(/"/g, '""') + '"' : x; }
-    var linhas = [["Frota", "Placa", "Processo", "Situação", "Câmera", "Defeito", "Ticket", "Status do ticket", "Última foto", "Último vídeo", "Observação"]].concat(ls.map(function (l) {
-      var v = l.v;
-      return [v.f, v.placa, v.processo, v.sit, l.nomeTipo, l.ds.map(function (d) { return d[1] + (l.tipo === "auditoria" ? " (" + d[2] + ")" : ""); }).join(", "), v.ticket, v.tst, hbr(v.foto), hbr(v.video), nomes[obs[l.k] || ""]];
+    var linhas = [["Frota", "Placa", "Processo", "Situação", "Ocorrência", "Ticket", "Status do ticket", "Última foto", "Último vídeo", "Status"]].concat(camFiltrados().lista.map(function (v) {
+      return [v.f, v.placa, v.processo, v.sit, ocorrencias(v).join(" / "), v.ticket, v.tst, hbr(v.foto), hbr(v.video), nomes[obs[v.f] || ""]];
     }));
     var blob = new Blob(["﻿" + linhas.map(function (r) { return r.map(c).join(";"); }).join("\r\n")], { type: "text/csv;charset=utf-8" });
     var a = document.createElement("a");
@@ -817,7 +857,7 @@ window.iniciarPainel = function (D) {
   painel.addEventListener("change", function (e) {
     var o = e.target.closest("select[data-obs]");
     if (o) {
-      if (!obsGravar(o.dataset.obs, o.value)) { obsMem = obsMem || {}; obsMem[o.dataset.obs] = o.value; }
+      obsGravar(o.dataset.obs, o.value);
       var id = o.id; render(); var n = document.getElementById(id); if (n) n.focus(); return;
     }
   });

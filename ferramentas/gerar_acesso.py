@@ -88,9 +88,9 @@ def recorte(D, procs):
             d.pop("permanencia")
     if "cameras" in d:
         M = d["cameras"]
-        M["total"] = {p: n for p, n in M["total"].items() if chave_proc(p) in procs}
+        M["proc"] = {p: r for p, r in M["proc"].items() if chave_proc(p) in procs}
         M["lista"] = [x for x in M["lista"] if chave_proc(x["processo"]) in procs]
-        if not M["total"]:
+        if not M["proc"]:
             d.pop("cameras")
     return d
 
@@ -112,10 +112,15 @@ def unificar_processos(D):
         M = D["cameras"]
         for v in M["lista"]: troca(v)
         tot = {}
-        for p, n in M["total"].items():
+        for p, r in M["proc"].items():
             p2 = mapa.get(chave_proc(p), p)
-            tot[p2] = tot.get(p2, 0) + n
-        M["total"] = tot
+            t = tot.setdefault(p2, {"n": 0, "st": {}, "gps": {}, "tk": 0, "ev": 0})
+            for k in ("n", "tk", "ev"):
+                t[k] += r[k]
+            for k in ("st", "gps"):
+                for s2, n in r[k].items():
+                    t[k][s2] = t[k].get(s2, 0) + n
+        M["proc"] = tot
 
 
 def main(cad, fonte, saida):
@@ -125,7 +130,7 @@ def main(cad, fonte, saida):
     conhecidos.update({chave_proc(v["processo"]): v["processo"] for v in D.get("motorOcioso", {}).get("veiculos", [])})
     conhecidos.update({chave_proc(v["processo"]): v["processo"] for v in D.get("permanencia", {}).get("veiculos", {}).values()})
     conhecidos.update({chave_proc(v["processo"]): v["processo"] for v in D.get("conectividade", {}).get("frotas", {}).values()})
-    conhecidos.update({chave_proc(p): p for p in D.get("cameras", {}).get("total", {})})
+    conhecidos.update({chave_proc(p): p for p in D.get("cameras", {}).get("proc", {})})
     grupos, usuarios, avisos = {}, {}, []
 
     for n, u, p, s in ler_cadastros(cad):

@@ -11,7 +11,10 @@ Tipos de câmera (um quadro para cada um no painel):
 - Pista:     INTERMITENTE, NÃO FUNCIONANDO (Sim/Não)
 - Auditoria: QTD INTERMITENTES, QTD NÃO FUNCIONANDO (quantidade de câmeras)
 
-Entra na lista todo veículo com "Sim" (ou quantidade acima de zero) em alguma dessas colunas.
+Entra na lista todo veículo com "Sim" (ou quantidade acima de zero) em alguma dessas colunas,
+ou com GPS "Não saudável". Por processo também vão os totais: frotas monitoradas, saúde da frota
+(coluna STATUS), status do GPS, chamados em aberto (tickets distintos) e veículos com último
+evento comportamental no dia do relatório.
 O processo vem do cadastro de frotas já presente no dados-fonte.json (pelo prefixo);
 sem cadastro, usa a UO do relatório ("AROEIRA - TRANSPORTE" -> TRANSPORTE).
 Horários do relatório estão em UTC e são convertidos para o horário de Brasília.
@@ -107,7 +110,7 @@ def main(arq, fonte):
         sys.exit("Colunas não encontradas no relatório: %s" % ", ".join(faltam))
     proc = cadastro_processos(D)
     quando = momento_relatorio(arq, linhas)
-    total, lista, sem_cadastro = {}, [], []
+    resumo, lista, sem_cadastro = {}, [], []
 
     for l in linhas:
         f = l.get("PREFIXO") or l.get("PLACA")
@@ -118,16 +121,27 @@ def main(arq, fonte):
             uo = l.get("UO", "")
             p = uo.split(" - ", 1)[1] if " - " in uo else "SEM PROCESSO"
             sem_cadastro.append(f)
-        total[p] = total.get(p, 0) + 1
+        r = resumo.setdefault(p, {"n": 0, "st": {}, "gps": {}, "tk": [], "ev": 0})
+        r["n"] += 1
+        st = l.get("STATUS", "") or "N/A"
+        r["st"][st] = r["st"].get(st, 0) + 1
+        gps = l.get("GPS", "") or "N/A"
+        r["gps"][gps] = r["gps"].get(gps, 0) + 1
+        t = l.get("TICKET", "")
+        if t.startswith("http") and t not in r["tk"]:
+            r["tk"].append(t)
+        if hora_local(l.get("ÚLTIMO EVENTO COMPORTAMENTAL"))[:10] == quando[:10]:
+            r["ev"] += 1
         d = []
         for tid, _, cols in TIPOS:
             for col, nome in cols:
                 n = defeito(l.get(col))
                 if n:
                     d.append([tid, nome, n])
+        if chave(gps) == "NÃO SAUDÁVEL":
+            d.append(["gps", "Não saudável", 1])
         if not d:
             continue
-        t = l.get("TICKET", "")
         lista.append({
             "f": f, "placa": l.get("PLACA", ""), "processo": p,
             "sit": l.get("SITUAÇÃO", "").replace("-", ""), "st": l.get("STATUS", "").replace("N/A", ""),
@@ -145,11 +159,11 @@ def main(arq, fonte):
         "periodo": "Relatório de câmeras de " + dbr + " às " + quando[11:],
         "dia": quando[:10], "hora": quando[11:],
         "tipos": [{"id": tid, "nome": nome, "defeitos": [n for _, n in cols]} for tid, nome, cols in TIPOS],
-        "total": total,
+        "proc": {p: dict(r, tk=len(r["tk"])) for p, r in resumo.items()},
         "lista": lista,
     }
     json.dump(D, open(fonte, "w", encoding="utf-8"), ensure_ascii=False)
-    print("Câmeras de %s: %d veículos no relatório, %d com defeito." % (dbr + " " + quando[11:], sum(total.values()), len(lista)))
+    print("Câmeras de %s: %d veículos no relatório, %d com defeito." % (dbr + " " + quando[11:], sum(r["n"] for r in resumo.values()), len(lista)))
     if sem_cadastro:
         print("Sem cadastro de frota (processo pela UO): %d veículos, ex.: %s" % (len(sem_cadastro), ", ".join(sem_cadastro[:8])))
 
