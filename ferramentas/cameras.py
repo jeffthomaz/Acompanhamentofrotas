@@ -17,10 +17,14 @@ ou com GPS "Não saudável". Por processo também vão os totais: frotas monitor
 evento comportamental no dia do relatório.
 O processo vem do cadastro de frotas já presente no dados-fonte.json (pelo prefixo);
 sem cadastro, usa a UO do relatório ("AROEIRA - TRANSPORTE" -> TRANSPORTE).
+Ficam de fora veículos com "Inativo" no prefixo e o equipamento ZZSEE4G55.
 Horários do relatório estão em UTC e são convertidos para o horário de Brasília.
 """
 import csv, json, os, re, sys, unicodedata
 from datetime import datetime, timedelta
+
+# Equipamentos desconsiderados (mesmo critério da conectividade).
+EXCLUIR = {"ZZSEE4G55"}
 
 TIPOS = [
     ("motorista", "Câmera motorista", [
@@ -114,7 +118,7 @@ def main(arq, fonte):
 
     for l in linhas:
         f = l.get("PREFIXO") or l.get("PLACA")
-        if not f or f == "-":
+        if not f or f == "-" or "INATIVO" in chave(f) or chave(f) in EXCLUIR:
             continue
         p = proc.get(f)
         if not p:
