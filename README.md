@@ -45,9 +45,10 @@ lista; a constante `EXCLUIR` do `app.js` (leitura de arquivos no navegador) deve
   MANUTENÇÃO/PARADO, OFFLINE com 2 dias ou mais sem conexão, processo pela tabela Frotas. O último dia é a
   referência para manutenção/parado; a planilha local `status_frotas.xlsx` informa quem entrou (PARADO/MANUTENÇÃO)
   ou saiu (OPERANDO). A base em texto puro fica só na pasta local do usuário (painel-dados).
-  A cada atualização, `conectividade.py planilha` refaz a `status_frotas.xlsx` já com os equipamentos em
-  manutenção, parados ou offline há 2 dias ou mais (STATUS em branco = sugestão, não vale nada); as linhas
-  que o usuário preencheu ficam guardadas no topo.
+  A cada atualização, `conectividade.py planilha` refaz a `status_frotas.xlsx` com as colunas FROTA, STATUS,
+  DIAS OFFLINE, RESPONSÁVEL e OBSERVAÇÃO: os equipamentos em manutenção, parados ou offline 2+ dias, com o
+  STATUS da última atualização para o usuário conferir (OFFLINE não muda nada; PARADO, MANUTENÇÃO e OPERANDO
+  valem). A data em que um status passou a valer fica guardada na base (`manual_desde`).
 - Comportamento: dados reais dos Power BI "Dados Monitoramento Comportamental Frotas Leves 2026"
   (tabela OCORRÊNCIAS FROTA LEVA PO.GE.03) e "... Frotas Pesadas 2026" (tabela Frota Pesada POLGE03),
   extraídos com `ferramentas/comportamento_do_powerbi.py`. Excesso de velocidade nas faixas da nova
