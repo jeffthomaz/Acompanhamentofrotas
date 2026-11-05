@@ -123,6 +123,30 @@ def unificar_processos(D):
         M["proc"] = tot
 
 
+def processos_informados():
+    caminho = os.path.join(os.path.dirname(os.path.abspath(__file__)), "processos_frotas.json")
+    if not os.path.exists(caminho):
+        return {}
+    return {norm(k): norm(v) for k, v in json.load(open(caminho, encoding="utf-8")).items() if not k.startswith("_")}
+
+
+def aplicar_processos_informados(D):
+    """Processo informado pelo usuário (ferramentas/processos_frotas.json) vale em todas as abas."""
+    pi = processos_informados()
+    if not pi:
+        return
+    for f, v in D.get("comportamento", {}).get("frotas", {}).items():
+        if f in pi: v["processo"] = pi[f]
+    for f, v in D.get("permanencia", {}).get("veiculos", {}).items():
+        if f in pi: v["processo"] = pi[f]
+    for f, v in D.get("conectividade", {}).get("frotas", {}).items():
+        if f in pi: v["processo"] = pi[f]
+    for v in D.get("motorOcioso", {}).get("veiculos", []):
+        if v["id"] in pi: v["processo"] = pi[v["id"]]
+    for x in D.get("cameras", {}).get("lista", []):
+        if x["f"] in pi: x["processo"] = pi[x["f"]]
+
+
 def aplicar_de_para(D):
     """Junta na frota certa os registros que vieram pela placa (ferramentas/frotas_de_para.json)."""
     caminho = os.path.join(os.path.dirname(os.path.abspath(__file__)), "frotas_de_para.json")
@@ -213,6 +237,7 @@ def main(cad, fonte, saida):
     D = json.load(open(fonte, encoding="utf-8"))
     unificar_processos(D)
     aplicar_de_para(D)
+    aplicar_processos_informados(D)
     remover_excluidas(D)
     conhecidos = {chave_proc(v["processo"]): v["processo"] for v in D.get("comportamento", {}).get("frotas", {}).values()}
     conhecidos.update({chave_proc(v["processo"]): v["processo"] for v in D.get("motorOcioso", {}).get("veiculos", [])})

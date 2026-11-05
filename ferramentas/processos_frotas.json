@@ -1,0 +1,9 @@
+{
+  "_comentario": "Processo informado pelo usuário para frotas sem processo (ou com processo errado) no cadastro do Power BI. Vale em todas as abas e tem prioridade sobre o cadastro. Aplicado em gerar_acesso.py, cameras.py e ociosidade.py.",
+  "40771": "TRANSPORTE",
+  "40777": "TRATOS CULTURAIS",
+  "40845": "TRATOS CULTURAIS",
+  "40743": "TRATOS CULTURAIS",
+  "40833": "FACILITIES",
+  "40690": "FACILITIES"
+}

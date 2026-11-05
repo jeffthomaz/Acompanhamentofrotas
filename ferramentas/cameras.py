@@ -93,6 +93,10 @@ def cadastro_processos(D):
         for f, v in frotas.items():
             if v.get("processo"):
                 mapa[norm(f)] = v["processo"]
+    # Processo informado pelo usuário tem prioridade (ferramentas/processos_frotas.json).
+    cam = os.path.join(os.path.dirname(os.path.abspath(__file__)), "processos_frotas.json")
+    if os.path.exists(cam):
+        mapa.update({norm(k): norm(v) for k, v in json.load(open(cam, encoding="utf-8")).items() if not k.startswith("_")})
     return mapa
 
 

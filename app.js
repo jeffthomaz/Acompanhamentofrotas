@@ -488,6 +488,7 @@ window.iniciarPainel = function (D) {
   // ----- Leitura dos arquivos exportados no navegador (mesmas regras de ferramentas/cameras.py e conectividade.py) -----
   var EXCLUIR = { ZZSEE4G55: 1, "961313": 1 }; // igual a ferramentas/frotas_excluidas.json
   var DE_PARA = { USG4J27: "40904", UAG4J26: "40898" }; // igual a ferramentas/frotas_de_para.json
+  var PROC_INFORMADO = { "40771": "TRANSPORTE", "40777": "TRATOS CULTURAIS", "40845": "TRATOS CULTURAIS", "40743": "TRATOS CULTURAIS", "40833": "FACILITIES", "40690": "FACILITIES" }; // igual a ferramentas/processos_frotas.json
   function frotaCerta(f) { return DE_PARA[String(f).toUpperCase()] || f; }
   function nrm(t) { return String(t == null ? "" : t).normalize("NFC").trim(); }
   function decodifica(buf) {
@@ -521,6 +522,7 @@ window.iniciarPainel = function (D) {
       var fr = (D[b[0]] || {})[b[1]] || {}; Object.keys(fr).forEach(function (f) { if (fr[f].processo) m[f] = fr[f].processo; });
     });
     ((previa.cameras && previa.cameras.original) || D.cameras || { lista: [] }).lista.forEach(function (v) { if (!m[v.f]) m[v.f] = v.processo; });
+    Object.keys(PROC_INFORMADO).forEach(function (f) { m[f] = PROC_INFORMADO[f]; });
     return m;
   }
   function camDoArquivo(nome, T) {
@@ -614,7 +616,7 @@ window.iniciarPainel = function (D) {
       var v = porId[f];
       if (!v) { // veículo leve que ainda não estava na aba (só para quem vê todos os processos)
         var c = cad[f]; if (restrito || !c || (c.grupo || "").toUpperCase() !== "VEÍCULOS LEVES") return;
-        v = porId[f] = { id: f, placa: l["PLACA"] || c.placa || "", processo: c.processo || "Sem processo", responsavel: c.responsavel || "", dias: 0,
+        v = porId[f] = { id: f, placa: l["PLACA"] || c.placa || "", processo: PROC_INFORMADO[f] || c.processo || "Sem processo", responsavel: c.responsavel || "", dias: 0,
           ligado: M.semanas.map(function () { return 0; }), ocioso: M.semanas.map(function () { return 0; }) };
         M.veiculos.push(v);
       }

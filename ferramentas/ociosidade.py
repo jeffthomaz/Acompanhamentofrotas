@@ -104,7 +104,14 @@ def montar(base, destino):
         excl = {norm(f).upper() for f in json.load(open(cam, encoding="utf-8"))["frotas"]}
     cad = D.get("conectividade", {}).get("frotas", {})
     antigo = {v["id"]: v for v in D.get("motorOcioso", {}).get("veiculos", [])}
+    pi = {}
+    cam_pi = os.path.join(AQUI, "processos_frotas.json")
+    if os.path.exists(cam_pi):
+        pi = {norm(k): norm(v) for k, v in json.load(open(cam_pi, encoding="utf-8")).items() if not k.startswith("_")}
     def info(f):
+        g, p, r = info_cad(f)
+        return g, pi.get(f, p), r
+    def info_cad(f):
         if f in cad:
             x = cad[f]
             return norm(x.get("grupo")).upper(), x.get("processo") or "Sem processo", (x.get("responsavel") or "").title()
