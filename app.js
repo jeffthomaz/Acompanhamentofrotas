@@ -686,42 +686,30 @@ window.iniciarPainel = function (D) {
     function pendente(l) { return !OBS_RESOLVE[obs[l.k]]; }
 
     var filtros = '<div class="filtros"><label>Processo<select data-fil="processo" id="cm-processo">' + opcoes(processos, fil_.processo, D.escopo && D.escopo !== "todos" ? "Todos os meus processos" : "Todos os processos") + "</select></label>" +
-      '<label>Câmera<select data-cam="tipo" id="cm-tipo"><option value="">Todas as câmeras</option>' + M.tipos.map(function (t) { return '<option value="' + t.id + '"' + (fcm.tipo === t.id ? " selected" : "") + ">" + esc(t.nome) + "</option>"; }).join("") + "</select></label>" +
-      (fil_.processo || fcm.tipo ? '<button type="button" class="limpar" data-limpar="1">Limpar filtros</button>' : "") +
+      (fil_.processo ? '<button type="button" class="limpar" data-limpar="1">Limpar filtros</button>' : "") +
+      (todas.length ? '<button type="button" class="limpar" data-cbaixar="1">Baixar lista (Excel)</button>' : "") +
       '<p class="ctx">' + num(monit, 0) + " " + plural(monit, "veículo monitorado", "veículos monitorados") + " no relatório de " + M.dia.slice(8, 10) + "/" + M.dia.slice(5, 7) + " às " + esc(M.hora) + "</p></div>";
 
-    // Um quadro por tipo de câmera: pendentes, com o detalhe de cada defeito.
+    // Um KPI por câmera, com os veículos que estão com defeito nela. A observação ao lado
+    // de cada veículo tira ele das pendências quando a câmera está ok (erro do sistema).
+    var k = 0;
     var cards = M.tipos.map(function (t) {
-      var ls = todas.filter(function (l) { return l.tipo === t.id; }), pend = ls.filter(pendente);
+      var ls = todas.filter(function (l) { return l.tipo === t.id; }), pend = ls.filter(pendente), rev = ls.length - pend.length;
       var det = t.defeitos.map(function (nome) {
         var n = pend.filter(function (l) { return l.ds.some(function (d) { return d[1] === nome; }); }).length;
         return "<span>" + esc(nome) + " <b>" + num(n, 0) + "</b></span>";
       }).join("");
-      var rev = ls.length - pend.length;
-      return '<button type="button" class="kpi kpi-btn c-cm-' + t.id + '" data-cmtipo="' + t.id + '" aria-pressed="' + (fcm.tipo === t.id) + '"><div class="kh">' + ico(ICO_CAM[t.id] || ICO_CAM.auditoria) + '<span class="kl">' + esc(t.nome) + '</span></div><strong class="kv">' + num(pend.length, 0) + '</strong><span class="kp">' + det + '</span><span class="ks">' + plural(pend.length, "veículo pendente", "veículos pendentes") + (rev ? " · " + rev + " " + plural(rev, "revisado", "revisados") : "") + "</span></button>";
-    }).join("");
-    var veicPend = unicos(todas.filter(pendente).map(function (l) { return l.v.f; })).length;
-    var veicTot = unicos(todas.map(function (l) { return l.v.f; })).length;
-    cards += '<article class="kpi c-cm-total"><div class="kh">' + ico("M12 3l9 16H3zM12 10v4M12 17h.01") + '<span class="kl">Veículos com pendência</span></div><strong class="kv">' + num(veicPend, 0) + '</strong><span class="ks">' + num(veicTot, 0) + " com alerta no relatório" + (monit ? " · " + num(veicTot / monit * 100, 1) + "% da frota" : "") + "</span></article>";
-    var kpis = '<div class="kpis kpis4">' + cards + "</div>";
-
-    // Lista de pendências, com a observação ao lado (como uma coluna de planilha).
-    var ls = todas.filter(function (l) { return !fcm.tipo || l.tipo === fcm.tipo; });
-    var nPend = ls.filter(pendente).length;
-    var tab = '<section class="card tab-card"><div class="cm-cab"><h3>Pendências de câmera <span class="cnt off">' + nPend + "</span></h3>" +
-      (ls.length ? '<button type="button" class="limpar" data-cbaixar="1">Baixar lista (Excel)</button>' : "") + "</div>" +
-      '<p class="cs">Veículos com câmera acusando defeito. Se a câmera estiver ok e for só erro do sistema, escolha a observação na última coluna: a linha sai das pendências. As observações ficam salvas neste navegador e valem para o relatório deste dia.</p>' +
-      (ls.length ? '<div class="scroll rolagem alta"><table class="tb tb-k tb-cm"><thead><tr><th scope="col">Frota</th><th scope="col">Processo</th><th scope="col">Câmera</th><th scope="col">Ticket</th><th scope="col">Última foto · vídeo</th><th scope="col">Observação</th></tr></thead><tbody>' + ls.map(function (l, i) {
-        var v = l.v, o = obs[l.k] || "", res = !!OBS_RESOLVE[o];
+      var itens = ls.length ? '<ul class="cm-lista">' + ls.map(function (l) {
+        var v = l.v, o = obs[l.k] || "", res = !!OBS_RESOLVE[o], i = k++;
         var defs = l.ds.map(function (d) { return esc(d[1]) + (l.tipo === "auditoria" ? " (" + d[2] + ")" : ""); }).join(", ");
-        var tk = v.ticket ? '<a href="' + esc(v.ticket) + '" target="_blank" rel="noopener">' + esc(v.ticket.split("/").pop()) + "</a><small>" + esc(v.tst || "") + "</small>" : '<span class="mut">Sem ticket</span>';
-        return '<tr class="' + (res ? "cm-ok" : "") + '"><th scope="row">' + esc(v.f) + "<small>" + esc([v.placa, v.sit && v.sit !== "Em operação" ? v.sit : ""].filter(Boolean).join(" · ")) + "</small></th><td>" + esc(v.processo) + "</td>" +
-          "<td>" + esc(l.nomeTipo) + '<small><span class="b ' + (res ? "bom" : "critico") + '">' + defs + "</span></small></td><td>" + tk + "</td>" +
-          "<td>" + hbr(v.foto) + "<small>" + hbr(v.video) + "</small></td>" +
-          '<td><select class="obs obs-' + (o || "pen") + '" data-obs="' + esc(l.k) + '" id="cm-obs-' + i + '" aria-label="Observação de ' + esc(v.f) + ", " + esc(l.nomeTipo) + '">' + OBS.map(function (x) { return '<option value="' + x[0] + '"' + (x[0] === o ? " selected" : "") + ">" + x[1] + "</option>"; }).join("") + "</select></td></tr>";
-      }).join("") + "</tbody></table></div>" : '<p class="cs">Nenhuma câmera com defeito' + (fcm.tipo || fil_.processo ? " nesse filtro" : " no relatório") + ".</p>") + "</section>";
-
-    return filtros + kpis + tab;
+        var tk = v.ticket ? '<a href="' + esc(v.ticket) + '" target="_blank" rel="noopener">' + esc(v.ticket.split("/").pop()) + "</a>" + (v.tst ? " · " + esc(v.tst) : "") : "Sem ticket";
+        return '<li class="' + (res ? "cm-ok" : "") + '"><div class="cm-v"><b>' + esc(v.f) + "</b><span>" + esc([v.placa, v.processo, v.sit && v.sit !== "Em operação" ? v.sit : ""].filter(Boolean).join(" · ")) + '</span></div><span class="b ' + (res ? "bom" : "critico") + '">' + defs + "</span>" +
+          '<small class="cm-tk">' + tk + "<br>Foto " + hbr(v.foto) + " · vídeo " + hbr(v.video) + "</small>" +
+          '<select class="obs obs-' + (o || "pen") + '" data-obs="' + esc(l.k) + '" id="cm-obs-' + i + '" aria-label="Observação de ' + esc(v.f) + ", " + esc(t.nome) + '">' + OBS.map(function (x) { return '<option value="' + x[0] + '"' + (x[0] === o ? " selected" : "") + ">" + x[1] + "</option>"; }).join("") + "</select></li>";
+      }).join("") + "</ul>" : '<p class="cm-vazio">Nenhum veículo com defeito nesta câmera.</p>';
+      return '<section class="card cm-card c-cm-' + t.id + '"><div class="kh">' + ico(ICO_CAM[t.id] || ICO_CAM.auditoria) + '<span class="kl">' + esc(t.nome) + '</span></div><strong class="kv">' + num(pend.length, 0) + '</strong><span class="ks">' + plural(pend.length, "veículo com defeito", "veículos com defeito") + (rev ? " · " + rev + " " + plural(rev, "revisado", "revisados") : "") + '</span><span class="kp">' + det + "</span>" + itens + "</section>";
+    }).join("");
+    return filtros + '<p class="cs cm-nota">Se a câmera estiver ok e for só erro do sistema, escolha a observação ao lado do veículo: ele sai da contagem. As observações ficam salvas neste navegador e valem para o relatório deste dia.</p><div class="cm-grade">' + cards + "</div>";
   }
   function camBaixar() {
     var M = D.cameras, obs = obsTodas(), nomes = {};
@@ -832,12 +820,8 @@ window.iniciarPainel = function (D) {
       if (!obsGravar(o.dataset.obs, o.value)) { obsMem = obsMem || {}; obsMem[o.dataset.obs] = o.value; }
       var id = o.id; render(); var n = document.getElementById(id); if (n) n.focus(); return;
     }
-    var t = e.target.closest("select[data-cam]");
-    if (t) { fcm.tipo = t.value; render(); var n2 = document.getElementById(t.id); if (n2) n2.focus(); }
   });
   painel.addEventListener("click", function (e) {
-    var t = e.target.closest("[data-cmtipo]");
-    if (t) { fcm.tipo = fcm.tipo === t.dataset.cmtipo ? "" : t.dataset.cmtipo; render(); var n = document.querySelector('[data-cmtipo="' + t.dataset.cmtipo + '"]'); if (n) n.focus(); return; }
     if (e.target.closest("[data-cbaixar]")) camBaixar();
   });
   window.addEventListener("hashchange", render);
