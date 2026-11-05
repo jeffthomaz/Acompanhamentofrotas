@@ -76,6 +76,32 @@ def linhas(caminho):
     return [{k.strip("[]"): v for k, v in l.items()} for l in json.load(open(caminho, encoding="utf-8"))["data"]["rows"]]
 
 
+def relatar_mudancas(antes, novo, velho, frotas, ultimo):
+    """Mostra o que o Power BI mudou em dias que já estavam salvos (correções antigas)."""
+    nomes = {t["id"]: t["nome"] for t in TIPOS}
+    ult_salvo = max([d for d, _, _ in antes] or [""])
+    mud = []
+    for k in sorted(set(antes) | set(novo)):
+        d, t, f = k
+        if d > ult_salvo:  # dia novo, não é correção
+            continue
+        dif = novo.get(k, 0) - antes.get(k, 0)
+        if dif:
+            mud.append("%s/%s %s, frota %s: %+d" % (d[8:10], d[5:7], nomes.get(t, t), f, dif))
+    for f, x in sorted(frotas.items()):
+        v = velho["frotas"].get(f)
+        if v and v.get("processo") != x["processo"]:
+            mud.append("frota %s: processo %s -> %s" % (f, v.get("processo"), x["processo"]))
+    if mud:
+        print("MUDANÇAS em dias já salvos (%d):" % len(mud))
+        for m in mud[:30]:
+            print("  " + m)
+        if len(mud) > 30:
+            print("  ... e mais %d" % (len(mud) - 30))
+    else:
+        print("nenhuma mudança em dias já salvos")
+
+
 def main(leves, pesadas, base_xlsx, destino):
     wb = openpyxl.load_workbook(base_xlsx, read_only=True, data_only=True)
     base = {str(x[0]).strip(): nome_proc(x[3]) for x in wb.worksheets[2].iter_rows(min_row=2, values_only=True) if x[0]}
@@ -103,6 +129,8 @@ def main(leves, pesadas, base_xlsx, destino):
     # Acumulado: a extração vale para o período que ela cobre (do primeiro dia dela em diante);
     # os dias anteriores já salvos no dados-fonte.json continuam como estavam.
     corte, mantidos = min(dias), 0
+    novo = Counter(cont)  # só a extração, para comparar com o que estava salvo
+    antes = Counter()
     velho = D.get("comportamento")
     if velho and velho.get("ev"):
         ini_v = date.fromisoformat(velho["inicio"])
@@ -110,10 +138,15 @@ def main(leves, pesadas, base_xlsx, destino):
         validos = {t["id"] for t in TIPOS}
         for d0, ti, f, n in velho["ev"]:
             d = (ini_v + timedelta(days=d0)).isoformat()
-            if d < corte and ids_v[ti] in validos:
+            if ids_v[ti] not in validos:
+                continue
+            if d < corte:
                 cont[(d, ids_v[ti], f)] += n; dias.add(d); mantidos += n
                 if f not in frotas and f in velho["frotas"]:
                     frotas[f] = velho["frotas"][f]
+            else:
+                antes[(d, ids_v[ti], f)] += n
+        relatar_mudancas(antes, novo, velho, frotas, max(d for d, _, _ in novo))
 
     dias = sorted(dias)
     ini = date.fromisoformat(dias[0])
