@@ -676,9 +676,9 @@ window.iniciarPainel = function (D) {
       return { f: x.f, dias: a ? a.dias : diasOff, ult: a ? a.ult : "" };
     }).sort(function (a, b) { return a.dias - b.dias || a.f.localeCompare(b.f); });
     var tab = '<section class="card tab-card"><h3>Equipamentos offline <span class="cnt off">' + sem.length + '</span></h3><p class="cs">Em ' + dbr(K.dias[di]) + ", do que está há menos dias sem comunicar para o que está há mais.</p>" +
-      (sem.length ? '<div class="scroll rolagem alta"><table class="tb tb-k"><thead><tr><th scope="col">Frota</th><th scope="col">Processo</th><th scope="col" class="r">Dias offline</th>' + (ehHoje ? '<th scope="col">Última conexão</th>' : "") + "</tr></thead><tbody>" + sem.map(function (x) {
+      (sem.length ? '<div class="scroll rolagem alta"><table class="tb tb-k tb-off"><thead><tr><th scope="col">Frota</th><th scope="col">Processo</th><th scope="col" class="r">Dias</th>' + (ehHoje ? '<th scope="col">Última conexão</th>' : "") + "</tr></thead><tbody>" + sem.map(function (x) {
         var v = F[x.f];
-        return '<tr><th scope="row">' + esc(x.f) + "<small>" + esc([v.placa, v.grupo].filter(Boolean).join(" · ")) + "</small></th><td>" + esc(v.processo) + '</td><td class="r"><span class="b critico">' + num(x.dias, 0) + "</span></td>" +
+        return '<tr><th scope="row" title="' + esc([v.placa, v.grupo].filter(Boolean).join(" · ")) + '">' + esc(x.f) + (v.placa ? " <small>" + esc(v.placa) + "</small>" : "") + "</th><td title=\"" + esc(v.processo) + "\">" + esc(v.processo) + '</td><td class="r"><span class="b critico">' + num(x.dias, 0) + "</span></td>" +
           (ehHoje ? "<td>" + (x.ult ? esc(x.ult.slice(8, 10) + "/" + x.ult.slice(5, 7) + " " + x.ult.slice(11)) : "") + "</td>" : "") + "</tr>";
       }).join("") + "</tbody></table></div>" : '<p class="cs">Nenhum equipamento offline nesse dia.</p>') + "</section>";
 
