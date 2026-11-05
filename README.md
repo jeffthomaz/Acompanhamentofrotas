@@ -53,8 +53,10 @@ Atualizar usuários ou dados:
 
 ## Atualização automática (pasta de envio)
 
-Qualquer usuário pode atualizar as abas Conectividade e Câmeras: no fim de cada aba há o botão
-"Enviar arquivo", que leva à pasta `painel-dados/entrada` (link "Solicitar arquivos" do OneDrive,
+Qualquer usuário pode atualizar as abas Conectividade e Câmeras. No fim de cada aba, "Carregar arquivo"
+lê o arquivo exportado no próprio navegador e mostra a aba atualizada na hora, só para quem carregou
+(mesmas regras dos scripts; na conectividade, parado/manutenção continuam como no último dia, sem
+consultar a planilha). Para todos verem, o botão "Enviar para todos" leva à pasta `painel-dados/entrada` (link "Solicitar arquivos" do OneDrive,
 constante `LINK_ENVIO` em `app.js`). Lá vão, sem mudar o nome, o "Localização da Frota" (vFleets)
 e o "Saúde do Veículo - Análise" (Platform Science).
 

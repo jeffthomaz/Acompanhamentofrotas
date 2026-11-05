@@ -472,13 +472,133 @@ window.iniciarPainel = function (D) {
     conectividade: { arq: "Localização da Frota", sis: "vFleets", aba: "Conectividade" },
     cameras: { arq: "Saúde do Veículo - Análise", sis: "Platform Science", aba: "Câmeras" }
   };
+  var previa = {}; // abas com arquivo carregado neste navegador: { nome, original }
   function secaoEnvio(qual, dados) {
-    var e = ENVIO[qual];
+    var e = ENVIO[qual], pv = previa[qual];
     return '<section class="envio"><div><h3>Atualizar a aba ' + e.aba + "</h3>" +
-      '<p>Exporte o arquivo <b>' + esc(e.arq) + "</b> no " + esc(e.sis) + " e envie sem mudar o nome (a data da exportação vai no nome). " +
-      "O painel confere os arquivos enviados a cada hora, em dias úteis, das 7h às 18h, aplica as regras e publica para todos.</p>" +
-      '<p class="envio-at">Dados atuais: <b>' + esc(dados) + "</b></p></div>" +
-      (LINK_ENVIO ? '<a class="btn" href="' + LINK_ENVIO + '" target="_blank" rel="noopener">Enviar arquivo <span aria-hidden="true">↗</span></a>' : "") + "</section>";
+      '<p>Exporte o arquivo <b>' + esc(e.arq) + "</b> no " + esc(e.sis) + " e carregue aqui, sem mudar o nome (a data da exportação vai no nome). A aba atualiza na hora, para você. " +
+      "Para todos verem, envie o mesmo arquivo para a pasta do painel: ela é conferida a cada hora, em dias úteis, das 7h às 18h.</p>" +
+      (pv ? '<p class="envio-pv" role="status">Mostrando o arquivo <b>' + esc(pv.nome) + "</b> só neste navegador. " + esc(pv.msg) + ' <button type="button" class="limpar" data-desfazer="' + qual + '">Voltar aos dados publicados</button></p>' : "") +
+      '<p class="envio-at">Dados ' + (pv ? "do arquivo" : "publicados") + ": <b>" + esc(dados) + "</b></p></div>" +
+      '<div class="envio-bt"><label class="btn btn-arq">Carregar arquivo<input type="file" accept=".csv,text/csv" data-carregar="' + qual + '"></label>' +
+      (LINK_ENVIO ? '<a class="btn btn-sec" href="' + LINK_ENVIO + '" target="_blank" rel="noopener">Enviar para todos <span aria-hidden="true">↗</span></a>' : "") + "</div></section>";
+  }
+
+  // ----- Leitura dos arquivos exportados no navegador (mesmas regras de ferramentas/cameras.py e conectividade.py) -----
+  var EXCLUIR = { ZZSEE4G55: 1 };
+  function nrm(t) { return String(t == null ? "" : t).normalize("NFC").trim(); }
+  function decodifica(buf) {
+    try { return new TextDecoder("utf-8", { fatal: true }).decode(buf).replace(/^﻿/, ""); } catch (e) { return new TextDecoder("windows-1252").decode(buf); }
+  }
+  function lerCSV(txt) {
+    var linhas = [], lin = [], campo = "", aspas = false;
+    for (var i = 0; i < txt.length; i++) {
+      var ch = txt[i];
+      if (aspas) { if (ch === '"') { if (txt[i + 1] === '"') { campo += '"'; i++; } else aspas = false; } else campo += ch; continue; }
+      if (ch === '"') aspas = true;
+      else if (ch === ";") { lin.push(campo); campo = ""; }
+      else if (ch === "\n" || ch === "\r") { if (ch === "\r" && txt[i + 1] === "\n") i++; lin.push(campo); campo = ""; if (lin.some(function (c) { return c.trim(); })) linhas.push(lin); lin = []; }
+      else campo += ch;
+    }
+    lin.push(campo); if (lin.some(function (c) { return c.trim(); })) linhas.push(lin);
+    if (!linhas.length) return { cab: [], rows: [] };
+    var cab = linhas[0].map(function (c) { return nrm(c).toUpperCase(); });
+    return { cab: cab, rows: linhas.slice(1).map(function (r) { var o = {}; cab.forEach(function (c, k) { o[c] = nrm(r[k]); }); return o; }) };
+  }
+  function pad(n) { return (n < 10 ? "0" : "") + n; }
+  function horaLocal(t) { // UTC -> Brasília, "AAAA-MM-DD HH:MM"
+    var m = /(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(t || ""); if (!m) return "";
+    var d = new Date(Date.UTC(+m[1], m[2] - 1, +m[3], +m[4], +m[5]) - 3 * 3600000);
+    return d.getUTCFullYear() + "-" + pad(d.getUTCMonth() + 1) + "-" + pad(d.getUTCDate()) + " " + pad(d.getUTCHours()) + ":" + pad(d.getUTCMinutes());
+  }
+  function mapaProcessos() {
+    var m = {};
+    ((D.motorOcioso || {}).veiculos || []).forEach(function (v) { if (v.id && v.processo) m[v.id] = v.processo; });
+    [["permanencia", "veiculos"], ["comportamento", "frotas"], ["conectividade", "frotas"]].forEach(function (b) {
+      var fr = (D[b[0]] || {})[b[1]] || {}; Object.keys(fr).forEach(function (f) { if (fr[f].processo) m[f] = fr[f].processo; });
+    });
+    ((previa.cameras && previa.cameras.original) || D.cameras || { lista: [] }).lista.forEach(function (v) { if (!m[v.f]) m[v.f] = v.processo; });
+    return m;
+  }
+  function camDoArquivo(nome, T) {
+    var COLS = { motorista: [["CÂMERA MOTORISTA MAL POSICIONADA", "Mal posicionada"], ["CÂMERA MOTORISTA INTERMITENTE", "Intermitente"], ["CÂMERA MOTORISTA NÃO FUNCIONANDO", "Não funcionando"]],
+      pista: [["CÂMERA PISTA INTERMITENTE", "Intermitente"], ["CÂMERA PISTA NÃO FUNCIONANDO", "Não funcionando"]],
+      auditoria: [["QTD CÂMERAS DE AUDITORIA INTERMITENTES", "Intermitente"], ["QTD CÂMERAS DE AUDITORIA NÃO FUNCIONANDO", "Não funcionando"]] };
+    var faltam = []; Object.keys(COLS).forEach(function (t) { COLS[t].forEach(function (c) { if (T.cab.indexOf(c[0]) < 0) faltam.push(c[0]); }); });
+    if (faltam.length) throw new Error("Esse não parece o arquivo Saúde do Veículo. Faltam colunas: " + faltam.slice(0, 3).join(", ") + (faltam.length > 3 ? "…" : ""));
+    var mm = /(\d{4}-\d{2}-\d{2})T(\d{2})_(\d{2})/.exec(nome), quando = mm ? horaLocal(mm[1] + "T" + mm[2] + ":" + mm[3]) : "";
+    if (!quando) T.rows.forEach(function (l) { ["GSM TELEMETRIA", "ÚLTIMA VELOCIDADE"].forEach(function (c) { var h = horaLocal(l[c]); if (h > quando) quando = h; }); });
+    function def(v) { v = nrm(v).toUpperCase(); if (v === "SIM" || v === "S") return 1; var n = parseInt(v, 10); return isNaN(n) ? 0 : n; }
+    var proc = mapaProcessos(), restrito = D.escopo && D.escopo !== "todos", R = {}, lista = [], fora = 0;
+    T.rows.forEach(function (l) {
+      var f = l["PREFIXO"] || l["PLACA"]; if (!f || f === "-" || /INATIVO/i.test(f) || EXCLUIR[f.toUpperCase()]) return;
+      var p = proc[f];
+      if (!p) { if (restrito) { fora++; return; } p = l["UO"] && l["UO"].indexOf(" - ") >= 0 ? l["UO"].split(" - ").slice(1).join(" - ") : "SEM PROCESSO"; }
+      var r = R[p] || (R[p] = { n: 0, st: {}, gps: {}, tk: {}, ev: 0 }); r.n++;
+      var st = l["STATUS"] || "N/A", gps = l["GPS"] || "N/A", t = l["TICKET"] || "";
+      r.st[st] = (r.st[st] || 0) + 1; r.gps[gps] = (r.gps[gps] || 0) + 1;
+      if (t.indexOf("http") === 0) r.tk[t] = 1;
+      if (horaLocal(l["ÚLTIMO EVENTO COMPORTAMENTAL"]).slice(0, 10) === quando.slice(0, 10)) r.ev++;
+      var d = [];
+      Object.keys(COLS).forEach(function (tid) { COLS[tid].forEach(function (c) { var n = def(l[c[0]]); if (n) d.push([tid, c[1], n]); }); });
+      if (gps.toUpperCase() === "NÃO SAUDÁVEL") d.push(["gps", "Não saudável", 1]);
+      if (!d.length) return;
+      lista.push({ f: f, placa: l["PLACA"] || "", processo: p, sit: (l["SITUAÇÃO"] || "").replace("-", ""), st: (l["STATUS"] || "").replace("N/A", ""), cams: def(l["NÚMERO TOTAL DE CÂMERAS"]),
+        foto: horaLocal(l["ÚLTIMA FOTO"]), video: horaLocal(l["ÚLTIMO VÍDEO"]), ticket: t.indexOf("http") === 0 ? t : "", tst: (l["STATUS DO TICKET"] || "").replace("-", ""), d: d });
+    });
+    if (!Object.keys(R).length) throw new Error(restrito ? "Nenhum veículo dos seus processos nesse arquivo." : "Nenhum veículo no arquivo.");
+    Object.keys(R).forEach(function (p) { R[p].tk = Object.keys(R[p].tk).length; });
+    lista.sort(function (a, b) { return a.processo.localeCompare(b.processo, "pt-BR") || a.f.localeCompare(b.f); });
+    var dbr = quando.slice(8, 10) + "/" + quando.slice(5, 7) + "/" + quando.slice(0, 4);
+    return { bloco: { real: true, periodo: "Câmeras de " + dbr + " às " + quando.slice(11) + " · arquivo carregado", dia: quando.slice(0, 10), hora: quando.slice(11), tipos: (D.cameras || {}).tipos, proc: R, lista: lista },
+      msg: lista.length + " " + plural(lista.length, "veículo com alerta", "veículos com alerta") + (fora ? "; " + fora + " de outros processos ficaram de fora" : "") + "." };
+  }
+  function conDoArquivo(nome, T) {
+    if (T.cab.indexOf("VEÍCULO") < 0 || T.cab.indexOf("ÚLTIMA CONEXÃO") < 0) throw new Error("Esse não parece o arquivo Localização da Frota (faltam as colunas VEÍCULO e ÚLTIMA CONEXÃO).");
+    var K = JSON.parse(JSON.stringify((previa.conectividade && previa.conectividade.original) || D.conectividade));
+    function dataBR(t) { var m = /(\d{2})\/(\d{2})\/(\d{4}) (\d{2}):(\d{2})/.exec(t || ""); return m ? { d: m[3] + "-" + m[2] + "-" + m[1], h: m[4] + ":" + m[5] } : null; }
+    var mm = /(\d{4}-\d{2}-\d{2})T\d{2}_\d{2}/.exec(nome), dia = mm ? mm[1] : "";
+    if (!dia) T.rows.forEach(function (l) { var u = dataBR(l["ÚLTIMA CONEXÃO"]); if (u && u.d > dia) dia = u.d; });
+    if (!dia) throw new Error("Não consegui achar a data do arquivo.");
+    var i = K.dias.indexOf(dia);
+    if (i < 0) {
+      K.dias.push(dia); K.dias.sort(); i = K.dias.indexOf(dia);
+      Object.keys(K.hist).forEach(function (f) { var h = K.hist[f]; K.hist[f] = h.slice(0, i) + "." + h.slice(i); });
+    }
+    var ref = Date.UTC(+dia.slice(0, 4), dia.slice(5, 7) - 1, +dia.slice(8, 10)), atual = {}, n = 0, novos = 0, ultimo = i === K.dias.length - 1;
+    T.rows.forEach(function (l) {
+      var partes = (l["VEÍCULO"] || "").split(" - ").map(nrm); if (!partes[0]) return;
+      if (partes.some(function (x) { return x.toLowerCase() === "inativo"; })) return;
+      var f = partes[0]; if (EXCLUIR[f.toUpperCase()]) return;
+      if (!K.frotas[f]) { novos++; return; }
+      var ap = (l["APELIDO"] || "").toUpperCase().replace("MANUTENCAO", "MANUTENÇÃO"), u = dataBR(l["ÚLTIMA CONEXÃO"]);
+      var off = u ? Math.round((ref - Date.UTC(+u.d.slice(0, 4), u.d.slice(5, 7) - 1, +u.d.slice(8, 10))) / 86400000) : 999;
+      var st = ap === "MANUTENÇÃO" ? "M" : ap === "PARADO" ? "P" : off >= 2 ? "O" : "C";
+      var h = K.hist[f] || new Array(K.dias.length + 1).join("."), ant = i > 0 ? h[i - 1] : ".", man = (K.atual[f] || {}).manual;
+      // O último dia é a referência: manutenção/parado continua até a planilha dizer OPERANDO.
+      if ("CO".indexOf(st) >= 0 && (ant === "M" || ant === "P" || ((ant === "m" || ant === "p") && man && man.status !== "OPERANDO"))) st = ant;
+      K.hist[f] = h.slice(0, i) + st + h.slice(i + 1); n++;
+      if (ultimo) atual[f] = { dias: off, ult: u ? u.d + " " + u.h : "", sis: (l["STATUS CONEXÃO"] || "").toUpperCase(), mov: (l["STATUS"] || ""), st: st, manual: man };
+    });
+    if (!n) throw new Error("Nenhum veículo dos seus processos nesse arquivo.");
+    if (ultimo) K.atual = atual;
+    var di = K.dias[0], df = K.dias[K.dias.length - 1];
+    K.periodo = di.slice(8, 10) + "/" + di.slice(5, 7) + "/" + di.slice(0, 4) + " a " + df.slice(8, 10) + "/" + df.slice(5, 7) + "/" + df.slice(0, 4) + " · arquivo carregado";
+    return { bloco: K, msg: n + " " + plural(n, "veículo atualizado", "veículos atualizados") + " em " + dia.slice(8, 10) + "/" + dia.slice(5, 7) + (novos ? "; " + novos + " fora do cadastro ou de outros processos" : "") + "." };
+  }
+  function carregarArquivo(qual, arq) {
+    var r = new FileReader();
+    r.onload = function () {
+      var antes = previa[qual] ? previa[qual].original : D[qual];
+      try {
+        var T = lerCSV(decodifica(r.result)), x = qual === "cameras" ? camDoArquivo(arq.name, T) : conDoArquivo(arq.name, T);
+        previa[qual] = { nome: arq.name, original: antes, msg: x.msg };
+        D[qual] = x.bloco; if (qual === "conectividade") fco.dia = -1;
+      } catch (err) { alert(err.message || "Não consegui ler esse arquivo."); return; }
+      render();
+      var s = document.querySelector(".envio"); if (s) s.scrollIntoView({ block: "nearest" });
+    };
+    r.readAsArrayBuffer(arq);
   }
 
   // ---------- Conectividade (Power BI "Conectividade" + planilha manual de parados e manutenção) ----------
@@ -867,6 +987,8 @@ window.iniciarPainel = function (D) {
   });
   painel.addEventListener("toggle", function (e) { if (e.target.id === "p-frotas") pm.abertoFrotas = e.target.open; }, true);
   painel.addEventListener("change", function (e) {
+    var ca = e.target.closest("input[data-carregar]");
+    if (ca) { if (ca.files && ca.files[0]) carregarArquivo(ca.dataset.carregar, ca.files[0]); return; }
     var o = e.target.closest("select[data-obs]");
     if (o) {
       obsGravar(o.dataset.obs, o.value);
@@ -875,6 +997,8 @@ window.iniciarPainel = function (D) {
   });
   painel.addEventListener("click", function (e) {
     if (e.target.closest("[data-cbaixar]")) camBaixar();
+    var dz = e.target.closest("[data-desfazer]");
+    if (dz && previa[dz.dataset.desfazer]) { D[dz.dataset.desfazer] = previa[dz.dataset.desfazer].original; delete previa[dz.dataset.desfazer]; fco.dia = -1; render(); }
   });
   window.addEventListener("hashchange", render);
   render();
