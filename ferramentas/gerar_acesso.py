@@ -123,9 +123,36 @@ def unificar_processos(D):
         M["proc"] = tot
 
 
+def remover_excluidas(D):
+    """Tira de todas as abas as frotas de ferramentas/frotas_excluidas.json (inativas)."""
+    caminho = os.path.join(os.path.dirname(os.path.abspath(__file__)), "frotas_excluidas.json")
+    if not os.path.exists(caminho):
+        return
+    fora = {norm(f).upper() for f in json.load(open(caminho, encoding="utf-8"))["frotas"]}
+    sai = lambda f: norm(f).upper() in fora
+    if "comportamento" in D:
+        C = D["comportamento"]
+        C["frotas"] = {f: v for f, v in C["frotas"].items() if not sai(f)}
+        C["ev"] = [e for e in C["ev"] if not sai(e[2])]
+    if "motorOcioso" in D:
+        D["motorOcioso"]["veiculos"] = [v for v in D["motorOcioso"]["veiculos"] if not sai(v.get("id", ""))]
+    if "permanencia" in D:
+        P = D["permanencia"]
+        P["veiculos"] = {f: v for f, v in P["veiculos"].items() if not sai(f)}
+        P["eventos"] = [e for e in P["eventos"] if not sai(e[0])]
+    if "conectividade" in D:
+        K = D["conectividade"]
+        for k in ("frotas", "hist", "atual"):
+            K[k] = {f: v for f, v in K[k].items() if not sai(f)}
+        K["pendencias"] = [p for p in K.get("pendencias", []) if not sai(p["f"])]
+    if "cameras" in D:
+        D["cameras"]["lista"] = [x for x in D["cameras"]["lista"] if not sai(x["f"])]
+
+
 def main(cad, fonte, saida):
     D = json.load(open(fonte, encoding="utf-8"))
     unificar_processos(D)
+    remover_excluidas(D)
     conhecidos = {chave_proc(v["processo"]): v["processo"] for v in D.get("comportamento", {}).get("frotas", {}).values()}
     conhecidos.update({chave_proc(v["processo"]): v["processo"] for v in D.get("motorOcioso", {}).get("veiculos", [])})
     conhecidos.update({chave_proc(v["processo"]): v["processo"] for v in D.get("permanencia", {}).get("veiculos", {}).values()})

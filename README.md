@@ -23,6 +23,12 @@ Atualizar usuários ou dados:
 
     python ferramentas/gerar_acesso.py cadastros.xlsx dados-fonte.json acesso.js
 
+## Frotas excluídas
+
+`ferramentas/frotas_excluidas.json` lista as frotas que ficam fora de todas as abas (inativas ou
+equipamentos que não contam, ex.: 961313 e ZZSEE4G55). `gerar_acesso.py` e `cameras.py` leem essa
+lista; a constante `EXCLUIR` do `app.js` (leitura de arquivos no navegador) deve ficar igual.
+
 ## Fontes dos dados
 
 - Motor ocioso: dados reais do Power BI "Ociosidade Frota Leve" (veículos leves), extraídos com a

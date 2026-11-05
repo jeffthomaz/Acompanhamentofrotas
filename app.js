@@ -485,7 +485,7 @@ window.iniciarPainel = function (D) {
   }
 
   // ----- Leitura dos arquivos exportados no navegador (mesmas regras de ferramentas/cameras.py e conectividade.py) -----
-  var EXCLUIR = { ZZSEE4G55: 1 };
+  var EXCLUIR = { ZZSEE4G55: 1, "961313": 1 }; // igual a ferramentas/frotas_excluidas.json
   function nrm(t) { return String(t == null ? "" : t).normalize("NFC").trim(); }
   function decodifica(buf) {
     try { return new TextDecoder("utf-8", { fatal: true }).decode(buf).replace(/^﻿/, ""); } catch (e) { return new TextDecoder("windows-1252").decode(buf); }
