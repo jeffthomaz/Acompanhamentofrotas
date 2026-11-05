@@ -7,6 +7,7 @@ Comandos:
     python conectividade.py vfleets      <Localizacao_da_Frota.csv> <base.json>
     python conectividade.py montar       <base.json> <status_frotas.xlsx> <dados-fonte.json>
     python conectividade.py excluir      <frota> <base.json>        (desconsiderar um equipamento)
+    python conectividade.py planilha     <dados-fonte.json> <status_frotas.xlsx>  (pré-preenche a planilha)
 
 iniciar-bi: cria a base a partir do Power BI "Conectividade" (consulta em conectividade_do_powerbi.py).
 vfleets:    acrescenta (ou substitui) o dia do arquivo "Localização da Frota" exportado do vFleets.
@@ -154,6 +155,8 @@ def ler_planilha(caminho):
             continue
         f = str(r[0]).strip().split(".")[0]
         st = str(r[1] or "").strip().upper().replace("MANUTENCAO", "MANUTENÇÃO")
+        if not st:  # linha sugerida pelo painel, ainda sem status: não vale nada
+            continue
         if st not in ("PARADO", "MANUTENÇÃO", "OPERANDO"):
             avisos.append("linha %d (frota %s): STATUS precisa ser PARADO, MANUTENÇÃO ou OPERANDO" % (n, f)); continue
         out.setdefault(f, []).append({"status": st, "desde": dt(r[2]) or date(2000, 1, 1),
@@ -223,8 +226,99 @@ def montar(base, planilha, destino):
         print("AVISO:", a)
 
 
+def planilha(destino, caminho):
+    """Pré-preenche status_frotas.xlsx com os equipamentos em manutenção, parados ou offline há 2 dias ou mais.
+
+    As linhas que você já preencheu (com STATUS) ficam como estão, no topo. As sugeridas entram com STATUS em
+    branco (não valem nada até você escolher PARADO, MANUTENÇÃO ou OPERANDO) e são refeitas a cada atualização.
+    As colunas F em diante são só informação do painel e não são lidas.
+    """
+    from openpyxl.styles import Font, PatternFill, Alignment
+    from openpyxl.worksheet.datavalidation import DataValidation
+    import os
+    K = ler_json(destino)["conectividade"]
+    aqui = os.path.dirname(os.path.abspath(__file__))
+    def jl(nome):
+        c = os.path.join(aqui, nome)
+        return {k: v for k, v in ler_json(c).items() if not k.startswith("_")} if os.path.exists(c) else {}
+    depara_proc = {k.strip().upper(): v for k, v in jl("processos.json").items()}
+    informado = jl("processos_frotas.json")
+    fora = {f.strip().upper() for f in jl("frotas_excluidas.json").get("frotas", [])}
+    def processo(f, p):
+        return informado.get(f) or depara_proc.get((p or "").strip().upper(), p or "")
+    wb = openpyxl.load_workbook(caminho)
+    ws = wb["STATUS"] if "STATUS" in wb.sheetnames else wb.worksheets[0]
+    meus = []
+    for r in ws.iter_rows(min_row=2, max_col=5, values_only=True):
+        if r and r[0] not in (None, "") and str(r[1] or "").strip():
+            meus.append(list(r))
+    ja = {str(r[0]).strip().split(".")[0] for r in meus}
+    nomes = {"M": "Manutenção (rastreador)", "P": "Parado (rastreador)", "m": "Manutenção (planilha)", "p": "Parado (planilha)"}
+    sug = []
+    for f, a in K["atual"].items():
+        st, dias = a.get("st", ""), a.get("dias", 0) or 0
+        if st in "MPmp" and st:
+            sit = nomes[st]
+        elif st == "O" or dias >= 2:
+            sit = "Offline"
+        else:
+            continue
+        if f in ja or f.upper() in fora:
+            continue
+        v = K["frotas"].get(f, {})
+        ult = a.get("ult") or ""
+        sug.append([f, sit, dias, (ult[8:10] + "/" + ult[5:7] + "/" + ult[:4] + " " + ult[11:16]) if ult else "", v.get("placa", ""), processo(f, v.get("processo", ""))])
+    ordem = {"Manutenção (rastreador)": 0, "Parado (rastreador)": 1, "Manutenção (planilha)": 0, "Parado (planilha)": 1, "Offline": 2}
+    sug.sort(key=lambda x: (ordem[x[1]], -x[2], x[0]))
+    ws.delete_rows(2, ws.max_row)
+    cab = ["SITUAÇÃO NO PAINEL", "DIAS SEM COMUNICAR", "ÚLTIMA CONEXÃO", "PLACA", "PROCESSO"]
+    hf, hfill = Font(bold=True, color="FFFFFF"), PatternFill("solid", fgColor="5E9C8A")
+    for i, c in enumerate(cab):
+        cel = ws.cell(1, 6 + i, c); cel.font = hf; cel.fill = hfill; cel.alignment = Alignment(vertical="center")
+    for i, w in enumerate([24, 12, 18, 11, 28]):
+        ws.column_dimensions[chr(ord("F") + i)].width = w
+    lin = 2
+    for r in meus:
+        for j, v in enumerate(r):
+            ws.cell(lin, 1 + j, v)
+        lin += 1
+    cinza = Font(color="5A6A61")
+    amarelo = PatternFill("solid", fgColor="FFF4CE")
+    for f, sit, dias, ult, placa, proc in sug:
+        ws.cell(lin, 1, int(f) if f.isdigit() else f)
+        ws.cell(lin, 2).fill = amarelo
+        for j, v in enumerate([sit, dias, ult, placa, proc]):
+            c = ws.cell(lin, 6 + j, v); c.font = cinza
+        lin += 1
+    ws.data_validations.dataValidation = []
+    dv = DataValidation(type="list", formula1='"PARADO,MANUTENÇÃO,OPERANDO"', allow_blank=True)
+    dv.add("B2:B1000"); ws.add_data_validation(dv)
+    for c in ("C", "D"):
+        for r in range(2, 1001):
+            ws[c + str(r)].number_format = "DD/MM/YYYY"
+    ws.auto_filter.ref = "A1:J%d" % max(lin - 1, 1)
+    if "COMO USAR" in wb.sheetnames:
+        cu = wb["COMO USAR"]
+        cu.delete_rows(1, cu.max_row)
+        for t in ["Como usar esta planilha", "",
+                  "A planilha já abre com os equipamentos que o painel mostra em MANUTENÇÃO, PARADO ou OFFLINE há 2 dias ou mais",
+                  "(linhas com STATUS em branco, em amarelo). Ela é refeita a cada atualização do painel.",
+                  "Para confirmar ou corrigir, escolha o STATUS na lista: PARADO, MANUTENÇÃO ou OPERANDO, e informe DESDE.",
+                  "Linha com STATUS em branco não muda nada no painel. Linha preenchida por você fica guardada no topo.",
+                  "", "FROTA: número da frota (ex.: 30103).",
+                  "STATUS: PARADO, MANUTENÇÃO ou OPERANDO (OPERANDO encerra uma parada ou manutenção).",
+                  "DESDE: data a partir da qual vale (vale também para o histórico).",
+                  "ATÉ: opcional. Deixe em branco enquanto continuar.",
+                  "OBSERVAÇÃO: opcional (ex.: oficina, entressafra). Não coloque nome de pessoas.",
+                  "Colunas F a J (em verde): informação do painel, só para consulta; não precisa mexer.",
+                  "", "O painel lê esta planilha nas atualizações das 11h, 13h e 14h (dias úteis)."]:
+            cu.append([t])
+    wb.save(caminho)
+    print("planilha: %d linhas suas mantidas, %d sugeridas (%s)" % (len(meus), len(sug), ", ".join("%s %d" % (k, sum(1 for x in sug if x[1].startswith(k))) for k in ("Manutenção", "Parado", "Offline"))))
+
+
 if __name__ == "__main__":
-    cmds = {"iniciar-bi": iniciar_bi, "vfleets": vfleets, "montar": montar, "excluir": excluir}
+    cmds = {"iniciar-bi": iniciar_bi, "vfleets": vfleets, "montar": montar, "excluir": excluir, "planilha": planilha}
     if len(sys.argv) < 2 or sys.argv[1] not in cmds:
         sys.exit(__doc__)
     cmds[sys.argv[1]](*sys.argv[2:])
