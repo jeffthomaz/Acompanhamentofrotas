@@ -60,8 +60,18 @@ def ler_boletim(caminho):
             d = "%s-%s-%s" % (dm.group(3), dm.group(2), dm.group(1)) if dm else ""
         if not d:
             continue
-        out.append({"f": f, "placa": g("PLACA"), "d": d, "i": segundos(g("TEMPO IGNIÇÃO LIGADA")), "p": segundos(g("PARADO LIGADO"))})
+        out.append({"f": DE_PARA.get(f.upper(), f), "placa": g("PLACA"), "d": d, "i": segundos(g("TEMPO IGNIÇÃO LIGADA")), "p": segundos(g("PARADO LIGADO"))})
     return out
+
+
+def de_para():
+    cam = os.path.join(AQUI, "frotas_de_para.json")
+    if not os.path.exists(cam):
+        return {}
+    return {norm(k).upper(): norm(v) for k, v in json.load(open(cam, encoding="utf-8")).items() if not k.startswith("_")}
+
+
+DE_PARA = de_para()
 
 
 def boletim(*args):
@@ -102,7 +112,9 @@ def montar(base, destino):
             return "VEÍCULOS LEVES", antigo[f]["processo"], antigo[f]["responsavel"]
         return "", "", ""
     linhas, sem_cad = [], set()
+    dp = de_para()
     for l in B["linhas"]:
+        l = dict(l, f=dp.get(norm(l["f"]).upper(), l["f"]))
         if norm(l["f"]).upper() in excl:
             continue
         grp, proc, resp = info(l["f"])

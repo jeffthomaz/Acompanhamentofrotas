@@ -1,0 +1,5 @@
+{
+  "_comentario": "Frotas que já apareceram pela placa no lugar do número (antes do cadastro). Chave = como apareceu, valor = número da frota. Aplicado em gerar_acesso.py (todas as abas), ociosidade.py e no app.js (DE_PARA, leitura de arquivos no navegador).",
+  "USG4J27": "40904",
+  "UAG4J26": "40898"
+}

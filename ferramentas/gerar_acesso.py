@@ -123,6 +123,66 @@ def unificar_processos(D):
         M["proc"] = tot
 
 
+def aplicar_de_para(D):
+    """Junta na frota certa os registros que vieram pela placa (ferramentas/frotas_de_para.json)."""
+    caminho = os.path.join(os.path.dirname(os.path.abspath(__file__)), "frotas_de_para.json")
+    if not os.path.exists(caminho):
+        return
+    dp = {norm(k).upper(): norm(v) for k, v in json.load(open(caminho, encoding="utf-8")).items() if not k.startswith("_")}
+    nf = lambda f: dp.get(norm(f).upper(), f)
+    def juntar_dict(d):  # mantém o registro da frota certa; o da placa só entra se ela não existir
+        out = {}
+        for f, v in d.items():
+            if norm(f).upper() not in dp:
+                out[f] = v
+        for f, v in d.items():
+            if norm(f).upper() in dp:
+                out.setdefault(nf(f), v)
+        return out
+    if "comportamento" in D:
+        C = D["comportamento"]
+        C["frotas"] = juntar_dict(C["frotas"])
+        soma = {}
+        for d0, t, f, n in C["ev"]:
+            k = (d0, t, nf(f)); soma[k] = soma.get(k, 0) + n
+        C["ev"] = sorted([list(k) + [n] for k, n in soma.items()])
+    if "permanencia" in D:
+        P = D["permanencia"]
+        P["veiculos"] = juntar_dict(P["veiculos"])
+        for e in P["eventos"]:
+            e[0] = nf(e[0])
+    if "conectividade" in D:
+        K = D["conectividade"]
+        hist = {}
+        for f, h in sorted(K["hist"].items(), key=lambda x: norm(x[0]).upper() in dp):  # frota certa primeiro
+            g = nf(f)
+            if g in hist:  # dia a dia, completa com o que só a placa tinha
+                hist[g] = "".join(a if a != "." else b for a, b in zip(hist[g], h))
+            else:
+                hist[g] = h
+        K["hist"] = hist
+        K["frotas"] = juntar_dict(K["frotas"])
+        K["atual"] = juntar_dict(K["atual"])
+        for p in K.get("pendencias", []):
+            p["f"] = nf(p["f"])
+    if "motorOcioso" in D:
+        M = D["motorOcioso"]
+        por = {}
+        for v in sorted(M["veiculos"], key=lambda v: norm(v["id"]).upper() in dp):
+            g = nf(v["id"])
+            if g in por:
+                x = por[g]
+                x["ligado"] = [round(a + b, 2) for a, b in zip(x["ligado"], v["ligado"])]
+                x["ocioso"] = [round(a + b, 2) for a, b in zip(x["ocioso"], v["ocioso"])]
+                x["dias"] += v["dias"]
+            else:
+                por[g] = dict(v, id=g)
+        M["veiculos"] = sorted(por.values(), key=lambda v: v["id"])
+    if "cameras" in D:
+        for x in D["cameras"]["lista"]:
+            x["f"] = nf(x["f"])
+
+
 def remover_excluidas(D):
     """Tira de todas as abas as frotas de ferramentas/frotas_excluidas.json (inativas)."""
     caminho = os.path.join(os.path.dirname(os.path.abspath(__file__)), "frotas_excluidas.json")
@@ -152,6 +212,7 @@ def remover_excluidas(D):
 def main(cad, fonte, saida):
     D = json.load(open(fonte, encoding="utf-8"))
     unificar_processos(D)
+    aplicar_de_para(D)
     remover_excluidas(D)
     conhecidos = {chave_proc(v["processo"]): v["processo"] for v in D.get("comportamento", {}).get("frotas", {}).values()}
     conhecidos.update({chave_proc(v["processo"]): v["processo"] for v in D.get("motorOcioso", {}).get("veiculos", [])})

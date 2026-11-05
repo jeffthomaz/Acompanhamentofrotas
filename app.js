@@ -487,6 +487,8 @@ window.iniciarPainel = function (D) {
 
   // ----- Leitura dos arquivos exportados no navegador (mesmas regras de ferramentas/cameras.py e conectividade.py) -----
   var EXCLUIR = { ZZSEE4G55: 1, "961313": 1 }; // igual a ferramentas/frotas_excluidas.json
+  var DE_PARA = { USG4J27: "40904", UAG4J26: "40898" }; // igual a ferramentas/frotas_de_para.json
+  function frotaCerta(f) { return DE_PARA[String(f).toUpperCase()] || f; }
   function nrm(t) { return String(t == null ? "" : t).normalize("NFC").trim(); }
   function decodifica(buf) {
     try { return new TextDecoder("utf-8", { fatal: true }).decode(buf).replace(/^﻿/, ""); } catch (e) { return new TextDecoder("windows-1252").decode(buf); }
@@ -532,7 +534,7 @@ window.iniciarPainel = function (D) {
     function def(v) { v = nrm(v).toUpperCase(); if (v === "SIM" || v === "S") return 1; var n = parseInt(v, 10); return isNaN(n) ? 0 : n; }
     var proc = mapaProcessos(), restrito = D.escopo && D.escopo !== "todos", R = {}, lista = [], fora = 0;
     T.rows.forEach(function (l) {
-      var f = l["PREFIXO"] || l["PLACA"]; if (!f || f === "-" || /INATIVO/i.test(f) || EXCLUIR[f.toUpperCase()]) return;
+      var f = frotaCerta(l["PREFIXO"] || l["PLACA"] || ""); if (!f || f === "-" || /INATIVO/i.test(f) || EXCLUIR[f.toUpperCase()]) return;
       var p = proc[f];
       if (!p) { if (restrito) { fora++; return; } p = l["UO"] && l["UO"].indexOf(" - ") >= 0 ? l["UO"].split(" - ").slice(1).join(" - ") : "SEM PROCESSO"; }
       var r = R[p] || (R[p] = { n: 0, st: {}, gps: {}, tk: {}, ev: 0 }); r.n++;
@@ -570,7 +572,7 @@ window.iniciarPainel = function (D) {
     T.rows.forEach(function (l) {
       var partes = (l["VEÍCULO"] || "").split(" - ").map(nrm); if (!partes[0]) return;
       if (partes.some(function (x) { return x.toLowerCase() === "inativo"; })) return;
-      var f = partes[0]; if (EXCLUIR[f.toUpperCase()]) return;
+      var f = frotaCerta(partes[0]); if (EXCLUIR[f.toUpperCase()]) return;
       if (!K.frotas[f]) { novos++; return; }
       var ap = (l["APELIDO"] || "").toUpperCase().replace("MANUTENCAO", "MANUTENÇÃO"), u = dataBR(l["ÚLTIMA CONEXÃO"]);
       var off = u ? Math.round((ref - Date.UTC(+u.d.slice(0, 4), u.d.slice(5, 7) - 1, +u.d.slice(8, 10))) / 86400000) : 999;
@@ -607,7 +609,7 @@ window.iniciarPainel = function (D) {
     var cad = (D.conectividade || {}).frotas || {}, porId = {}, restrito = D.escopo && D.escopo !== "todos", n = 0;
     M.veiculos.forEach(function (v) { porId[v.id] = v; });
     T.rows.forEach(function (l) {
-      var f = l["PREFIXO"]; if (!f || f === "-" || EXCLUIR[f.toUpperCase()]) return;
+      var f = frotaCerta(l["PREFIXO"] || ""); if (!f || f === "-" || EXCLUIR[f.toUpperCase()]) return;
       var i = segs(l["TEMPO IGNIÇÃO LIGADA"]), p = segs(l["PARADO LIGADO"]); if (i <= 0 && p <= 0) return;
       var v = porId[f];
       if (!v) { // veículo leve que ainda não estava na aba (só para quem vê todos os processos)
