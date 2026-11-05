@@ -1,4 +1,4 @@
 {
   "_comentario": "Frotas desconsideradas em todas as abas do painel (inativas ou equipamentos que não contam). Aplicado em gerar_acesso.py e cameras.py; manter igual à lista EXCLUIR do app.js (leitura de arquivos no navegador).",
-  "frotas": ["ZZSEE4G55", "961313"]
+  "frotas": ["ZZSEE4G55", "961313", "30030"]
 }
