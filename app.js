@@ -486,8 +486,8 @@ window.iniciarPainel = function (D) {
   }
 
   // ----- Leitura dos arquivos exportados no navegador (mesmas regras de ferramentas/cameras.py e conectividade.py) -----
-  var EXCLUIR = { ZZSEE4G55: 1, "961313": 1 }; // igual a ferramentas/frotas_excluidas.json
-  var DE_PARA = { USG4J27: "40904", UAG4J26: "40898" }; // igual a ferramentas/frotas_de_para.json
+  var EXCLUIR = { ZZSEE4G55: 1, ZSEE4G55: 1, "961313": 1 }; // igual a ferramentas/frotas_excluidas.json
+  var DE_PARA = { USG4J27: "40904", UAG4J26: "40898", ARO0157: "10157", UCM7H97: "30168", UCO7E57: "40907" }; // igual a ferramentas/frotas_de_para.json
   var PROC_INFORMADO = { "40771": "TRANSPORTE", "40777": "TRATOS CULTURAIS", "40845": "TRATOS CULTURAIS", "40743": "TRATOS CULTURAIS", "40833": "FACILITIES", "40690": "FACILITIES", "40908": "FACILITIES" }; // igual a ferramentas/processos_frotas.json
   function frotaCerta(f) { return DE_PARA[String(f).toUpperCase()] || f; }
   function nrm(t) { return String(t == null ? "" : t).normalize("NFC").trim(); }
