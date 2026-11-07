@@ -986,14 +986,14 @@ window.iniciarPainel = function (D) {
     return '<span class="dl ' + (ig ? "neutro" : v < 0 ? "bom" : "ruim") + '"><span aria-hidden="true">' + (ig ? "=" : v < 0 ? "↓" : "↑") + "</span> " + (v > 0 ? "+" : "") + num(v, 1).replace("-", "−") + " p.p.</span>";
   }
 
-  // Semana do Resumo: domingo a sexta da última semana fechada (a sexta mais recente antes de hoje),
-  // comparada com o domingo a sexta anterior. Mesma semana do resumo enviado no WhatsApp.
+  // Semana do Resumo: sábado a sexta da última semana fechada (a sexta mais recente antes de hoje),
+  // comparada com o sábado a sexta anterior. Mesma semana do resumo enviado no WhatsApp.
   function semanaRef() {
     var h = new Date(); h.setHours(12, 0, 0, 0);
     var volta = (h.getDay() + 2) % 7 || 7; // dias até a sexta anterior (sábado 1, domingo 2, ..., sexta 7)
     h.setDate(h.getDate() - volta);
     var fim = h.getFullYear() + "-" + pad(h.getMonth() + 1) + "-" + pad(h.getDate()), dias = [];
-    for (var k = 5; k >= 0; k--) dias.push(isoMais(fim, -k));
+    for (var k = 6; k >= 0; k--) dias.push(isoMais(fim, -k));
     return { ini: dias[0], fim: fim, dias: dias, ant: dias.map(function (d) { return isoMais(d, -7); }) };
   }
   function entre(a, b) { return Math.round((new Date(b + "T12:00:00") - new Date(a + "T12:00:00")) / 864e5); }
@@ -1016,8 +1016,8 @@ window.iniciarPainel = function (D) {
     C.ev.forEach(function (e) {
       var f = F[e[2]]; if (!f || !noProc(f.processo) || e[0] > fimC) return;
       var k = e[0] - i0, q = e[0] - a0;
-      if (k >= 0 && k < 6 && por[k] !== null) { por[k] += e[3]; cur += e[3]; porT[e[1]] += e[3]; porP[f.processo] = (porP[f.processo] || 0) + e[3]; }
-      else if (q >= 0 && q < 6 && okA[q]) { ant += e[3]; porTA[e[1]] += e[3]; }
+      if (k >= 0 && k < 7 && por[k] !== null) { por[k] += e[3]; cur += e[3]; porT[e[1]] += e[3]; porP[f.processo] = (porP[f.processo] || 0) + e[3]; }
+      else if (q >= 0 && q < 7 && okA[q]) { ant += e[3]; porTA[e[1]] += e[3]; }
     });
     var cats = CATS.map(function (c) {
       var ix = T.map(function (t, i) { return (t.grupo || t.id) === c.id ? i : -1; }).filter(function (i) { return i >= 0; });
@@ -1161,7 +1161,7 @@ window.iniciarPainel = function (D) {
     var lista = unicos(Object.keys(procs));
     var filtros = '<div class="filtros"><label>Processo<select data-fil="processo" id="r-processo">' + opcoes(lista, fil_.processo, D.escopo && D.escopo !== "todos" ? "Todos os meus processos" : "Todos os processos") + "</select></label>" +
       (fil_.processo ? '<button type="button" class="limpar" data-limpar="1">Limpar filtros</button>' : "") +
-      '<p class="ctx">Semana de domingo a sexta, ' + dd(S.ini) + " a " + dd(S.fim) + ", comparada com " + dd(S.ant[0]) + " a " + dd(S.ant[5]) + ". Câmeras: relatório do dia.</p></div>";
+      '<p class="ctx">Semana de sábado a sexta, ' + dd(S.ini) + " a " + dd(S.fim) + ", comparada com " + dd(S.ant[0]) + " a " + dd(S.ant[6]) + ". Câmeras: relatório do dia.</p></div>";
 
     var by = {}; A.forEach(function (a) { if (a.valor !== "—") by[a.aba] = a; });
     var partes = [];
@@ -1215,7 +1215,7 @@ window.iniciarPainel = function (D) {
     painel.innerHTML = VIEWS[id]();
     if (id === "permanencia") montarMapa();
     fil.hidden = true;
-    var blocos = { "resumo": { real: !D.exemplo, periodo: "Semana de domingo a sexta" }, "comportamento": D.comportamento, "motor-ocioso": D.motorOcioso, "permanencia": D.permanencia, "conectividade": D.conectividade, "cameras": D.cameras }, b = blocos[id], real = b && b.real;
+    var blocos = { "resumo": { real: !D.exemplo, periodo: "Semana de sábado a sexta" }, "comportamento": D.comportamento, "motor-ocioso": D.motorOcioso, "permanencia": D.permanencia, "conectividade": D.conectividade, "cameras": D.cameras }, b = blocos[id], real = b && b.real;
     document.getElementById("periodo").textContent = real ? b.periodo + " · dados reais" : D.periodo;
     document.getElementById("aviso").hidden = real || !D.exemplo;
   }

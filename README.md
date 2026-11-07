@@ -2,7 +2,7 @@
 
 Site em JavaScript com as abas Resumo, Comportamento, Motor ocioso, Permanência, Conectividade e Câmeras.
 
-O Resumo é a primeira aba: a semana de domingo a sexta (a última fechada antes de hoje), comparada com o domingo a
+O Resumo é a primeira aba: a semana de sábado a sexta (a última fechada antes de hoje), comparada com o sábado a
 sexta anterior, usando só os mesmos dias da semana que já têm dados, com diagnóstico, "O que pede atenção" e as maiores permanências. Usa os mesmos dados das outras
 abas, então se atualiza junto com elas. No comportamento, só contam os dias que leves e pesadas já têm.
 O motor ocioso guarda os últimos 21 dias por veículo (`ultDias`, `dl`, `do`) para isso.
