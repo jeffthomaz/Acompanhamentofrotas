@@ -986,24 +986,39 @@ window.iniciarPainel = function (D) {
     return '<span class="dl ' + (ig ? "neutro" : v < 0 ? "bom" : "ruim") + '"><span aria-hidden="true">' + (ig ? "=" : v < 0 ? "↓" : "↑") + "</span> " + (v > 0 ? "+" : "") + num(v, 1).replace("-", "−") + " p.p.</span>";
   }
 
-  function rzComportamento() {
+  // Semana do Resumo: domingo a sexta da última semana fechada (a sexta mais recente antes de hoje),
+  // comparada com o domingo a sexta anterior. Mesma semana do resumo enviado no WhatsApp.
+  function semanaRef() {
+    var h = new Date(); h.setHours(12, 0, 0, 0);
+    var volta = (h.getDay() + 2) % 7 || 7; // dias até a sexta anterior (sábado 1, domingo 2, ..., sexta 7)
+    h.setDate(h.getDate() - volta);
+    var fim = h.getFullYear() + "-" + pad(h.getMonth() + 1) + "-" + pad(h.getDate()), dias = [];
+    for (var k = 5; k >= 0; k--) dias.push(isoMais(fim, -k));
+    return { ini: dias[0], fim: fim, dias: dias, ant: dias.map(function (d) { return isoMais(d, -7); }) };
+  }
+  function entre(a, b) { return Math.round((new Date(b + "T12:00:00") - new Date(a + "T12:00:00")) / 864e5); }
+  function semDados(S, aba, nome, un) {
+    return { aba: aba, nome: nome, ini: S.ini, fim: S.fim, valor: "—", un: un, delta: '<span class="dl neutro">sem dados</span>',
+      graf: barras7(S.dias.map(function () { return null; }), S.dias, String, nome), diag: "Ainda sem dados desta semana.", alertas: [] };
+  }
+
+  function rzComportamento(S) {
     var C = D.comportamento; if (!C) return null;
-    var F = C.frotas, T = C.tipos, N = C.ndias;
-    // Leves e pesadas vêm de BIs diferentes: a semana fecha no último dia que as duas já têm.
-    var ultT = {};
+    var F = C.frotas, T = C.tipos, ultT = {};
+    // Leves e pesadas vêm de BIs diferentes: só contam os dias que as duas já têm.
     C.ev.forEach(function (e) { var t = (F[e[2]] || {}).frota || ""; if (!(ultT[t] >= e[0])) ultT[t] = e[0]; });
-    var fimC = Math.min.apply(null, Object.keys(ultT).map(function (t) { return ultT[t]; }).concat(N - 1));
-    N = fimC + 1;
-    var a0 = Math.max(N - 7, 0), b0 = a0 - 7;
-    var por = [], k, cur = 0, ant = 0, porT = T.map(function () { return 0; }), porTA = porT.slice(), porP = {};
-    for (k = a0; k < N; k++) por.push(0);
+    var fimC = Math.min.apply(null, Object.keys(ultT).map(function (t) { return ultT[t]; }).concat(C.ndias - 1));
+    var i0 = entre(C.inicio, S.ini), a0 = i0 - 7;
+    var por = S.dias.map(function (_, k) { return i0 + k <= fimC && i0 + k >= 0 ? 0 : null; });
+    var okA = S.dias.map(function (_, k) { return por[k] !== null && a0 + k >= 0; });
+    if (por.every(function (v) { return v === null; })) return semDados(S, "comportamento", "Comportamental", "ocorrências");
+    var cur = 0, ant = 0, porT = T.map(function () { return 0; }), porTA = porT.slice(), porP = {};
     C.ev.forEach(function (e) {
-      var f = F[e[2]]; if (!f || !noProc(f.processo)) return;
-      if (e[0] >= N) return;
-      if (e[0] >= a0) { por[e[0] - a0] += e[3]; cur += e[3]; porT[e[1]] += e[3]; porP[f.processo] = (porP[f.processo] || 0) + e[3]; }
-      else if (b0 >= 0 && e[0] >= b0) { ant += e[3]; porTA[e[1]] += e[3]; }
+      var f = F[e[2]]; if (!f || !noProc(f.processo) || e[0] > fimC) return;
+      var k = e[0] - i0, q = e[0] - a0;
+      if (k >= 0 && k < 6 && por[k] !== null) { por[k] += e[3]; cur += e[3]; porT[e[1]] += e[3]; porP[f.processo] = (porP[f.processo] || 0) + e[3]; }
+      else if (q >= 0 && q < 6 && okA[q]) { ant += e[3]; porTA[e[1]] += e[3]; }
     });
-    var dias = por.map(function (_, i) { return isoMais(C.inicio, a0 + i); });
     var cats = CATS.map(function (c) {
       var ix = T.map(function (t, i) { return (t.grupo || t.id) === c.id ? i : -1; }).filter(function (i) { return i >= 0; });
       return { c: c, n: sum(ix, function (i) { return porT[i]; }), a: sum(ix, function (i) { return porTA[i]; }) };
@@ -1019,50 +1034,55 @@ window.iniciarPainel = function (D) {
     if (sobe) al.push(["atencao", "↑", "<b>" + esc(sobe.c.nome) + "</b> subiu " + num((sobe.n - sobe.a) / sobe.a * 100, 0) + "% em relação à semana anterior."]);
     var diag = cur ? "<b>" + esc(cats[0].c.nome) + "</b> é " + num(cats[0].n / cur * 100, 0) + "% das ocorrências" +
       (procs.length > 1 ? "; <b>" + esc(procs[0]) + "</b> concentra " + num(porP[procs[0]] / cur * 100, 0) + "%." : ".") : "Nenhuma ocorrência na semana.";
-    return { aba: "comportamento", nome: "Comportamental", ini: dias[0], fim: dias[dias.length - 1],
-      valor: num(cur, 0), un: plural(cur, "ocorrência", "ocorrências"), delta: b0 >= 0 ? delta(cur, ant) : '<span class="dl neutro">sem base</span>',
-      graf: barras7(por, dias, function (v) { return num(v, 0) + " " + plural(v, "ocorrência", "ocorrências"); }, "Ocorrências por dia"),
+    var dFim = isoMais(C.inicio, fimC);
+    return { aba: "comportamento", nome: "Comportamental", ini: S.ini, fim: S.fim, ate: dFim < S.fim ? dFim : null,
+      valor: num(cur, 0), un: plural(cur, "ocorrência", "ocorrências"), delta: ant ? delta(cur, ant) : '<span class="dl neutro">sem base</span>',
+      graf: barras7(por, S.dias, function (v) { return num(v, 0) + " " + plural(v, "ocorrência", "ocorrências"); }, "Ocorrências por dia"),
       diag: diag, alertas: al, cur: cur, ant: ant };
   }
 
-  function rzOcioso() {
+  function rzOcioso(S) {
     var M = D.motorOcioso; if (!M || !M.ultDias) return null;
-    var U = M.ultDias, n = U.length, meta = M.metaPct, vs = M.veiculos.filter(function (v) { return noProc(v.processo) && v.dl; });
-    var L = U.map(function (_, k) { return sum(vs, function (v) { return v.dl[k] || 0; }); }), O = U.map(function (_, k) { return sum(vs, function (v) { return v.do[k] || 0; }); });
-    var c0 = Math.max(n - 7, 0), a0 = c0 - 7;
-    function pctDe(i0, i1) { var l = 0, o = 0; for (var k = Math.max(i0, 0); k < i1; k++) { l += L[k]; o += O[k]; } return l ? o / l * 100 : null; }
-    var pct = pctDe(c0, n), pAnt = a0 >= 0 ? pctDe(a0, c0) : null;
-    var vals = [], dias = U.slice(c0);
-    for (var k = c0; k < n; k++) vals.push(L[k] ? O[k] / L[k] * 100 : null);
+    var U = M.ultDias, meta = M.metaPct, vs = M.veiculos.filter(function (v) { return noProc(v.processo) && v.dl; });
+    function tot(d) {
+      var k = U.indexOf(d); if (k < 0) return null;
+      var l = sum(vs, function (v) { return v.dl[k] || 0; }); return l ? { k: k, l: l, o: sum(vs, function (v) { return v.do[k] || 0; }) } : null;
+    }
+    var cur = S.dias.map(tot), ant = S.ant.map(tot);
+    if (cur.every(function (x) { return !x; })) return semDados(S, "motor-ocioso", "Motor ocioso", "do tempo ligado parado");
+    var lc = 0, oc = 0, la = 0, oa = 0;
+    cur.forEach(function (x, i) { if (!x) return; lc += x.l; oc += x.o; if (ant[i]) { la += ant[i].l; oa += ant[i].o; } });
+    var pct = lc ? oc / lc * 100 : null, pAnt = la ? oa / la * 100 : null;
+    var ks = cur.filter(Boolean).map(function (x) { return x.k; });
     var rows = vs.map(function (v) {
-      var l = 0, o = 0; for (var q = c0; q < n; q++) { l += v.dl[q] || 0; o += v.do[q] || 0; }
+      var l = sum(ks, function (k) { return v.dl[k] || 0; }), o = sum(ks, function (k) { return v.do[k] || 0; });
       return { v: v, l: l, o: o, p: l ? o / l * 100 : 0 };
     }).filter(function (r) { return r.l >= 2; });
     var acima = rows.filter(function (r) { return r.p > meta; }).sort(function (a, b) { return b.p - a.p; });
-    var horasO = sum(rows, function (r) { return r.o; });
     var al = [];
     if (pct !== null && pct > meta) al.push(["ruim", "!", "Motor ocioso em <b>" + num(pct, 1) + "%</b>, acima da meta de " + meta + "%."]);
     if (acima.length) al.push(["atencao", "▲", "<b>" + acima.length + "</b> " + plural(acima.length, "veículo passou", "veículos passaram") + " da meta de " + meta + "%; o <b>" + esc(acima[0].v.id) + "</b> ficou " + num(acima[0].p, 1) + "% do tempo ligado parado."]);
-    var diag = pct === null ? "Sem dados de motor ligado na semana." :
-      (acima.length ? "<b>" + acima.length + "</b> " + plural(acima.length, "veículo acima", "veículos acima") + " da meta de " + meta + "%. " : "Todos os veículos dentro da meta de " + meta + "%. ") + horas(horasO) + " de motor ligado parado.";
-    var fim = dias.filter(function (d, i) { return vals[i] !== null; }).pop() || dias[dias.length - 1];
-    return { aba: "motor-ocioso", nome: "Motor ocioso", ini: dias[0], fim: fim,
-      valor: pct === null ? "—" : num(pct, 1) + "%", un: "do tempo ligado parado", delta: deltaPP(pct, pAnt),
-      graf: barras7(vals, dias, function (v) { return num(v, 1) + "%"; }, "Motor ocioso por dia"),
+    var diag = (acima.length ? "<b>" + acima.length + "</b> " + plural(acima.length, "veículo acima", "veículos acima") + " da meta de " + meta + "%. " : "Todos os veículos dentro da meta de " + meta + "%. ") + horas(oc) + " de motor ligado parado.";
+    var ultD = S.dias.filter(function (d, i) { return cur[i]; }).pop();
+    return { aba: "motor-ocioso", nome: "Motor ocioso", ini: S.ini, fim: S.fim, ate: ultD < S.fim ? ultD : null,
+      valor: num(pct, 1) + "%", un: "do tempo ligado parado", delta: deltaPP(pct, pAnt),
+      graf: barras7(cur.map(function (x) { return x ? x.o / x.l * 100 : null; }), S.dias, function (v) { return num(v, 1) + "%"; }, "Motor ocioso por dia"),
       diag: diag, alertas: al, pct: pct };
   }
 
-  function rzPermanencia() {
+  function rzPermanencia(S) {
     var P = D.permanencia; if (!P || !P.eventos.length) return null;
-    var V = P.veiculos, ult = P.eventos[P.eventos.length - 1][5], i0 = isoMais(ult, -6), a0 = isoMais(ult, -13);
-    var dias = [], k; for (k = 0; k < 7; k++) dias.push(isoMais(i0, k));
-    var porDia = dias.map(function () { return 0; }), loc = {}, n = 0, min = 0, minA = 0;
+    var V = P.veiculos, ult = P.eventos[P.eventos.length - 1][5];
+    var porDia = S.dias.map(function (d) { return d <= ult ? 0 : null; });
+    if (porDia[0] === null) return semDados(S, "permanencia", "Permanência", "parados");
+    var loc = {}, n = 0, min = 0, minA = 0;
     P.eventos.forEach(function (e) {
       var v = V[e[0]]; if (!v || !noProc(v.processo)) return;
-      if (e[5] >= i0) {
-        n++; min += e[3]; porDia[dias.indexOf(e[5])] += e[3];
+      var k = S.dias.indexOf(e[5]), q = S.ant.indexOf(e[5]);
+      if (k >= 0 && porDia[k] !== null) {
+        n++; min += e[3]; porDia[k] += e[3];
         var x = loc[e[4]] || (loc[e[4]] = { i: e[4], n: 0, min: 0, fr: {} }); x.n++; x.min += e[3]; x.fr[e[0]] = 1;
-      } else if (e[5] >= a0) minA += e[3];
+      } else if (q >= 0 && porDia[q] !== null) minA += e[3];
     });
     var top = Object.keys(loc).map(function (q) { return loc[q]; }).sort(function (a, b) { return b.min - a.min; });
     // Nas observações só entram estabelecimentos (postos, padarias, restaurantes...).
@@ -1071,34 +1091,36 @@ window.iniciarPainel = function (D) {
     if (est) al.push(["atencao", "◷", "Paradas em <b>" + esc(P.locais[est.i].nome) + "</b> somam " + hmin(est.min) + " na semana (" + est.n + " " + plural(est.n, "vez", "vezes") + ", média de " + hmin(est.min / est.n) + ")."]);
     var diag = n ? num(n, 0) + " " + plural(n, "permanência", "permanências") + " em " + top.length + " " + plural(top.length, "local", "locais") + "." +
       (est ? " O estabelecimento com mais tempo parado é <b>" + esc(P.locais[est.i].nome) + "</b>." : "") : "Nenhuma permanência na semana.";
-    return { aba: "permanencia", nome: "Permanência", ini: dias[0], fim: ult,
-      valor: min >= 600 ? num(Math.round(min / 60), 0) + " h" : hmin(min), un: "parados em " + num(n, 0) + " " + plural(n, "permanência", "permanências"), delta: delta(min, minA),
-      graf: barras7(porDia, dias, hmin, "Tempo de permanência por dia"),
+    return { aba: "permanencia", nome: "Permanência", ini: S.ini, fim: S.fim, ate: ult < S.fim ? ult : null,
+      valor: min >= 600 ? num(Math.round(min / 60), 0) + " h" : hmin(min), un: "parados em " + num(n, 0) + " " + plural(n, "permanência", "permanências"), delta: minA ? delta(min, minA) : '<span class="dl neutro">sem base</span>',
+      graf: barras7(porDia, S.dias, hmin, "Tempo de permanência por dia"),
       diag: diag, alertas: al, top: top.slice(0, 5), locais: P.locais };
   }
 
-  function rzConectividade() {
+  function rzConectividade(S) {
     var K = D.conectividade; if (!K || !K.dias.length) return null;
     var nd = K.dias.length, ids = Object.keys(K.frotas).filter(function (f) { return noProc(K.frotas[f].processo); });
-    var c0 = Math.max(nd - 7, 0), dias = K.dias.slice(c0), vals = [], k;
     function conta(i) {
       var o = { C: 0, O: 0, M: 0, P: 0 };
       ids.forEach(function (f) { var s = letraSt((K.hist[f] || "")[i] || "."); if (o[s] !== undefined) o[s]++; });
       return o;
     }
-    for (k = c0; k < nd; k++) { var o = conta(k); vals.push(o.C + o.O + o.M + o.P ? o.O : null); }
-    var hoje = conta(nd - 1), antes = nd >= 8 ? conta(nd - 8) : null, tot = hoje.C + hoje.O + hoje.M + hoje.P;
+    var ix = S.dias.map(function (d) { return K.dias.indexOf(d); });
+    var vals = ix.map(function (i) { if (i < 0) return null; var o = conta(i); return o.C + o.O + o.M + o.P ? o.O : null; });
+    var li = -1; ix.forEach(function (i, k) { if (vals[k] !== null) li = i; });
+    if (li < 0) return semDados(S, "conectividade", "Conectividade", "veículos offline");
+    var hoje = conta(li), ia = K.dias.indexOf(isoMais(K.dias[li], -7)), antes = ia >= 0 ? conta(ia) : null, tot = hoje.C + hoje.O + hoje.M + hoje.P;
     var longos = ids.map(function (f) {
-      var h = K.hist[f] || "", d = 0; for (var q = nd - 1; q >= 0 && h[q] === "O"; q--) d++;
+      var h = K.hist[f] || "", d = 0; for (var q = li; q >= 0 && h[q] === "O"; q--) d++;
       return { f: f, d: d };
     }).filter(function (x) { return x.d >= 2; }).sort(function (a, b) { return b.d - a.d; });
     var al = [];
     if (longos.length) al.push([longos[0].d >= 5 ? "ruim" : "atencao", "⌁", "<b>" + longos.length + "</b> " + plural(longos.length, "veículo está", "veículos estão") + " offline há 2 dias ou mais; o <b>" + esc(longos[0].f) + "</b> há " + longos[0].d + " dias."]);
-    var diag = tot ? num(hoje.C, 0) + " de " + num(tot, 0) + " " + plural(tot, "veículo conectado", "veículos conectados") + "; " + hoje.M + " em manutenção e " + hoje.P + " " + plural(hoje.P, "parado", "parados") + "." : "Sem veículos nesse filtro.";
-    return { aba: "conectividade", nome: "Conectividade", ini: dias[0], fim: K.dias[nd - 1],
-      valor: num(hoje.O, 0), un: plural(hoje.O, "veículo offline", "veículos offline") + " no último dia",
+    var diag = num(hoje.C, 0) + " de " + num(tot, 0) + " " + plural(tot, "veículo conectado", "veículos conectados") + "; " + hoje.M + " em manutenção e " + hoje.P + " " + plural(hoje.P, "parado", "parados") + ".";
+    return { aba: "conectividade", nome: "Conectividade", ini: S.ini, fim: S.fim, ate: K.dias[li] < S.fim ? K.dias[li] : null,
+      valor: num(hoje.O, 0), un: plural(hoje.O, "veículo offline", "veículos offline") + " em " + dd(K.dias[li]),
       delta: antes ? delta(hoje.O, antes.O) : '<span class="dl neutro">sem base</span>',
-      graf: barras7(vals, dias, function (v) { return v + " offline"; }, "Veículos offline por dia"),
+      graf: barras7(vals, S.dias, function (v) { return v + " offline"; }, "Veículos offline por dia"),
       diag: diag, alertas: al, offline: hoje.O };
   }
 
@@ -1129,7 +1151,8 @@ window.iniciarPainel = function (D) {
     "cameras": "M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3zM12 10a3 3 0 1 0 0 6a3 3 0 1 0 0-6z"
   };
   function abaResumo() {
-    var A = [rzComportamento(), rzOcioso(), rzPermanencia(), rzConectividade(), rzCameras()].filter(Boolean);
+    var S = semanaRef();
+    var A = [rzComportamento(S), rzOcioso(S), rzPermanencia(S), rzConectividade(S), rzCameras()].filter(Boolean);
     var procs = {};
     [["comportamento", "frotas"], ["permanencia", "veiculos"], ["conectividade", "frotas"]].forEach(function (b) {
       var o = (D[b[0]] || {})[b[1]] || {}; Object.keys(o).forEach(function (f) { if (o[f].processo) procs[o[f].processo] = 1; });
@@ -1138,15 +1161,15 @@ window.iniciarPainel = function (D) {
     var lista = unicos(Object.keys(procs));
     var filtros = '<div class="filtros"><label>Processo<select data-fil="processo" id="r-processo">' + opcoes(lista, fil_.processo, D.escopo && D.escopo !== "todos" ? "Todos os meus processos" : "Todos os processos") + "</select></label>" +
       (fil_.processo ? '<button type="button" class="limpar" data-limpar="1">Limpar filtros</button>' : "") +
-      '<p class="ctx">Cada área mostra os 7 dias até o último dia com dados dela, comparados com os 7 dias anteriores.</p></div>';
+      '<p class="ctx">Semana de domingo a sexta, ' + dd(S.ini) + " a " + dd(S.fim) + ", comparada com " + dd(S.ant[0]) + " a " + dd(S.ant[5]) + ". Câmeras: relatório do dia.</p></div>";
 
-    var by = {}; A.forEach(function (a) { by[a.aba] = a; });
+    var by = {}; A.forEach(function (a) { if (a.valor !== "—") by[a.aba] = a; });
     var partes = [];
     if (by.comportamento) partes.push("<b>" + by.comportamento.valor + "</b> " + by.comportamento.un + " comportamentais" + (by.comportamento.ant ? " (" + (by.comportamento.cur >= by.comportamento.ant ? "+" : "−") + num(Math.abs(by.comportamento.cur - by.comportamento.ant) / by.comportamento.ant * 100, 0) + "% sobre a semana anterior)" : ""));
-    if (by["motor-ocioso"] && by["motor-ocioso"].pct !== null) partes.push("motor ocioso em <b>" + by["motor-ocioso"].valor + "</b>");
+    if (by["motor-ocioso"] && by["motor-ocioso"].pct != null) partes.push("motor ocioso em <b>" + by["motor-ocioso"].valor + "</b>");
     if (by.conectividade) partes.push("<b>" + by.conectividade.valor + "</b> " + plural(by.conectividade.offline, "veículo offline", "veículos offline"));
     if (by.cameras) partes.push("<b>" + by.cameras.valor + "</b> " + plural(by.cameras.pend, "câmera com defeito", "câmeras com defeito") + " a confirmar");
-    var lead = partes.length ? "Na última semana: " + (partes.length > 1 ? partes.slice(0, -1).join(", ") + " e " + partes[partes.length - 1] : partes[0]) + "." : "Sem dados para esse filtro.";
+    var lead = partes.length ? "Na semana de " + dd(S.ini) + " a " + dd(S.fim) + ": " + (partes.length > 1 ? partes.slice(0, -1).join(", ") + " e " + partes[partes.length - 1] : partes[0]) + "." : "Sem dados para esse filtro.";
 
     var nivel = { ruim: 3, atencao: 2, bom: 1 };
     var quadro = '<section class="rz-quadro" aria-label="Quadro da semana">' + A.map(function (a) {
@@ -1154,7 +1177,7 @@ window.iniciarPainel = function (D) {
       var cls = pior === 3 ? "critico" : pior === 2 ? "atencao" : "bom";
       var nomeSit = { critico: "Pede ação", atencao: "Atenção", bom: "Sem alertas" }[cls];
       return '<a class="rz-l s-' + cls + '" href="#' + a.aba + '">' +
-        '<div class="rz-n"><span class="rz-ico">' + ico(RZ_ICO[a.aba]) + '</span><span class="rz-area">' + esc(a.nome) + "</span><small>" + (a.dia ? "Relatório de " + dd(a.fim) : dd(a.ini) + " a " + dd(a.fim)) + '</small><span class="rz-sit">' + nomeSit + "</span></div>" +
+        '<div class="rz-n"><span class="rz-ico">' + ico(RZ_ICO[a.aba]) + '</span><span class="rz-area">' + esc(a.nome) + "</span><small>" + (a.dia ? "Relatório de " + dd(a.fim) : dd(a.ini) + " a " + dd(a.fim) + (a.ate ? "<br>dados até " + dd(a.ate) : "")) + '</small><span class="rz-sit">' + nomeSit + "</span></div>" +
         '<div class="rz-v"><strong>' + a.valor + "</strong><span>" + esc(a.un) + "</span>" + a.delta + "</div>" +
         '<div class="rz-g">' + a.graf + "</div>" +
         '<p class="rz-d">' + a.diag + '<span class="rz-ir">Abrir ' + esc(a.nome.toLowerCase()) + "</span></p></a>";
@@ -1168,7 +1191,7 @@ window.iniciarPainel = function (D) {
     }).join("") + "</ul>" : '<p class="cs">Nenhum alerta na semana para esse filtro.</p>') + "</section>";
 
     var pe = by.permanencia, maiores = "";
-    if (pe) {
+    if (pe && pe.top) {
       var mx = Math.max.apply(null, [1].concat(pe.top.map(function (x) { return x.min; })));
       maiores = '<section class="card"><h3>Maiores permanências</h3><p class="cs">Locais com mais tempo parado de ' + dd(pe.ini) + " a " + dd(pe.fim) + ".</p>" + (pe.top.length ? '<ol class="rz-top">' + pe.top.map(function (x) {
         var L0 = pe.locais[x.i], nf = Object.keys(x.fr).length;
@@ -1192,7 +1215,7 @@ window.iniciarPainel = function (D) {
     painel.innerHTML = VIEWS[id]();
     if (id === "permanencia") montarMapa();
     fil.hidden = true;
-    var blocos = { "resumo": { real: !D.exemplo, periodo: "Últimos 7 dias de cada área" }, "comportamento": D.comportamento, "motor-ocioso": D.motorOcioso, "permanencia": D.permanencia, "conectividade": D.conectividade, "cameras": D.cameras }, b = blocos[id], real = b && b.real;
+    var blocos = { "resumo": { real: !D.exemplo, periodo: "Semana de domingo a sexta" }, "comportamento": D.comportamento, "motor-ocioso": D.motorOcioso, "permanencia": D.permanencia, "conectividade": D.conectividade, "cameras": D.cameras }, b = blocos[id], real = b && b.real;
     document.getElementById("periodo").textContent = real ? b.periodo + " · dados reais" : D.periodo;
     document.getElementById("aviso").hidden = real || !D.exemplo;
   }
