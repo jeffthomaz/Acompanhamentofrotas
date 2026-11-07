@@ -198,6 +198,9 @@ def aplicar_de_para(D):
                 x = por[g]
                 x["ligado"] = [round(a + b, 2) for a, b in zip(x["ligado"], v["ligado"])]
                 x["ocioso"] = [round(a + b, 2) for a, b in zip(x["ocioso"], v["ocioso"])]
+                for c in ("dl", "do"):  # últimos 14 dias (Resumo)
+                    if c in x and c in v:
+                        x[c] = [round(a + b, 2) for a, b in zip(x[c], v[c])]
                 x["dias"] += v["dias"]
             else:
                 por[g] = dict(v, id=g)

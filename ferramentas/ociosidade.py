@@ -136,17 +136,23 @@ def montar(base, destino):
     seg0 = ini - timedelta(days=ini.weekday())
     nsem = (fim - seg0).days // 7 + 1
     rot = [max(seg0 + timedelta(weeks=k), ini).strftime("%d/%m") for k in range(nsem)]
+    # Últimos 14 dias corridos, dia a dia, para o Resumo (últimos 7 dias comparados aos 7 anteriores).
+    ult = [(fim - timedelta(days=13 - k)).isoformat() for k in range(14)]
+    ix_ult = {d: k for k, d in enumerate(ult)}
     v = {}
     for l in linhas:
         x = v.setdefault(l["f"], {"id": l["f"], "placa": l["placa"], "processo": l["proc"], "responsavel": l["resp"],
-                                  "dias": set(), "i": [0] * nsem, "p": [0] * nsem})
+                                  "dias": set(), "i": [0] * nsem, "p": [0] * nsem, "di": [0] * 14, "dp": [0] * 14})
         d = date.fromisoformat(l["d"])
         k = (d - seg0).days // 7
         x["i"][k] += l["i"]; x["p"][k] += l["p"]
+        if l["d"] in ix_ult:
+            x["di"][ix_ult[l["d"]]] += l["i"]; x["dp"][ix_ult[l["d"]]] += l["p"]
         if l["i"] > 0:
             x["dias"].add(d)
     veiculos = [{"id": x["id"], "placa": x["placa"], "processo": x["processo"], "responsavel": x["responsavel"], "dias": len(x["dias"]),
-                 "ligado": [round(s / 3600, 2) for s in x["i"]], "ocioso": [round(s / 3600, 2) for s in x["p"]]}
+                 "ligado": [round(s / 3600, 2) for s in x["i"]], "ocioso": [round(s / 3600, 2) for s in x["p"]],
+                 "dl": [round(s / 3600, 2) for s in x["di"]], "do": [round(s / 3600, 2) for s in x["dp"]]}
                 for x in v.values()]
     veiculos.sort(key=lambda x: x["id"])
     D["motorOcioso"] = {
@@ -157,6 +163,7 @@ def montar(base, destino):
         "semanas": rot,
         "inicioSemana": seg0.isoformat(),
         "diasIncluidos": [d.isoformat() for d in dias],
+        "ultDias": ult,
         "veiculos": veiculos,
     }
     json.dump(D, open(destino, "w", encoding="utf-8"), ensure_ascii=False)

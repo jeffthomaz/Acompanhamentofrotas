@@ -1,6 +1,11 @@
 # Painel de monitoramento
 
-Site em JavaScript com as abas Comportamento, Motor ocioso, Permanência, Conectividade e Câmeras.
+Site em JavaScript com as abas Resumo, Comportamento, Motor ocioso, Permanência, Conectividade e Câmeras.
+
+O Resumo é a primeira aba: os últimos 7 dias de cada área (até o último dia com dados dela), comparados com os
+7 dias anteriores, com diagnóstico, "O que pede atenção" e as maiores permanências. Usa os mesmos dados das outras
+abas, então se atualiza junto com elas. No comportamento, a semana fecha no último dia que leves e pesadas já têm.
+O motor ocioso guarda os últimos 14 dias por veículo (`ultDias`, `dl`, `do`) para isso.
 O acesso é por login: cada usuário só consegue abrir os dados dos processos do grupo dele.
 
 - `index.html`: página, tela de login e estilos

@@ -314,10 +314,45 @@ rect.seg.c-vel{fill:var(--c-vel)}rect.seg.c-celular{fill:var(--c-celular)}rect.s
   .row .plot{grid-column:1/-1;order:3;min-height:1.6rem}
   .row.hd{display:none}
 }
+/* Resumo: quadro da semana */
+.rz-quadro{background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:0 1px 3px rgba(10,42,25,.08);overflow:hidden}
+.rz-l{--rz:var(--bom);position:relative;display:grid;grid-template-columns:minmax(0,10.5rem) minmax(0,11rem) minmax(0,13.5rem) minmax(0,1fr);gap:.5rem 1.75rem;align-items:center;padding:1.05rem 1.25rem 1.05rem 1.6rem;color:inherit;text-decoration:none;border-top:1px solid var(--line)}
+.rz-l:first-child{border-top:0}
+.rz-l::before{content:"";position:absolute;left:0;top:0;bottom:0;width:6px;background:var(--rz)}
+.rz-l.s-atencao{--rz:var(--maq)}.rz-l.s-critico{--rz:var(--critico)}
+.rz-l:hover{background:color-mix(in srgb,var(--maq) 7%,var(--card))}
+.rz-l:focus-visible{outline:3px solid var(--maq);outline-offset:-3px}
+.rz-area{display:block;font-family:var(--display);font-weight:800;font-size:1.15rem;letter-spacing:-.015em;line-height:1.15}
+.rz-n small{display:block;color:var(--muted);font-size:.8rem;margin-top:.1rem;font-variant-numeric:tabular-nums}
+.rz-sit{display:inline-block;margin-top:.45rem;font-size:.74rem;font-weight:600;padding:.1rem .55rem;border-radius:999px;background:var(--bom-bg);color:var(--bom)}
+.s-atencao .rz-sit{background:var(--atencao-bg);color:var(--atencao)}.s-critico .rz-sit{background:var(--critico-bg);color:var(--critico)}
+.rz-v strong{display:block;font-family:var(--display);font-weight:800;font-size:2.1rem;line-height:1;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.rz-v>span:not(.dl){display:block;color:var(--muted);font-size:.8rem;line-height:1.3;margin:.25rem 0 .2rem}
+.rz-v .dl{font-size:.82rem}
+.rz-b{display:block;width:100%;height:auto;max-width:15rem}
+.rz-col{fill:var(--c-vel)}.rz-col.ult{fill:var(--maq)}.rz-nd{fill:var(--line)}.rz-hit{fill:transparent}
+.rz-cam{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.3rem .9rem;font-size:.74rem;color:var(--muted)}.rz-cam li:first-child{grid-column:1/-1}
+.rz-cam li{display:flex;align-items:baseline;gap:.3rem;line-height:1.2}
+.rz-cam b{font-family:var(--display);font-size:1rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.rz-cam li.tem b{color:var(--critico)}
+.rz-d{margin:0;font-size:.9rem;line-height:1.45;max-width:46ch;text-wrap:pretty}
+.rz-ir{display:block;margin-top:.4rem;font-size:.8rem;font-weight:600;color:var(--muted);text-decoration:underline;text-decoration-color:var(--maq);text-decoration-thickness:2px;text-underline-offset:3px}
+.rz-l:hover .rz-ir{color:var(--ink)}
+.g2.rz-g2{grid-template-columns:minmax(0,1.15fr) minmax(0,1fr)}
+.rz-aba{font-size:.78rem;color:var(--muted);white-space:nowrap;text-decoration-color:var(--maq)}
+.rz-top{list-style:none;margin:0;padding:0;counter-reset:rz}
+.rz-top li{counter-increment:rz;display:grid;grid-template-columns:1.6rem 1fr auto;gap:.1rem .6rem;padding:.6rem 0;border-bottom:1px solid var(--line)}
+.rz-top li:last-child{border-bottom:0}
+.rz-top li::before{content:counter(rz);grid-row:1/3;font-family:var(--display);font-weight:800;font-size:1.05rem;color:var(--muted)}
+.rz-top .t{font-weight:600;font-size:.9rem;min-width:0;overflow-wrap:anywhere}.rz-top .t small{display:block;font-weight:400;font-size:.74rem;color:var(--muted)}
+.rz-top .n{font-family:var(--display);font-weight:700;font-size:1.05rem;text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.rz-top .bb{grid-column:2/-1}
+@media (max-width:900px){.rz-l{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:.75rem 1.25rem}.rz-g,.rz-d{grid-column:1/-1}.rz-b{max-width:20rem}.g2.rz-g2{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:420px){.rz-v strong{font-size:1.8rem}}
 </style>
 </head><body>
 <header class="band"><div class="band-in gut">
-  <img class="logo" src="logo-branco.png?v=202611070743" alt="Bioenergética Aroeira" width="67" height="92">
+  <img class="logo" src="logo-branco.png?v=202611070759" alt="Bioenergética Aroeira" width="67" height="92">
   <div><h1>Acompanhamento de frotas</h1><p class="per" id="periodo"></p></div>
   <div class="quem" id="quem" hidden><span><b id="quem-nome"></b><small id="quem-escopo"></small></span><button type="button" id="sair">Sair</button></div>
 </div></header>
@@ -346,7 +381,7 @@ rect.seg.c-vel{fill:var(--c-vel)}rect.seg.c-celular{fill:var(--c-celular)}rect.s
 </div>
 <footer class="foot gut">Bioenergética Aroeira S/A, Tupaciguara/MG. <a href="https://www.bioaroeira.com.br" target="_blank" rel="noopener">www.bioaroeira.com.br</a></footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" defer></script>
-<script src="acesso.js?v=202611070743"></script>
-<script src="app.js?v=202611070743"></script>
-<script src="login.js?v=202611070743"></script>
+<script src="acesso.js?v=202611070759"></script>
+<script src="app.js?v=202611070759"></script>
+<script src="login.js?v=202611070759"></script>
 </body></html>
