@@ -1120,6 +1120,14 @@ window.iniciarPainel = function (D) {
       alertas: al, pend: linhas.length };
   }
 
+  // Ícones das áreas (os mesmos da mensagem do WhatsApp: semáforo, combustível, local, sinal, câmera).
+  var RZ_ICO = {
+    "comportamento": "M9 2h6a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zM12 5.2a1.6 1.6 0 1 0 0 3.2a1.6 1.6 0 1 0 0-3.2zM12 10.4a1.6 1.6 0 1 0 0 3.2a1.6 1.6 0 1 0 0-3.2zM12 15.6a1.6 1.6 0 1 0 0 3.2a1.6 1.6 0 1 0 0-3.2z",
+    "motor-ocioso": "M3 22h12M4 9h10M14 22V4a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v18M14 13h2a2 2 0 0 1 2 2v2a2 2 0 0 0 4 0V9.8a2 2 0 0 0-.6-1.4L18 5",
+    "permanencia": "M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0zM12 7a3 3 0 1 0 0 6a3 3 0 1 0 0-6z",
+    "conectividade": "M5 12.6a11 11 0 0 1 14 0M1.5 9a16 16 0 0 1 21 0M8.5 16.1a6 6 0 0 1 7 0M12 20h.01",
+    "cameras": "M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3zM12 10a3 3 0 1 0 0 6a3 3 0 1 0 0-6z"
+  };
   function abaResumo() {
     var A = [rzComportamento(), rzOcioso(), rzPermanencia(), rzConectividade(), rzCameras()].filter(Boolean);
     var procs = {};
@@ -1146,7 +1154,7 @@ window.iniciarPainel = function (D) {
       var cls = pior === 3 ? "critico" : pior === 2 ? "atencao" : "bom";
       var nomeSit = { critico: "Pede ação", atencao: "Atenção", bom: "Sem alertas" }[cls];
       return '<a class="rz-l s-' + cls + '" href="#' + a.aba + '">' +
-        '<div class="rz-n"><span class="rz-area">' + esc(a.nome) + "</span><small>" + (a.dia ? "Relatório de " + dd(a.fim) : dd(a.ini) + " a " + dd(a.fim)) + '</small><span class="rz-sit">' + nomeSit + "</span></div>" +
+        '<div class="rz-n"><span class="rz-ico">' + ico(RZ_ICO[a.aba]) + '</span><span class="rz-area">' + esc(a.nome) + "</span><small>" + (a.dia ? "Relatório de " + dd(a.fim) : dd(a.ini) + " a " + dd(a.fim)) + '</small><span class="rz-sit">' + nomeSit + "</span></div>" +
         '<div class="rz-v"><strong>' + a.valor + "</strong><span>" + esc(a.un) + "</span>" + a.delta + "</div>" +
         '<div class="rz-g">' + a.graf + "</div>" +
         '<p class="rz-d">' + a.diag + '<span class="rz-ir">Abrir ' + esc(a.nome.toLowerCase()) + "</span></p></a>";
@@ -1156,7 +1164,7 @@ window.iniciarPainel = function (D) {
     A.forEach(function (a) { a.alertas.forEach(function (x) { al.push({ x: x, a: a }); }); });
     al.sort(function (p, q) { return (nivel[q.x[0]] || 0) - (nivel[p.x[0]] || 0); });
     var atencao = '<section class="card"><h3>O que pede atenção</h3>' + (al.length ? '<ul class="alertas">' + al.slice(0, 7).map(function (p) {
-      return '<li><span class="ai ' + p.x[0] + '" aria-hidden="true">' + p.x[1] + "</span><span>" + p.x[2] + ' <a class="rz-aba" href="#' + p.a.aba + '">' + esc(p.a.nome) + "</a></span></li>";
+      return '<li><span class="ai ' + p.x[0] + '" aria-hidden="true">' + p.x[1] + "</span><span>" + p.x[2] + ' <a class="rz-aba" href="#' + p.a.aba + '">' + ico(RZ_ICO[p.a.aba]) + esc(p.a.nome) + "</a></span></li>";
     }).join("") + "</ul>" : '<p class="cs">Nenhum alerta na semana para esse filtro.</p>') + "</section>";
 
     var pe = by.permanencia, maiores = "";
