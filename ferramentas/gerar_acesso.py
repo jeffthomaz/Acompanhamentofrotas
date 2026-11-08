@@ -236,12 +236,24 @@ def remover_excluidas(D):
         D["cameras"]["lista"] = [x for x in D["cameras"]["lista"] if not sai(x["f"])]
 
 
+def remover_locais(D):
+    """Tira das permanências os locais de ferramentas/locais_excluidos.json."""
+    caminho = os.path.join(os.path.dirname(os.path.abspath(__file__)), "locais_excluidos.json")
+    if not os.path.exists(caminho) or "permanencia" not in D:
+        return
+    fora = {norm(n).lower() for n in json.load(open(caminho, encoding="utf-8"))["locais"]}
+    P = D["permanencia"]
+    ix = {i for i, l in enumerate(P["locais"]) if norm(l["nome"]).lower() in fora}
+    P["eventos"] = [e for e in P["eventos"] if e[4] not in ix]
+
+
 def main(cad, fonte, saida):
     D = json.load(open(fonte, encoding="utf-8"))
     unificar_processos(D)
     aplicar_de_para(D)
     aplicar_processos_informados(D)
     remover_excluidas(D)
+    remover_locais(D)
     conhecidos = {chave_proc(v["processo"]): v["processo"] for v in D.get("comportamento", {}).get("frotas", {}).values()}
     conhecidos.update({chave_proc(v["processo"]): v["processo"] for v in D.get("motorOcioso", {}).get("veiculos", [])})
     conhecidos.update({chave_proc(v["processo"]): v["processo"] for v in D.get("permanencia", {}).get("veiculos", {}).values()})
