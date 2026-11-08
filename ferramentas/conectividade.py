@@ -22,7 +22,7 @@ Regras do painel:
 - nos dias vindos do vFleets, quem estava em MANUTENÇÃO/PARADO no dia anterior continua assim
   (o último dia é a referência), até a planilha dizer OPERANDO;
 - planilha status_frotas.xlsx: PARADO ou MANUTENÇÃO valem a partir de DESDE (até ATÉ, se houver);
-  OPERANDO a partir de DESDE encerra a manutenção/parada.
+  OPERANDO a partir de DESDE encerra a manutenção/parada e faz um equipamento offline contar como conectado.
 """
 import csv, json, re, sys
 from datetime import date, datetime
@@ -213,7 +213,8 @@ def montar(base, planilha, destino):
             if B["origem"].get(d) == "vfleets" and s in "CO" and (ant in "MP" or (ant in "mp" and ativo)):
                 c = ant
             if ativo:
-                c = s if ativo["status"] == "OPERANDO" else ("m" if ativo["status"] == "MANUTENÇÃO" else "p")
+                # OPERANDO: encerra manutenção/parada e, se o equipamento estiver offline, conta como conectado.
+                c = ("C" if s == "O" else s) if ativo["status"] == "OPERANDO" else ("m" if ativo["status"] == "MANUTENÇÃO" else "p")
             res.append(c)
             ant = c
         hist[f] = "".join(res)
@@ -252,7 +253,7 @@ def planilha(destino, caminho):
 
     Colunas: FROTA, STATUS, DIAS OFFLINE, RESPONSÁVEL, OBSERVAÇÃO. Entram os equipamentos em manutenção,
     parados ou offline há 2 dias ou mais (quem você marcou OPERANDO continua com OPERANDO enquanto ainda
-    aparecer nessa situação; quando conecta, sai da lista). STATUS vem preenchido com a situação atual (MANUTENÇÃO, PARADO ou OFFLINE);
+    aparecer nessa situação; quando conecta de verdade, sai da lista). STATUS vem preenchido com a situação atual (MANUTENÇÃO, PARADO ou OFFLINE);
     o usuário confere e troca quando precisar. OFFLINE não muda nada; PARADO/MANUTENÇÃO/OPERANDO valem.
     A OBSERVAÇÃO escrita pelo usuário é mantida.
     """
@@ -286,7 +287,7 @@ def planilha(destino, caminho):
             status = "OFFLINE"
         else:  # conectado: sai da lista (inclusive quem você marcou OPERANDO e já voltou)
             continue
-        if antes.get(f, {}).get("st") == "OPERANDO" and status != "OFFLINE":
+        if antes.get(f, {}).get("st") == "OPERANDO":
             status = "OPERANDO"
         v = K["frotas"].get(f, {})
         resp = str(v.get("responsavel") or "").strip()
@@ -320,7 +321,7 @@ def planilha(destino, caminho):
                   "os que estão em MANUTENÇÃO, PARADO ou OFFLINE há 2 dias ou mais.",
                   "Confira um por um e troque o STATUS quando estiver diferente:",
                   "  MANUTENÇÃO ou PARADO: o painel passa a mostrar assim (informado na planilha).",
-                  "  OPERANDO: o equipamento voltou a operar (encerra a manutenção ou a parada).",
+                  "  OPERANDO: o equipamento está operando (encerra a manutenção ou a parada; se estiver offline, conta como conectado).",
                   "  OFFLINE: só a situação que o painel mostrou; não muda nada.",
                   "DIAS OFFLINE e RESPONSÁVEL: informação do painel.",
                   "OBSERVAÇÃO: opcional (ex.: oficina, entressafra). Não coloque nome de pessoas. Fica guardada.",
