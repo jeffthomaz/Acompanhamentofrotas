@@ -9,10 +9,9 @@ Lê o CSV exportado do sistema (separado por ";", acentos em Latin-1) e grava o 
 Tipos de câmera (um quadro para cada um no painel):
 - Motorista: MAL POSICIONADA, INTERMITENTE, NÃO FUNCIONANDO (colunas Sim/Não)
 - Pista:     INTERMITENTE, NÃO FUNCIONANDO (Sim/Não)
-- Auditoria: QTD INTERMITENTES, QTD NÃO FUNCIONANDO (quantidade de câmeras)
 
-Entra na lista todo veículo com "Sim" (ou quantidade acima de zero) em alguma dessas colunas,
-ou com GPS "Não saudável". Por processo também vão os totais: frotas monitoradas, saúde da frota
+Só essas cinco colunas indicam problema de câmera (definido pelo usuário). Entra na lista todo
+veículo com "Sim" em alguma delas; auditoria, GPS e ticket não contam como defeito. Por processo também vão os totais: frotas monitoradas, saúde da frota
 (coluna STATUS), status do GPS, chamados em aberto (tickets distintos) e veículos com último
 evento comportamental no dia do relatório.
 O processo vem do cadastro de frotas já presente no dados-fonte.json (pelo prefixo);
@@ -35,10 +34,6 @@ TIPOS = [
     ("pista", "Câmera pista", [
         ("CÂMERA PISTA INTERMITENTE", "Intermitente"),
         ("CÂMERA PISTA NÃO FUNCIONANDO", "Não funcionando"),
-    ]),
-    ("auditoria", "Câmeras de auditoria", [
-        ("QTD CÂMERAS DE AUDITORIA INTERMITENTES", "Intermitente"),
-        ("QTD CÂMERAS DE AUDITORIA NÃO FUNCIONANDO", "Não funcionando"),
     ]),
 ]
 
@@ -146,8 +141,6 @@ def main(arq, fonte):
                 n = defeito(l.get(col))
                 if n:
                     d.append([tid, nome, n])
-        if chave(gps) == "NÃO SAUDÁVEL":
-            d.append(["gps", "Não saudável", 1])
         if not d:
             continue
         lista.append({

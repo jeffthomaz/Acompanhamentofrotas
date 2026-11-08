@@ -528,8 +528,7 @@ window.iniciarPainel = function (D) {
   }
   function camDoArquivo(nome, T) {
     var COLS = { motorista: [["CÂMERA MOTORISTA MAL POSICIONADA", "Mal posicionada"], ["CÂMERA MOTORISTA INTERMITENTE", "Intermitente"], ["CÂMERA MOTORISTA NÃO FUNCIONANDO", "Não funcionando"]],
-      pista: [["CÂMERA PISTA INTERMITENTE", "Intermitente"], ["CÂMERA PISTA NÃO FUNCIONANDO", "Não funcionando"]],
-      auditoria: [["QTD CÂMERAS DE AUDITORIA INTERMITENTES", "Intermitente"], ["QTD CÂMERAS DE AUDITORIA NÃO FUNCIONANDO", "Não funcionando"]] };
+      pista: [["CÂMERA PISTA INTERMITENTE", "Intermitente"], ["CÂMERA PISTA NÃO FUNCIONANDO", "Não funcionando"]] }; // só essas colunas indicam problema de câmera
     var faltam = []; Object.keys(COLS).forEach(function (t) { COLS[t].forEach(function (c) { if (T.cab.indexOf(c[0]) < 0) faltam.push(c[0]); }); });
     if (faltam.length) throw new Error("Esse não parece o arquivo Saúde do Veículo. Faltam colunas: " + faltam.slice(0, 3).join(", ") + (faltam.length > 3 ? "…" : ""));
     var mm = /(\d{4}-\d{2}-\d{2})T(\d{2})_(\d{2})/.exec(nome), quando = mm ? horaLocal(mm[1] + "T" + mm[2] + ":" + mm[3]) : "";
@@ -547,7 +546,6 @@ window.iniciarPainel = function (D) {
       if (horaLocal(l["ÚLTIMO EVENTO COMPORTAMENTAL"]).slice(0, 10) === quando.slice(0, 10)) r.ev++;
       var d = [];
       Object.keys(COLS).forEach(function (tid) { COLS[tid].forEach(function (c) { var n = def(l[c[0]]); if (n) d.push([tid, c[1], n]); }); });
-      if (gps.toUpperCase() === "NÃO SAUDÁVEL") d.push(["gps", "Não saudável", 1]);
       if (!d.length) return;
       lista.push({ f: f, placa: l["PLACA"] || "", processo: p, sit: (l["SITUAÇÃO"] || "").replace("-", ""), st: (l["STATUS"] || "").replace("N/A", ""), cams: def(l["NÚMERO TOTAL DE CÂMERAS"]),
         foto: horaLocal(l["ÚLTIMA FOTO"]), video: horaLocal(l["ÚLTIMO VÍDEO"]), ticket: t.indexOf("http") === 0 ? t : "", tst: (l["STATUS DO TICKET"] || "").replace("-", ""), d: d });
@@ -853,8 +851,7 @@ window.iniciarPainel = function (D) {
     { nome: "Câmera do motorista", tipo: "motorista", cols: ["Intermitente", "Mal posicionada"], rot: ["Intermit.", "Mal posic."] },
     { nome: "Câmera do motorista não funcionando", tipo: "motorista", cols: ["Não funcionando"], rot: ["Câmera"] },
     { nome: "Câmera da pista intermitente", tipo: "pista", cols: ["Intermitente"], rot: ["Câmera"] },
-    { nome: "Câmera da pista não funcionando", tipo: "pista", cols: ["Não funcionando"], rot: ["Câmera"] },
-    { nome: "Câmeras de auditoria", tipo: "auditoria", cols: ["Intermitente", "Não funcionando"], rot: ["Intermit.", "Não func."], qtd: true }
+    { nome: "Câmera da pista não funcionando", tipo: "pista", cols: ["Não funcionando"], rot: ["Câmera"] }
   ];
   var NOME_OC = { motorista: "Câmera motorista", pista: "Câmera pista", auditoria: "Auditoria", gps: "GPS" };
   var X_ICO = '<svg class="cm-x" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M8.5 8.5l7 7M15.5 8.5l-7 7"/></svg>';
