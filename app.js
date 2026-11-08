@@ -528,7 +528,8 @@ window.iniciarPainel = function (D) {
   }
   function camDoArquivo(nome, T) {
     var COLS = { motorista: [["CÂMERA MOTORISTA MAL POSICIONADA", "Mal posicionada"], ["CÂMERA MOTORISTA INTERMITENTE", "Intermitente"], ["CÂMERA MOTORISTA NÃO FUNCIONANDO", "Não funcionando"]],
-      pista: [["CÂMERA PISTA INTERMITENTE", "Intermitente"], ["CÂMERA PISTA NÃO FUNCIONANDO", "Não funcionando"]] }; // só essas colunas indicam problema de câmera
+      pista: [["CÂMERA PISTA INTERMITENTE", "Intermitente"], ["CÂMERA PISTA NÃO FUNCIONANDO", "Não funcionando"]],
+      auditoria: [["QTD CÂMERAS DE AUDITORIA INTERMITENTES", "Intermitente"]] }; // só essas colunas indicam problema de câmera
     var faltam = []; Object.keys(COLS).forEach(function (t) { COLS[t].forEach(function (c) { if (T.cab.indexOf(c[0]) < 0) faltam.push(c[0]); }); });
     if (faltam.length) throw new Error("Esse não parece o arquivo Saúde do Veículo. Faltam colunas: " + faltam.slice(0, 3).join(", ") + (faltam.length > 3 ? "…" : ""));
     var mm = /(\d{4}-\d{2}-\d{2})T(\d{2})_(\d{2})/.exec(nome), quando = mm ? horaLocal(mm[1] + "T" + mm[2] + ":" + mm[3]) : "";
@@ -851,7 +852,8 @@ window.iniciarPainel = function (D) {
     { nome: "Câmera do motorista", tipo: "motorista", cols: ["Intermitente", "Mal posicionada"], rot: ["Intermit.", "Mal posic."] },
     { nome: "Câmera do motorista não funcionando", tipo: "motorista", cols: ["Não funcionando"], rot: ["Câmera"] },
     { nome: "Câmera da pista intermitente", tipo: "pista", cols: ["Intermitente"], rot: ["Câmera"] },
-    { nome: "Câmera da pista não funcionando", tipo: "pista", cols: ["Não funcionando"], rot: ["Câmera"] }
+    { nome: "Câmera da pista não funcionando", tipo: "pista", cols: ["Não funcionando"], rot: ["Câmera"] },
+    { nome: "Câmeras de auditoria intermitentes", tipo: "auditoria", cols: ["Intermitente"], rot: ["Câmeras"], qtd: true }
   ];
   var NOME_OC = { motorista: "Câmera motorista", pista: "Câmera pista", auditoria: "Auditoria", gps: "GPS" };
   var X_ICO = '<svg class="cm-x" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M8.5 8.5l7 7M15.5 8.5l-7 7"/></svg>';
