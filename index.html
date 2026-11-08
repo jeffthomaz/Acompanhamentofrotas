@@ -354,6 +354,17 @@ rect.seg.c-vel{fill:var(--c-vel)}rect.seg.c-celular{fill:var(--c-celular)}rect.s
 @media (max-width:900px){.rz-l{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:.75rem 1.25rem}.rz-g,.rz-d{grid-column:1/-1}.rz-b{max-width:20rem}.g2.rz-g2{grid-template-columns:minmax(0,1fr)}}
 @media (max-width:420px){.rz-v strong{font-size:1.8rem}}
 /* Resumo em estilo dashboard (BI) */
+.rz-obs{list-style:none;margin:0;padding:0;display:grid}
+.rz-obs li{display:grid;grid-template-columns:2.1rem minmax(0,1fr);gap:.75rem;padding:.7rem 0;border-top:1px solid var(--line)}
+.rz-obs li:first-child{border-top:0;padding-top:.2rem}
+.rz-oi{display:grid;place-items:center;width:2.1rem;height:2.1rem;border-radius:8px;background:var(--bom-bg);color:var(--bom)}
+.rz-oi .ic{width:1.15rem;height:1.15rem;color:inherit}
+.rz-obs .s-atencao .rz-oi{background:var(--atencao-bg);color:var(--atencao)}.rz-obs .s-critico .rz-oi{background:var(--critico-bg);color:var(--critico)}
+.rz-obs p{margin:0;font-size:.88rem;line-height:1.5;text-wrap:pretty}
+.rz-obs .rz-oh{display:flex;flex-wrap:wrap;align-items:center;gap:.2rem .5rem;margin-bottom:.15rem}
+.rz-oh b{font-family:var(--display);font-size:.98rem}.rz-oh small{font-size:.72rem;color:var(--muted)}
+.rz-obs .dl{font-size:.8rem}
+.rz-obs li.s-critico .rz-sit{background:var(--critico-bg);color:var(--critico)}.rz-obs li.s-atencao .rz-sit{background:var(--atencao-bg);color:var(--atencao)}
 .rz-dash{display:grid;grid-template-columns:minmax(0,1fr);gap:.85rem}.rz-dash>*{min-width:0}
 .rz-fil{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:.7rem 1rem;box-shadow:0 1px 3px rgba(10,42,25,.06)}
 .rz-sem{display:inline-block;background:var(--soft);border-radius:6px;padding:.15rem .5rem;margin-right:.2rem;color:var(--ink)}
@@ -432,7 +443,7 @@ rect.seg.c-vel{fill:var(--c-vel)}rect.seg.c-celular{fill:var(--c-celular)}rect.s
 </style>
 </head><body>
 <header class="band"><div class="band-in gut">
-  <img class="logo" src="logo-branco.png?v=202611080841" alt="Bioenergética Aroeira" width="67" height="92">
+  <img class="logo" src="logo-branco.png?v=202611080845" alt="Bioenergética Aroeira" width="67" height="92">
   <div><h1>MONITORAMENTO COMPORTAMENTAL</h1><p class="per" id="periodo"></p></div>
   <div class="quem" id="quem" hidden><span><b id="quem-nome"></b><small id="quem-escopo"></small></span><button type="button" id="sair">Sair</button></div>
 </div></header>
@@ -461,7 +472,7 @@ rect.seg.c-vel{fill:var(--c-vel)}rect.seg.c-celular{fill:var(--c-celular)}rect.s
 </div>
 <footer class="foot gut">Bioenergética Aroeira S/A, Tupaciguara/MG. <a href="https://www.bioaroeira.com.br" target="_blank" rel="noopener">www.bioaroeira.com.br</a></footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" defer></script>
-<script src="acesso.js?v=202611080841"></script>
-<script src="app.js?v=202611080841"></script>
-<script src="login.js?v=202611080841"></script>
+<script src="acesso.js?v=202611080845"></script>
+<script src="app.js?v=202611080845"></script>
+<script src="login.js?v=202611080845"></script>
 </body></html>

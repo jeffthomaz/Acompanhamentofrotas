@@ -1105,7 +1105,8 @@ window.iniciarPainel = function (D) {
     return { aba: "permanencia", nome: "Permanência", ini: S.ini, fim: S.fim, ate: ult < S.fim ? ult : null,
       valor: min >= 600 ? num(Math.round(min / 60), 0) + " h" : hmin(min), un: "parados em " + num(n, 0) + " " + plural(n, "permanência", "permanências"), delta: minA ? delta(min, minA) : '<span class="dl neutro">sem base</span>',
       graf: barras7(porDia, S.dias, hmin, "Tempo de permanência por dia"),
-      diag: diag, alertas: al, top: top.slice(0, 5), locais: P.locais, vals: porDia, n: n, min: min };
+      diag: diag, alertas: al, top: top.slice(0, 5), locais: P.locais, vals: porDia, n: n, min: min,
+      obs: " em " + top.length + " " + plural(top.length, "local", "locais") + "." + (est ? " O estabelecimento com mais tempo parado é <b>" + esc(P.locais[est.i].nome) + "</b> (" + hmin(est.min) + " em " + est.n + " " + plural(est.n, "vez", "vezes") + ")." : "") };
   }
 
   function rzConectividade(S) {
@@ -1207,10 +1208,13 @@ window.iniciarPainel = function (D) {
       "conectividade": function (a) { return num(a.hoje.C, 0) + " de " + num(a.tot, 0) + " conectados"; },
       "cameras": function (a) { return a.nv + " " + plural(a.nv, "veículo", "veículos") + " · " + a.tk + " " + plural(a.tk, "chamado aberto", "chamados abertos"); }
     };
-    var kpis = '<section class="rz-kpis" aria-label="Indicadores da semana">' + A.map(function (a) {
+    function sitDe(a) {
       var pior = a.alertas.reduce(function (m, x) { return Math.max(m, nivel[x[0]] || 0); }, 1);
       var cls = pior === 3 ? "critico" : pior === 2 ? "atencao" : "bom";
-      var sit = { critico: "Pede ação", atencao: "Atenção", bom: "Sem alertas" }[cls];
+      return { cls: cls, nome: { critico: "Pede ação", atencao: "Atenção", bom: "Sem alertas" }[cls] };
+    }
+    var kpis = '<section class="rz-kpis" aria-label="Indicadores da semana">' + A.map(function (a) {
+      var st = sitDe(a), cls = st.cls, sit = st.nome;
       var vals = a.valor === "—" ? null : a.aba === "cameras" ? a.porQ.map(function (x) { return x.n; }) : a.vals;
       return '<a class="rz-k s-' + cls + '" href="#' + a.aba + '">' +
         '<span class="rz-kh"><span class="rz-kn">' + ico(RZ_ICO[a.aba]) + esc(a.nome) + '</span><span class="rz-sit">' + sit + "</span></span>" +
@@ -1222,13 +1226,9 @@ window.iniciarPainel = function (D) {
 
     var linhas = [];
 
-    // 2. Comportamental: colunas por dia e tipo + distribuição.
-    var c = by.comportamento;
+    // 2. Resumo escrito por aba + distribuição das ocorrências por tipo.
+    var c = by.comportamento, g2 = "";
     if (c) {
-      var serie = S.dias.map(function (d, k) { return c.vals[k] === null ? null : { d: diaSem(d) + " " + d.slice(8, 10), partes: c.porDC[k], total: c.vals[k] }; }).filter(Boolean);
-      var usadas = CATS.filter(function (x, j) { return sum(c.porDC, function (p) { return p[j]; }) > 0; });
-      var leg = '<ul class="legend">' + usadas.map(function (x) { return '<li class="c-' + x.id + '"><i></i>' + esc(x.nome) + "</li>"; }).join("") + "</ul>";
-      var g1 = rzCard("Ocorrências comportamentais por dia", num(c.cur, 0) + " na semana" + (c.ant ? " · " + num(c.ant, 0) + " na anterior" : "") + (c.ate ? " · dados até " + dd(c.ate) : ""), leg + empilhado(serie, false, 640), "rz-larga");
       var cats = c.cats.filter(function (x) { return x.n; });
       var legR = '<ul class="rz-lr">' + cats.map(function (x) {
         return '<li class="c-' + x.c.id + '"><i></i><span>' + esc(x.c.nome) + "</span><b>" + num(x.n / c.cur * 100, 0) + "%</b></li>";
@@ -1237,9 +1237,20 @@ window.iniciarPainel = function (D) {
       if (velT) vel = '<div class="rz-vel"><span class="rz-mini">Excesso de velocidade por faixa</span><div class="rz-st">' + c.vel.map(function (v, i) {
         return v.n ? '<i class="v' + (i + 1) + '" style="flex:' + v.n + '" title="' + esc(v.nome + ": " + v.n) + '"></i>' : "";
       }).join("") + '</div><p>' + c.vel.map(function (v, i) { return '<span class="v' + (i + 1) + '"><i></i>' + esc(v.nome) + ": <b>" + num(v.n, 0) + "</b></span>"; }).join("") + "</p></div>";
-      var g2 = rzCard("Distribuição por tipo", "", '<div class="rz-ros">' + rosca(cats.map(function (x) { return { id: x.c.id, nome: x.c.nome, n: x.n }; }), c.cur) + legR + "</div>" + vel, "rz-estreita");
-      linhas.push('<div class="rz-row">' + g1 + g2 + "</div>");
+      g2 = rzCard("Distribuição por tipo", "", '<div class="rz-ros">' + rosca(cats.map(function (x) { return { id: x.c.id, nome: x.c.nome, n: x.n }; }), c.cur) + legR + "</div>" + vel, "rz-estreita");
     }
+    // Resumo escrito: uma observação por aba.
+    var g1 = rzCard("Resumo da semana", "uma observação por aba", '<ul class="rz-obs">' + A.map(function (a) {
+      var st = sitDe(a), semD = a.valor === "—";
+      return '<li class="s-' + st.cls + '"><span class="rz-oi">' + ico(RZ_ICO[a.aba]) + '</span><div><p class="rz-oh"><b>' + esc(a.nome) + '</b><span class="rz-sit">' + st.nome + "</span>" +
+        (a.ate ? '<small>dados até ' + dd(a.ate) + "</small>" : "") + "</p><p>" +
+        (semD ? a.diag : a.aba === "cameras" ? "<b>" + a.valor + "</b> " + esc(a.un) + " no relatório de " + dd(a.fim) + ". " + a.diag
+          : "<b>" + a.valor + "</b> " + esc(a.un) + (a.aba === "permanencia" ? a.obs.replace(/\.$/, "").replace(/\. O estab.*$/, "") : "") +
+            (a.delta.indexOf("sem ") < 0 ? " (" + a.delta + " " + (a.aba === "conectividade" ? "sobre 7 dias antes" : "sobre a semana anterior") + ")" : "") + ". " +
+            (a.aba === "permanencia" ? (a.obs.match(/O estab.*$/) || [""])[0] : a.diag)) +
+        ' <a class="rz-aba" href="#' + a.aba + '">Abrir ' + esc(a.nome.toLowerCase()) + "</a></p></div></li>";
+    }).join("") + "</ul>", "rz-larga");
+    linhas.push('<div class="rz-row">' + g1 + (c ? g2 : "") + "</div>");
 
     // 3. Por processo (ou por veículo, com processo escolhido), motor ocioso e conectividade.
     var trio = [];
