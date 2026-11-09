@@ -21,6 +21,7 @@ USUARIO, PROCESSO e SENHA. PROCESSO = `todos` vê tudo; vários processos são s
 Ao gerar, frota sem processo numa aba e com processo em outra recebe o processo da outra aba
 (o que aparece em mais abas; empate: Conectividade, Comportamental, Motor ocioso, Permanência, Câmeras).
 Para corrigir um processo errado, use `ferramentas/processos_frotas.json`, que tem prioridade.
+Ocorrências do Comportamental resolvidas de forma errada saem por `ferramentas/ocorrencias_excluidas.json`.
 Senhas precisam de pelo menos 10 caracteres.
 
 Os dados de cada grupo são trancados com AES-256-GCM, e a chave do grupo é trancada com a

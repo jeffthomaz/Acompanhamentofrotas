@@ -172,6 +172,31 @@ def completar_processos(D):
     return feitos
 
 
+def remover_ocorrencias(D):
+    """Tira do Comportamental as ocorrências de ferramentas/ocorrencias_excluidas.json."""
+    caminho = os.path.join(os.path.dirname(os.path.abspath(__file__)), "ocorrencias_excluidas.json")
+    C = D.get("comportamento")
+    if not os.path.exists(caminho) or not C:
+        return 0
+    import datetime
+    ini = datetime.date.fromisoformat(C["inicio"])
+    tipos = {t["id"]: i for i, t in enumerate(C["tipos"])}
+    tirados = 0
+    for o in json.load(open(caminho, encoding="utf-8")).get("ocorrencias", []):
+        dia = (datetime.date.fromisoformat(o["data"]) - ini).days
+        ti = tipos.get(o["tipo"])
+        resta = o.get("qtd")
+        for e in C["ev"]:
+            if e[0] == dia and e[1] == ti and norm(e[2]) == norm(o["frota"]) and e[3] > 0:
+                n = e[3] if resta is None else min(e[3], resta)
+                e[3] -= n; tirados += n
+                if resta is not None:
+                    resta -= n
+                    if resta <= 0: break
+    C["ev"] = [e for e in C["ev"] if e[3] > 0]
+    return tirados
+
+
 def aplicar_de_para(D):
     """Junta na frota certa os registros que vieram pela placa (ferramentas/frotas_de_para.json)."""
     caminho = os.path.join(os.path.dirname(os.path.abspath(__file__)), "frotas_de_para.json")
@@ -282,6 +307,9 @@ def main(cad, fonte, saida):
         print("%d frota(s) sem processo completadas pelo processo de outra aba" % len(feitos))
     remover_excluidas(D)
     remover_locais(D)
+    tiradas = remover_ocorrencias(D)
+    if tiradas:
+        print("%d ocorrência(s) do Comportamental desconsiderada(s)" % tiradas)
     conhecidos = {chave_proc(v["processo"]): v["processo"] for v in D.get("comportamento", {}).get("frotas", {}).values()}
     conhecidos.update({chave_proc(v["processo"]): v["processo"] for v in D.get("motorOcioso", {}).get("veiculos", [])})
     conhecidos.update({chave_proc(v["processo"]): v["processo"] for v in D.get("permanencia", {}).get("veiculos", {}).values()})
