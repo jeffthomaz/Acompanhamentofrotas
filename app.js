@@ -985,11 +985,11 @@ window.iniciarPainel = function (D) {
     return '<span class="dl ' + (ig ? "neutro" : v < 0 ? "bom" : "ruim") + '"><span aria-hidden="true">' + (ig ? "=" : v < 0 ? "↓" : "↑") + "</span> " + (v > 0 ? "+" : "") + num(v, 1).replace("-", "−") + " p.p.</span>";
   }
 
-  // Semana do Resumo: sábado a sexta da última semana fechada (a sexta mais recente antes de hoje),
-  // comparada com o sábado a sexta anterior. Mesma semana do resumo enviado no WhatsApp.
+  // Semana do Resumo: segunda a domingo da última semana fechada (o domingo mais recente antes de hoje),
+  // comparada com a segunda a domingo anterior. Mesma semana do resumo enviado no WhatsApp.
   function semanaRef() {
     var h = new Date(); h.setHours(12, 0, 0, 0);
-    var volta = (h.getDay() + 2) % 7 || 7; // dias até a sexta anterior (sábado 1, domingo 2, ..., sexta 7)
+    var volta = h.getDay() || 7; // dias até o domingo anterior (segunda 1, terça 2, ..., domingo 7)
     h.setDate(h.getDate() - volta);
     var fim = h.getFullYear() + "-" + pad(h.getMonth() + 1) + "-" + pad(h.getDate()), dias = [];
     for (var k = 6; k >= 0; k--) dias.push(isoMais(fim, -k));
@@ -1327,7 +1327,7 @@ window.iniciarPainel = function (D) {
     painel.innerHTML = VIEWS[id]();
     if (id === "permanencia") montarMapa();
     fil.hidden = true;
-    var blocos = { "resumo": { real: !D.exemplo, periodo: "Semana de sábado a sexta" }, "comportamento": D.comportamento, "motor-ocioso": D.motorOcioso, "permanencia": D.permanencia, "conectividade": D.conectividade, "cameras": D.cameras }, b = blocos[id], real = b && b.real;
+    var blocos = { "resumo": { real: !D.exemplo, periodo: "Semana de segunda a domingo" }, "comportamento": D.comportamento, "motor-ocioso": D.motorOcioso, "permanencia": D.permanencia, "conectividade": D.conectividade, "cameras": D.cameras }, b = blocos[id], real = b && b.real;
     document.getElementById("periodo").textContent = real ? b.periodo + " · dados reais" : D.periodo;
     document.getElementById("aviso").hidden = real || !D.exemplo;
   }

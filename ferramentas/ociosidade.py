@@ -136,7 +136,7 @@ def montar(base, destino):
     seg0 = ini - timedelta(days=ini.weekday())
     nsem = (fim - seg0).days // 7 + 1
     rot = [max(seg0 + timedelta(weeks=k), ini).strftime("%d/%m") for k in range(nsem)]
-    # Últimos 21 dias corridos, dia a dia, para o Resumo (semana de domingo a sexta e a anterior).
+    # Últimos 21 dias corridos, dia a dia, para o Resumo (semana de segunda a domingo e a anterior).
     ult = [(fim - timedelta(days=20 - k)).isoformat() for k in range(21)]
     ix_ult = {d: k for k, d in enumerate(ult)}
     v = {}
