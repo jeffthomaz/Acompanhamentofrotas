@@ -56,9 +56,9 @@ window.iniciarPainel = function (D) {
     { id: "vel", nome: "Excesso de velocidade", icone: "M4 17a8 8 0 1 1 16 0M12 17l4-5" },
     { id: "celular", nome: "Uso de celular", icone: "M8 3h8a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM11 18h2" },
     { id: "cinto", nome: "Sem cinto de segurança", icone: "M12 3.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zM6 21l3-9h6l3 9M8 12l9 7" },
+    { id: "cigarro", nome: "Uso de cigarro", icone: "M3 14h13v4H3zM18 14v4M21 14v4M18 11c0-2 3-2 3-5" },
     { id: "distracao", nome: "Distração", icone: "M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12zM12 9.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5z" },
     { id: "fadiga", nome: "Fadiga e bocejo", icone: "M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z" },
-    { id: "cigarro", nome: "Uso de cigarro", icone: "M3 14h13v4H3zM18 14v4M21 14v4M18 11c0-2 3-2 3-5" },
     { id: "faixa", nome: "Ultrapassagem em faixa contínua", icone: "M5 21L9 3M19 21L15 3M12 3v18" }
   ];
   var TOTAL_ICONE = "M5 20V10M12 20V4M19 20v-7";
@@ -168,7 +168,7 @@ window.iniciarPainel = function (D) {
       (fc.frota || fil_.processo || fc.gerencia ? '<button type="button" class="limpar" data-limpar="1">Limpar filtros</button>' : "") +
       '<p class="ctx">' + num(nVeic, 0) + " " + plural(nVeic, "veículo", "veículos") + " com ocorrência, " + rot(a0) + " a " + rot(N - 1) + (temBase ? " (comparado com " + rot(b0) + " a " + rot(a0 - 1) + ")" : "") + "</p></div>";
 
-    var kpis = '<div class="kpis"><article class="kpi c-total"><div class="kh">' + ico(TOTAL_ICONE) + '<span class="kl">Total de ocorrências</span></div><strong class="kv">' + num(total, 0) + "</strong>" + dl(total, totalAnt) + '<span class="ks">' + (temBase ? "vs. período anterior" : "&nbsp;") + "</span></article>" +
+    var kpis = '<div class="kpis">' +
       CATS.map(function (c) {
         // Cards com mais de um tipo (ex.: fadiga e bocejo) mostram a quantidade de cada um.
         var partes = c.ix.length > 1 && c.id !== "vel" ? '<span class="kp">' + c.ix.map(function (i) { return esc(T[i].nome) + " <b>" + num(cur[i], 0) + "</b>"; }).map(function (x) { return "<span>" + x + "</span>"; }).join("") + "</span>" : "";
