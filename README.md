@@ -5,7 +5,7 @@ Site em JavaScript com as abas Resumo, Comportamento, Motor ocioso, Permanência
 O Resumo é a primeira aba: a semana de segunda a domingo (a última fechada antes de hoje), comparada com a segunda a
 domingo anterior, usando só os mesmos dias da semana que já têm dados, com diagnóstico, "O que pede atenção" e as maiores permanências. Usa os mesmos dados das outras
 abas, então se atualiza junto com elas. No comportamento, só contam os dias que leves e pesadas já têm.
-O motor ocioso guarda os últimos 21 dias por veículo (`ultDias`, `dl`, `do`) para isso.
+O motor ocioso guarda o período todo dia a dia por veículo (`ultDias`, `dl`, `do`), usado pelo Resumo e pelo filtro Dia da aba.
 O acesso é por login: cada usuário só consegue abrir os dados dos processos do grupo dele.
 
 - `index.html`: página, tela de login e estilos
@@ -41,6 +41,7 @@ lista; a constante `EXCLUIR` do `app.js` (leitura de arquivos no navegador) deve
   pasta local; `montar` aplica a regra do relatório: PARADO LIGADO / TEMPO IGNIÇÃO LIGADA, só grupo
   VEÍCULOS LEVES, processo e responsável pelo cadastro de frotas). Mesmos números do Power BI
   "Ociosidade Frota Leve" (o `ociosidade_do_powerbi.py` antigo continua no repositório).
+- Motor ocioso e Permanência têm filtro Dia (um dia específico) além do período todo.
 - Permanência: mapa de calor com dados reais da tabela Ocorrências (eventos PERMANENCIA_CERCA e
   PERMANENCIA_PONTO) do mesmo Power BI, extraídos com `ferramentas/permanencia_do_powerbi.py`.
   O local é a coluna CERCA ELETRÔNICA (sem cerca, usa o ponto de referência). Não leva motorista

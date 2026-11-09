@@ -136,13 +136,14 @@ def montar(base, destino):
     seg0 = ini - timedelta(days=ini.weekday())
     nsem = (fim - seg0).days // 7 + 1
     rot = [max(seg0 + timedelta(weeks=k), ini).strftime("%d/%m") for k in range(nsem)]
-    # Últimos 21 dias corridos, dia a dia, para o Resumo (semana de segunda a domingo e a anterior).
-    ult = [(fim - timedelta(days=20 - k)).isoformat() for k in range(21)]
+    # Dia a dia, do primeiro ao último dia (filtro Dia da aba e Resumo: semana de segunda a domingo e a anterior).
+    nd = (fim - ini).days + 1
+    ult = [(ini + timedelta(days=k)).isoformat() for k in range(nd)]
     ix_ult = {d: k for k, d in enumerate(ult)}
     v = {}
     for l in linhas:
         x = v.setdefault(l["f"], {"id": l["f"], "placa": l["placa"], "processo": l["proc"], "responsavel": l["resp"],
-                                  "dias": set(), "i": [0] * nsem, "p": [0] * nsem, "di": [0] * 21, "dp": [0] * 21})
+                                  "dias": set(), "i": [0] * nsem, "p": [0] * nsem, "di": [0] * nd, "dp": [0] * nd})
         d = date.fromisoformat(l["d"])
         k = (d - seg0).days // 7
         x["i"][k] += l["i"]; x["p"][k] += l["p"]

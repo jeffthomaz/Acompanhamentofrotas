@@ -237,8 +237,13 @@ window.iniciarPainel = function (D) {
 
   // ---------- Motor ocioso (dados reais do Power BI "Ociosidade Frota Leve") ----------
   function horas(h) { return h >= 100 ? num(h, 0) + " h" : num(h, 1).replace(",0", "") + " h"; }
+  var om = { dia: "" };
   function abaOcioso() {
     var m = D.motorOcioso, meta = m.metaPct, V = m.veiculos;
+    // Dia: só os dias com dados que têm a coluna dia a dia (ultDias).
+    var U = m.ultDias || [], diasOp = (m.diasIncluidos || []).filter(function (d) { return U.indexOf(d) >= 0; });
+    if (om.dia && diasOp.indexOf(om.dia) < 0) om.dia = "";
+    var kd = om.dia ? U.indexOf(om.dia) : -1;
     var processos = unicos(V.map(function (v) { return v.processo; }));
     if (fil_.processo && processos.indexOf(fil_.processo) < 0) fil_.processo = "";
     var doProc = V.filter(function (v) { return !fil_.processo || v.processo === fil_.processo; });
@@ -247,9 +252,9 @@ window.iniciarPainel = function (D) {
     var vs = doProc.filter(function (v) { return !fil_.responsavel || v.responsavel === fil_.responsavel; });
     var tot = function (a) { return sum(a, function (x) { return x; }); };
     var rows = vs.map(function (v) {
-      var li = tot(v.ligado), oc = tot(v.ocioso);
+      var li = kd >= 0 ? (v.dl || [])[kd] || 0 : tot(v.ligado), oc = kd >= 0 ? (v.do || [])[kd] || 0 : tot(v.ocioso);
       return { v: v, li: li, oc: oc, pct: li ? oc / li * 100 : 0 };
-    });
+    }).filter(function (r) { return kd < 0 || r.li > 0; });
     var li = sum(rows, function (r) { return r.li; }), oc = sum(rows, function (r) { return r.oc; }), pct = li ? oc / li * 100 : 0;
     var porSem = m.semanas.map(function (_, k) {
       var a = sum(vs, function (v) { return v.ligado[k]; }), b = sum(vs, function (v) { return v.ocioso[k]; });
@@ -259,10 +264,13 @@ window.iniciarPainel = function (D) {
 
     var filtros = '<div class="filtros"><label>Processo<select data-fil="processo" id="o-processo">' + opcoes(processos, fil_.processo, D.escopo && D.escopo !== "todos" ? "Todos os meus processos" : "Todos os processos") + "</select></label>" +
       '<label>Responsável<select data-fil="responsavel" id="o-responsavel">' + opcoes(resps, fil_.responsavel, "Todos os responsáveis") + "</select></label>" +
-      (fil_.processo || fil_.responsavel ? '<button type="button" class="limpar" data-limpar="1">Limpar filtros</button>' : "") +
-      '<p class="ctx">' + rows.length + " " + plural(rows.length, "veículo leve", "veículos leves") + ", " + esc(m.periodo) + "</p></div>";
+      (diasOp.length ? '<label>Dia<select data-om="dia" id="o-dia"><option value="">Todos os dias</option>' + diasOp.slice().reverse().map(function (d, i) {
+        return '<option value="' + d + '"' + (d === om.dia ? " selected" : "") + ">" + dataBR(d) + " (" + diaSem(d) + ")" + (i === 0 ? " · último" : "") + "</option>";
+      }).join("") + "</select></label>" : "") +
+      (fil_.processo || fil_.responsavel || om.dia ? '<button type="button" class="limpar" data-limpar="1">Limpar filtros</button>' : "") +
+      '<p class="ctx">' + rows.length + " " + plural(rows.length, "veículo leve", "veículos leves") + ", " + (om.dia ? "em " + dataBR(om.dia) : esc(m.periodo)) + "</p></div>";
 
-    var lead = "Os veículos ficaram <b>" + num(pct, 1) + "%</b> do tempo de motor ligado parados, <b>" + horas(oc) + "</b> de " + horas(li) + ". " +
+    var lead = (om.dia ? "Em " + dataBR(om.dia) + ", os" : "Os") + " veículos ficaram <b>" + num(pct, 1) + "%</b> do tempo de motor ligado parados, <b>" + horas(oc) + "</b> de " + horas(li) + ". " +
       (acima.length ? "<b>" + acima.length + "</b> " + plural(acima.length, "veículo passou", "veículos passaram") + " da meta de " + meta + "%, e o <b>" + esc(acima[0].v.id) + "</b> lidera com " + num(acima[0].pct, 1) + "%."
                     : "Todos os veículos estão dentro da meta de " + meta + "%.");
 
@@ -290,13 +298,20 @@ window.iniciarPainel = function (D) {
       .sort(function (a, b) { return b.pct - a.pct; });
     var limite = fil_.processo || fil_.responsavel ? lv.length : 15;
     secoes += '<section class="sec"><h2>' + (limite < lv.length ? "Os " + limite + " veículos mais ociosos" : "Veículos do mais ocioso ao menos") + "</h2>" +
-      '<p class="sub">Horas de motor ligado parado no período.' + (limite < lv.length ? " Escolha um processo para ver todos os veículos dele." : "") + "</p>" + quadro(lv.slice(0, limite)) + "</section>";
+      '<p class="sub">Horas de motor ligado parado ' + (om.dia ? "no dia" : "no período") + "." + (limite < lv.length ? " Escolha um processo para ver todos os veículos dele." : "") + "</p>" + quadro(lv.slice(0, limite)) + "</section>";
 
-    return filtros + '<div class="head"><p class="lead">' + lead + "</p>" + dias(porSem, "%", meta, "Motor ocioso por semana (linha tracejada: meta de " + meta + "%)", m.semanas) + "</div>" + secoes + (m.diasIncluidos ? secaoEnvio("motorOcioso", m.periodo.replace(" · arquivo carregado", "")) : "");
+    // Com um dia escolhido, o gráfico mostra os 7 dias até ele, dia a dia.
+    var graf;
+    if (kd >= 0) {
+      var ks = []; for (var q = Math.max(0, kd - 6); q <= kd; q++) ks.push(q);
+      graf = dias(ks.map(function (q) { var a = sum(vs, function (v) { return (v.dl || [])[q] || 0; }), b = sum(vs, function (v) { return (v.do || [])[q] || 0; }); return a ? b / a * 100 : 0; }),
+        "%", meta, "Motor ocioso por dia até " + dd(om.dia) + " (linha tracejada: meta de " + meta + "%)", ks.map(function (q) { return dd(U[q]); }));
+    } else graf = dias(porSem, "%", meta, "Motor ocioso por semana (linha tracejada: meta de " + meta + "%)", m.semanas);
+    return filtros + '<div class="head"><p class="lead">' + lead + "</p>" + graf + "</div>" + secoes + (m.diasIncluidos ? secaoEnvio("motorOcioso", m.periodo.replace(" · arquivo carregado", "")) : "");
   }
 
   // ---------- Permanência: mapa de calor (dados reais da tabela Ocorrências do Power BI) ----------
-  var pm = { frotas: [], medida: "tempo", dias: 0, abertoFrotas: false, refit: true, mapa: null, vista: null, marcas: {} };
+  var pm = { frotas: [], medida: "tempo", dias: 0, dia: "", abertoFrotas: false, refit: true, mapa: null, vista: null, marcas: {} };
   function permFiltrados() {
     var P = D.permanencia, V = P.veiculos;
     var processos = unicos(Object.keys(V).map(function (f) { return V[f].processo; }));
@@ -306,10 +321,13 @@ window.iniciarPainel = function (D) {
     var sel = pm.frotas.length ? pm.frotas : frotasProc, set = {};
     sel.forEach(function (f) { set[f] = 1; });
     var ultimo = P.eventos.length ? P.eventos[P.eventos.length - 1][5] : "";
+    var diasEv = unicos(P.eventos.map(function (e) { return e[5]; })).reverse();
+    if (pm.dia && diasEv.indexOf(pm.dia) < 0) pm.dia = "";
     var corte = "";
+    if (pm.dia) { var ev0 = P.eventos.filter(function (e) { return set[e[0]] && e[5] === pm.dia; }); return { P: P, V: V, processos: processos, frotasProc: frotasProc, ev: ev0, diasEv: diasEv }; }
     if (pm.dias && ultimo) { var d = new Date(ultimo + "T12:00:00"); d.setDate(d.getDate() - pm.dias + 1); corte = d.toISOString().slice(0, 10); }
     var ev = P.eventos.filter(function (e) { return set[e[0]] && (!corte || e[5] >= corte); });
-    return { P: P, V: V, processos: processos, frotasProc: frotasProc, ev: ev };
+    return { P: P, V: V, processos: processos, frotasProc: frotasProc, ev: ev, diasEv: diasEv };
   }
   function dataBR(s) { return s.slice(8, 10) + "/" + s.slice(5, 7) + "/" + s.slice(0, 4); }
   function hmin(m) { return m >= 6000 ? num(m / 60, 0) + " h" : m >= 60 ? dur(Math.round(m)) : num(m, 0) + " min"; }
@@ -333,14 +351,15 @@ window.iniciarPainel = function (D) {
     var rotFrotas = pm.frotas.length ? pm.frotas.length + " de " + F.frotasProc.length + " selecionadas" : "Todas (" + F.frotasProc.length + ")";
     var filtros = '<div class="filtros"><label>Processo<select data-fil="processo" id="p-processo">' + opcoes(F.processos, fil_.processo, D.escopo && D.escopo !== "todos" ? "Todos os meus processos" : "Todos os processos") + "</select></label>" +
       '<div class="campo"><span class="rot">Frotas</span><details class="frotas" id="p-frotas"' + (pm.abertoFrotas ? " open" : "") + '><summary>' + rotFrotas + '</summary><div class="fl-acoes"><button type="button" data-frotas="todas">Marcar todas</button><button type="button" data-frotas="limpar">Ver todas sem filtro</button></div><div class="fl-lista">' + listaFrotas + "</div></details></div>" +
-      '<label>Período<select data-pm="dias" id="p-dias">' + [[0, "Todo o período"], [30, "Últimos 30 dias"], [7, "Últimos 7 dias"]].map(function (o) { return '<option value="' + o[0] + '"' + (pm.dias === o[0] ? " selected" : "") + ">" + o[1] + "</option>"; }).join("") + "</select></label>" +
+      '<label>Dia<select data-pm="dia" id="p-dia"><option value="">Todos os dias</option>' + F.diasEv.map(function (d, i) { return '<option value="' + d + '"' + (d === pm.dia ? " selected" : "") + ">" + dataBR(d) + " (" + diaSem(d) + ")" + (i === 0 ? " · último" : "") + "</option>"; }).join("") + "</select></label>" +
+      '<label>Período<select data-pm="dias" id="p-dias"' + (pm.dia ? ' disabled title="Escolha &quot;Todos os dias&quot; para usar o período"' : "") + ">" + [[0, "Todo o período"], [30, "Últimos 30 dias"], [7, "Últimos 7 dias"]].map(function (o) { return '<option value="' + o[0] + '"' + (pm.dias === o[0] ? " selected" : "") + ">" + o[1] + "</option>"; }).join("") + "</select></label>" +
       '<div class="campo"><span class="rot">Calor por</span><div class="pills" role="group" aria-label="Medida do mapa de calor"><button type="button" data-medida="tempo" aria-pressed="' + (pm.medida === "tempo") + '">Tempo parado</button><button type="button" data-medida="vezes" aria-pressed="' + (pm.medida === "vezes") + '">Nº de permanências</button></div></div>' +
-      (fil_.processo || pm.frotas.length || pm.dias ? '<button type="button" class="limpar" data-limpar="1">Limpar filtros</button>' : "") + "</div>";
+      (fil_.processo || pm.frotas.length || pm.dias || pm.dia ? '<button type="button" class="limpar" data-limpar="1">Limpar filtros</button>' : "") + "</div>";
 
     // Nas observações, só estabelecimentos (posto, padaria, restaurante...), nunca cercas com nome de colaborador.
     var topoX = locais.filter(function (x) { return P.locais[x.i].tipo === "estabelecimento"; })[0];
     var topo = topoX ? P.locais[topoX.i] : null;
-    var lead = ev.length ? "<b>" + num(ev.length, 0) + "</b> " + plural(ev.length, "permanência", "permanências") + " de " + nFrotas + " " + plural(nFrotas, "frota", "frotas") + ", somando <b>" + hmin(totMin) + "</b> parados em " + locais.length + " " + plural(locais.length, "local", "locais") + "." +
+    var lead = ev.length ? (pm.dia ? "Em " + dataBR(pm.dia) + ": " : "") + "<b>" + num(ev.length, 0) + "</b> " + plural(ev.length, "permanência", "permanências") + " de " + nFrotas + " " + plural(nFrotas, "frota", "frotas") + ", somando <b>" + hmin(totMin) + "</b> parados em " + locais.length + " " + plural(locais.length, "local", "locais") + "." +
       (topo ? " O estabelecimento com " + (pm.medida === "tempo" ? "mais tempo parado" : "mais permanências") + " é <b>" + esc(topo.nome) + "</b>, com " + (pm.medida === "tempo" ? hmin(topoX.min) : topoX.n + " " + plural(topoX.n, "vez", "vezes")) + "." : "")
       : "Nenhuma permanência para esse filtro.";
 
@@ -1357,10 +1376,11 @@ window.iniciarPainel = function (D) {
       var n2 = document.querySelector('input[data-frota="' + fr.dataset.frota + '"]'); if (n2) n2.focus();
       return;
     }
-    var sel = e.target.closest("select[data-fil], select[data-pm], select[data-comp], select[data-kon]"); if (!sel) return;
+    var sel = e.target.closest("select[data-fil], select[data-pm], select[data-comp], select[data-kon], select[data-om]"); if (!sel) return;
+    if (sel.dataset.om) { om[sel.dataset.om] = sel.value; render(); var n5 = document.getElementById(sel.id); if (n5) n5.focus(); return; }
     if (sel.dataset.kon) { fco[sel.dataset.kon] = sel.dataset.kon === "dia" ? +sel.value : sel.value; render(); var n4 = document.getElementById(sel.id); if (n4) n4.focus(); return; }
     if (sel.dataset.comp) { fil_.comp[sel.dataset.comp] = sel.dataset.comp === "janela" ? +sel.value : sel.value; render(); var n3 = document.getElementById(sel.id); if (n3) n3.focus(); return; }
-    if (sel.dataset.pm) pm[sel.dataset.pm] = +sel.value;
+    if (sel.dataset.pm) pm[sel.dataset.pm] = sel.dataset.pm === "dia" ? sel.value : +sel.value;
     else { fil_[sel.dataset.fil] = sel.value; if (sel.dataset.fil === "processo") { fil_.responsavel = ""; pm.frotas = []; } }
     pm.refit = true;
     render();
@@ -1368,7 +1388,7 @@ window.iniciarPainel = function (D) {
   });
   painel.addEventListener("click", function (e) {
     var l = e.target.closest("[data-limpar]");
-    if (l) { fil_.processo = ""; fil_.responsavel = ""; if (fil_.comp) { fil_.comp.frota = ""; fil_.comp.gerencia = ""; } fco.grupo = ""; fco.dia = -1; fcm.tipo = ""; pm.frotas = []; pm.dias = 0; pm.refit = true; render(); return; }
+    if (l) { fil_.processo = ""; fil_.responsavel = ""; if (fil_.comp) { fil_.comp.frota = ""; fil_.comp.gerencia = ""; } fco.grupo = ""; fco.dia = -1; fcm.tipo = ""; pm.frotas = []; pm.dias = 0; pm.dia = ""; om.dia = ""; pm.refit = true; render(); return; }
     var kt = e.target.closest("[data-ktodos]");
     if (kt) { fco.todos = !fco.todos; render(); return; }
     var kd = e.target.closest("[data-kdia]");
