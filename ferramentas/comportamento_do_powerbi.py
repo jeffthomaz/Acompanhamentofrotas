@@ -44,10 +44,11 @@ TIPOS = [
     {"id": "fadigam", "nome": "Fadiga", "grupo": "fadiga"},
     {"id": "camera", "nome": "Câmera obstruída ou desconectada"},
     {"id": "faixa", "nome": "Ultrapassagem em faixa contínua"},
+    {"id": "cigarro", "nome": "Uso de cigarro"},
 ]
 POR_TIPO = {
     "MANUSEIO_CELULAR": "celular", "SEM_CINTO": "cinto", "DISTRACAO_MOTORISTA": "distracao",
-    "BOCEJO": "bocejo", "FADIGA_MOTORISTA": "fadigam",
+    "BOCEJO": "bocejo", "FADIGA_MOTORISTA": "fadigam", "USO_CIGARRO": "cigarro",
     "CAMERA_OBSTRUIDA": "camera", "DESCONEXAO_DA_CAMERA_DO_MOTORISTA": "camera",
     "DESCONEXAO_DA_CAMERA_DA_PISTA": "camera", "DESCONEXAO_DA_CAMERA_DE_AUDITORIA": "camera",
     # Freada, curva e aceleração brusca ficam de fora do painel (pedido do usuário).

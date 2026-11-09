@@ -1,5 +1,5 @@
 {
-  "_comentario": "Ocorrências do Comportamental desconsideradas (resolvidas de forma errada). Aplicado em gerar_acesso.py a cada atualização. tipo = id do tipo (celular, cinto, distracao, bocejo, fadigam, camera, vel1, vel2, vel3); qtd = quantas tirar daquele dia (sem qtd: todas).",
+  "_comentario": "Ocorrências do Comportamental desconsideradas (resolvidas de forma errada). Aplicado em gerar_acesso.py a cada atualização. tipo = id do tipo (celular, cinto, distracao, bocejo, fadigam, cigarro, faixa, camera, vel1, vel2, vel3); qtd = quantas tirar daquele dia (sem qtd: todas).",
   "ocorrencias": [
     {"frota": "40878", "data": "2026-11-05", "tipo": "celular", "qtd": 1, "motivo": "resolvida de forma errada"}
   ]

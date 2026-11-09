@@ -58,6 +58,7 @@ window.iniciarPainel = function (D) {
     { id: "cinto", nome: "Sem cinto de segurança", icone: "M12 3.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zM6 21l3-9h6l3 9M8 12l9 7" },
     { id: "distracao", nome: "Distração", icone: "M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12zM12 9.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5z" },
     { id: "fadiga", nome: "Fadiga e bocejo", icone: "M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z" },
+    { id: "cigarro", nome: "Uso de cigarro", icone: "M3 14h13v4H3zM18 14v4M21 14v4M18 11c0-2 3-2 3-5" },
     { id: "faixa", nome: "Ultrapassagem em faixa contínua", icone: "M5 21L9 3M19 21L15 3M12 3v18" }
   ];
   var TOTAL_ICONE = "M5 20V10M12 20V4M19 20v-7";
