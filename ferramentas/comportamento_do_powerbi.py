@@ -43,6 +43,7 @@ TIPOS = [
     {"id": "bocejo", "nome": "Bocejo", "grupo": "fadiga"},
     {"id": "fadigam", "nome": "Fadiga", "grupo": "fadiga"},
     {"id": "camera", "nome": "Câmera obstruída ou desconectada"},
+    {"id": "faixa", "nome": "Ultrapassagem em faixa contínua"},
 ]
 POR_TIPO = {
     "MANUSEIO_CELULAR": "celular", "SEM_CINTO": "cinto", "DISTRACAO_MOTORISTA": "distracao",
@@ -64,6 +65,8 @@ def tipo_id(r):
         lim, exc = kmh(r["lim"]), kmh(r["exc"])
         p = (exc / lim - 1) * 100 if lim and exc else 0
         return "vel1" if p <= 20 else "vel2" if p <= 50 else "vel3"
+    if "ULTRAPASSAGEM" in t:  # ultrapassagem em faixa contínua (nome exato ainda não apareceu no BI)
+        return "faixa"
     return POR_TIPO.get(t)
 
 

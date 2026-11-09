@@ -58,7 +58,7 @@ window.iniciarPainel = function (D) {
     { id: "cinto", nome: "Sem cinto de segurança", icone: "M12 3.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zM6 21l3-9h6l3 9M8 12l9 7" },
     { id: "distracao", nome: "Distração", icone: "M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12zM12 9.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5z" },
     { id: "fadiga", nome: "Fadiga e bocejo", icone: "M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z" },
-    { id: "camera", nome: "Câmera obstruída", icone: "M3 7h4l2-3h6l2 3h4v13H3zM12 10.5a3 3 0 1 1 0 6 3 3 0 0 1 0-6zM3 3l18 18" }
+    { id: "faixa", nome: "Ultrapassagem em faixa contínua", icone: "M5 21L9 3M19 21L15 3M12 3v18" }
   ];
   var TOTAL_ICONE = "M5 20V10M12 20V4M19 20v-7";
 
@@ -139,7 +139,9 @@ window.iniciarPainel = function (D) {
     for (k = 0; k < NT; k++) { cur.push(0); ant.push(0); }
     var porDia = [];
     for (k = 0; k < N; k++) porDia.push(new Array(NT).fill(0));
-    var porFrota = {};
+    var porFrota = {}, noPainel = {};
+    CATS.forEach(function (c) { T.forEach(function (t, i) { if ((t.grupo || t.id) === c.id) noPainel[i] = 1; }); });
+    ev = ev.filter(function (e) { return noPainel[e[1]]; }); // tipos sem card (ex.: câmera obstruída) ficam fora
     ev.forEach(function (e) {
       porDia[e[0]][e[1]] += e[3];
       if (e[0] >= a0) { cur[e[1]] += e[3]; porFrota[e[2]] = (porFrota[e[2]] || 0) + e[3]; }
@@ -1034,11 +1036,11 @@ window.iniciarPainel = function (D) {
     var ci = T.map(function (t) { var g = t.grupo || t.id; for (var j = 0; j < CATS.length; j++) if (CATS[j].id === g) return j; return -1; });
     var porDC = S.dias.map(function () { return CATS.map(function () { return 0; }); });
     C.ev.forEach(function (e) {
-      var f = F[e[2]]; if (!f || !noProc(f.processo) || e[0] > fimC) return;
+      var f = F[e[2]]; if (!f || !noProc(f.processo) || e[0] > fimC || ci[e[1]] < 0) return; // só tipos com card
       var k = e[0] - i0, q = e[0] - a0;
       if (k >= 0 && k < 7 && por[k] !== null) {
         por[k] += e[3]; cur += e[3]; porT[e[1]] += e[3]; porP[f.processo] = (porP[f.processo] || 0) + e[3]; porF[e[2]] = (porF[e[2]] || 0) + e[3];
-        if (ci[e[1]] >= 0) porDC[k][ci[e[1]]] += e[3];
+        porDC[k][ci[e[1]]] += e[3];
       }
       else if (q >= 0 && q < 7 && okA[q]) { ant += e[3]; porTA[e[1]] += e[3]; }
     });
