@@ -18,6 +18,9 @@ O acesso é por login: cada usuário só consegue abrir os dados dos processos d
 
 A planilha `cadastros.xlsx` (fica só no computador, nunca no repositório) tem as colunas
 USUARIO, PROCESSO e SENHA. PROCESSO = `todos` vê tudo; vários processos são separados por `;`.
+Ao gerar, frota sem processo numa aba e com processo em outra recebe o processo da outra aba
+(o que aparece em mais abas; empate: Conectividade, Comportamental, Motor ocioso, Permanência, Câmeras).
+Para corrigir um processo errado, use `ferramentas/processos_frotas.json`, que tem prioridade.
 Senhas precisam de pelo menos 10 caracteres.
 
 Os dados de cada grupo são trancados com AES-256-GCM, e a chave do grupo é trancada com a

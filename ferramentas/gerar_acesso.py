@@ -147,6 +147,31 @@ def aplicar_processos_informados(D):
         if x["f"] in pi: x["processo"] = pi[x["f"]]
 
 
+def completar_processos(D):
+    """Frota sem processo numa aba e com processo em outra: usa o processo da outra aba.
+    Com mais de um processo nas outras abas, vale o que aparece em mais abas; empate segue a ordem
+    Conectividade, Comportamental, Motor ocioso, Permanência, Câmeras. Devolve {frota: processo} preenchidos."""
+    vazio = lambda p: not norm(p) or chave_proc(p) == chave_proc("SEM PROCESSO")
+    regs = []  # (aba, frota, registro)
+    for f, v in D.get("conectividade", {}).get("frotas", {}).items(): regs.append((0, f, v))
+    for f, v in D.get("comportamento", {}).get("frotas", {}).items(): regs.append((1, f, v))
+    for v in D.get("motorOcioso", {}).get("veiculos", []): regs.append((2, v["id"], v))
+    for f, v in D.get("permanencia", {}).get("veiculos", {}).items(): regs.append((3, f, v))
+    for x in D.get("cameras", {}).get("lista", []): regs.append((4, x["f"], x))
+    cand = {}
+    for aba, f, v in regs:
+        if not vazio(v.get("processo")):
+            c = cand.setdefault(norm(f), {}).setdefault(v["processo"], [0, 9])
+            c[0] += 1; c[1] = min(c[1], aba)
+    feitos = {}
+    for aba, f, v in regs:
+        if aba == 4 or not vazio(v.get("processo")) or norm(f) not in cand:
+            continue  # Câmeras só servem de fonte (os totais por processo já vêm prontos)
+        p = sorted(cand[norm(f)].items(), key=lambda kv: (-kv[1][0], kv[1][1]))[0][0]
+        v["processo"] = p; feitos[norm(f)] = p
+    return feitos
+
+
 def aplicar_de_para(D):
     """Junta na frota certa os registros que vieram pela placa (ferramentas/frotas_de_para.json)."""
     caminho = os.path.join(os.path.dirname(os.path.abspath(__file__)), "frotas_de_para.json")
@@ -252,6 +277,9 @@ def main(cad, fonte, saida):
     unificar_processos(D)
     aplicar_de_para(D)
     aplicar_processos_informados(D)
+    feitos = completar_processos(D)
+    if feitos:
+        print("%d frota(s) sem processo completadas pelo processo de outra aba" % len(feitos))
     remover_excluidas(D)
     remover_locais(D)
     conhecidos = {chave_proc(v["processo"]): v["processo"] for v in D.get("comportamento", {}).get("frotas", {}).values()}
