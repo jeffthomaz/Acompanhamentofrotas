@@ -1138,10 +1138,12 @@ window.iniciarPainel = function (D) {
       ids.forEach(function (f) { var s = letraSt((K.hist[f] || "")[i] || "."); if (o[s] !== undefined) o[s]++; });
       return o;
     }
-    var ix = S.dias.map(function (d) { return K.dias.indexOf(d); });
-    var vals = ix.map(function (i) { if (i < 0) return null; var o = conta(i); return o.C + o.O + o.M + o.P ? o.O : null; });
-    var li = -1; ix.forEach(function (i, k) { if (vals[k] !== null) li = i; });
+    // Conectividade no Resumo é a situação atual (último dia com dados), não a da semana do Resumo.
+    var li = -1;
+    for (var q0 = nd - 1; q0 >= 0 && li < 0; q0--) { var o0 = conta(q0); if (o0.C + o0.O + o0.M + o0.P) li = q0; }
     if (li < 0) return semDados(S, "conectividade", "Conectividade", "veículos offline");
+    var dias7 = []; for (var k7 = 6; k7 >= 0; k7--) dias7.push(isoMais(K.dias[li], -k7));
+    var vals = dias7.map(function (d) { var i = K.dias.indexOf(d); if (i < 0) return null; var o = conta(i); return o.C + o.O + o.M + o.P ? o.O : null; });
     var hoje = conta(li), ia = K.dias.indexOf(isoMais(K.dias[li], -7)), antes = ia >= 0 ? conta(ia) : null, tot = hoje.C + hoje.O + hoje.M + hoje.P;
     var longos = ids.map(function (f) {
       var h = K.hist[f] || "", d = 0; for (var q = li; q >= 0 && h[q] === "O"; q--) d++;
@@ -1150,10 +1152,10 @@ window.iniciarPainel = function (D) {
     var al = [];
     if (longos.length) al.push([longos[0].d >= 5 ? "ruim" : "atencao", "⌁", "<b>" + longos.length + "</b> " + plural(longos.length, "veículo está", "veículos estão") + " offline há 2 dias ou mais; o <b>" + esc(longos[0].f) + "</b> há " + longos[0].d + " dias."]);
     var diag = num(hoje.C, 0) + " de " + num(tot, 0) + " " + plural(tot, "veículo conectado", "veículos conectados") + "; " + hoje.M + " em manutenção e " + hoje.P + " " + plural(hoje.P, "parado", "parados") + ".";
-    return { aba: "conectividade", nome: "Conectividade", ini: S.ini, fim: S.fim, ate: K.dias[li] < S.fim ? K.dias[li] : null,
-      valor: num(hoje.O, 0), un: plural(hoje.O, "veículo offline", "veículos offline") + " em " + dd(K.dias[li]),
+    return { aba: "conectividade", nome: "Conectividade", ini: dias7[0], fim: K.dias[li], ate: null, atual: true,
+      valor: num(hoje.O, 0), un: plural(hoje.O, "veículo offline", "veículos offline") + " na situação atual, de " + dd(K.dias[li]),
       delta: antes ? delta(hoje.O, antes.O) : '<span class="dl neutro">sem base</span>',
-      graf: barras7(vals, S.dias, function (v) { return v + " offline"; }, "Veículos offline por dia"),
+      graf: barras7(vals, dias7, function (v) { return v + " offline"; }, "Veículos offline por dia"),
       diag: diag, alertas: al, offline: hoje.O, hoje: hoje, tot: tot, dia: K.dias[li], vals: vals,
       longos: longos.slice(0, 5).map(function (x) { return { f: x.f, d: x.d, processo: K.frotas[x.f].processo }; }), nLongos: longos.length };
   }
@@ -1216,7 +1218,7 @@ window.iniciarPainel = function (D) {
     var lista = unicos(Object.keys(procs));
     var filtros = '<div class="filtros rz-fil"><label>Processo<select data-fil="processo" id="r-processo">' + opcoes(lista, fil_.processo, D.escopo && D.escopo !== "todos" ? "Todos os meus processos" : "Todos os processos") + "</select></label>" +
       (fil_.processo ? '<button type="button" class="limpar" data-limpar="1">Limpar filtros</button>' : "") +
-      '<p class="ctx"><span class="rz-sem">Semana <b>' + dd(S.ini) + " – " + dd(S.fim) + "</b></span> comparada com " + dd(S.ant[0]) + " – " + dd(S.ant[6]) + ". Câmeras: relatório do dia.</p></div>";
+      '<p class="ctx"><span class="rz-sem">Semana <b>' + dd(S.ini) + " – " + dd(S.fim) + "</b></span> comparada com " + dd(S.ant[0]) + " – " + dd(S.ant[6]) + ". Conectividade: situação atual. Câmeras: relatório do dia.</p></div>";
 
     var by = {}; A.forEach(function (a) { if (a.valor !== "—") by[a.aba] = a; });
     var nivel = { ruim: 3, atencao: 2, bom: 1 };
@@ -1303,7 +1305,7 @@ window.iniciarPainel = function (D) {
         '<div class="rz-off"><span class="rz-mini">Offline há 2 dias ou mais</span>' + (k.longos.length ? '<table class="tb rz-tb"><tbody>' + k.longos.map(function (x) {
           return '<tr><th scope="row">' + esc(x.f) + "</th><td>" + esc(x.processo) + '</td><td class="r"><b class="' + (x.d >= 5 ? "ruim" : "") + '">' + x.d + " dias</b></td></tr>";
         }).join("") + "</tbody></table>" + (k.nLongos > k.longos.length ? '<p class="rz-nota">e mais ' + (k.nLongos - k.longos.length) + ".</p>" : "") : '<p class="rz-nota">Nenhum veículo.</p>') + "</div>";
-      trio.push(rzCard("Conectividade", "situação em " + dd(k.dia) + " · " + num(k.tot, 0) + " veículos", corpo));
+      trio.push(rzCard("Conectividade", "situação atual (" + dd(k.dia) + ")" + " · " + num(k.tot, 0) + " veículos", corpo));
     }
     if (trio.length) linhas.push('<div class="rz-trio">' + trio.join("") + "</div>");
 
