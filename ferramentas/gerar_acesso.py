@@ -218,7 +218,7 @@ def aplicar_de_para(D):
         C["frotas"] = juntar_dict(C["frotas"])
         soma = {}
         for e in C["ev"]:
-            k = (e[0], e[1], nf(e[2])) + tuple(e[4:5]); soma[k] = soma.get(k, 0) + e[3]
+            k = (e[0], e[1], nf(e[2])) + tuple(e[4:]); soma[k] = soma.get(k, 0) + e[3]
         C["ev"] = sorted([list(k[:3]) + [n] + list(k[3:]) for k, n in soma.items()])
     if "permanencia" in D:
         P = D["permanencia"]

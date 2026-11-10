@@ -78,7 +78,8 @@ geral só quando o usuário pedir.
   Ultrapassagem em faixa contínua não tem tipo próprio: conta a linha cujo ULTIMO_COMENTARIO é
   "ALARME VERDADEIRO - ULTRAPASSAGEM EM FAIXA CONTÍNUA", qualquer que seja o TIPO.
   Cada ocorrência guarda o turno pela HORA (5º item do `ev`: 0 = A 07:00–15:10, 1 = B 15:10–23:10,
-  2 = C 23:10–07:00). O Resumo mostra o balanço por turno da semana, comparado com a semana anterior.
+  2 = C 23:10–07:00) e a hora cheia (6º item, 0–23). O Resumo mostra o balanço por turno da semana,
+  comparado com a semana anterior, e logo abaixo as horas de pico (gráfico das 24 horas e as 3 maiores).
 - Comportamento (até 09/11/2026): dados reais dos Power BI "Dados Monitoramento Comportamental Frotas Leves 2026"
   (tabela OCORRÊNCIAS FROTA LEVA PO.GE.03) e "... Frotas Pesadas 2026" (tabela Frota Pesada POLGE03),
   extraídos com `ferramentas/comportamento_do_powerbi.py`. Excesso de velocidade nas faixas da nova

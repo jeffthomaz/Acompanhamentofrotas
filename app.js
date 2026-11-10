@@ -1038,6 +1038,9 @@ window.iniciarPainel = function (D) {
     var porDC = S.dias.map(function () { return CATS.map(function () { return 0; }); });
     // Turno pela hora da ocorrência (5º item do ev): 0 = A, 1 = B, 2 = C; sem o item = sem hora.
     var tu = [0, 0, 0, 0], tuA = [0, 0, 0, 0], tuC = [0, 1, 2, 3].map(function () { return CATS.map(function () { return 0; }); });
+    // Hora cheia (6º item do ev), para os picos por hora.
+    var hr = [], hrC = [];
+    for (var h0 = 0; h0 < 24; h0++) { hr.push(0); hrC.push(CATS.map(function () { return 0; })); }
     C.ev.forEach(function (e) {
       var f = F[e[2]]; if (!f || !noProc(f.processo) || e[0] > fimC || ci[e[1]] < 0) return; // só tipos com card
       var k = e[0] - i0, q = e[0] - a0;
@@ -1045,6 +1048,7 @@ window.iniciarPainel = function (D) {
         por[k] += e[3]; cur += e[3]; porT[e[1]] += e[3]; porP[f.processo] = (porP[f.processo] || 0) + e[3]; porF[e[2]] = (porF[e[2]] || 0) + e[3];
         porDC[k][ci[e[1]]] += e[3];
         var t0 = e.length > 4 ? e[4] : 3; tu[t0] += e[3]; tuC[t0][ci[e[1]]] += e[3];
+        if (e.length > 5) { hr[e[5]] += e[3]; hrC[e[5]][ci[e[1]]] += e[3]; }
       }
       else if (q >= 0 && q < 7 && okA[q]) { ant += e[3]; porTA[e[1]] += e[3]; tuA[e.length > 4 ? e[4] : 3] += e[3]; }
     });
@@ -1067,7 +1071,7 @@ window.iniciarPainel = function (D) {
     return { aba: "comportamento", nome: "Comportamental", ini: S.ini, fim: S.fim, ate: dFim < S.fim ? dFim : null,
       valor: num(cur, 0), un: plural(cur, "ocorrência", "ocorrências"), delta: ant ? delta(cur, ant) : '<span class="dl neutro">sem base</span>',
       graf: barras7(por, S.dias, function (v) { return num(v, 0) + " " + plural(v, "ocorrência", "ocorrências"); }, "Ocorrências por dia"),
-      diag: diag, alertas: al, cur: cur, ant: ant, tu: tu, tuA: tuA, tuC: tuC, vals: por, porDC: porDC, cats: cats, porP: porP, porF: porF, frotas: F,
+      diag: diag, alertas: al, cur: cur, ant: ant, tu: tu, tuA: tuA, tuC: tuC, hr: hr, hrC: hrC, vals: por, porDC: porDC, cats: cats, porP: porP, porF: porF, frotas: F,
       vel: ["vel1", "vel2", "vel3"].map(function (id) { var i = T.map(function (t) { return t.id; }).indexOf(id); return i >= 0 ? { nome: T[i].nome, n: porT[i] } : null; }).filter(Boolean) };
   }
 
@@ -1293,6 +1297,40 @@ window.iniciarPainel = function (D) {
       linhas.push('<div class="rz-row">' + rzCard("Ocorrências por turno", "comportamental · semana " + dd(S.ini) + " – " + dd(S.fim) + " · variação sobre a semana anterior",
         '<ul class="rz-tu">' + tiles + '</ul><p class="rz-nota">' + (mxT ? "<b>Turno " + TURNOS[iMx][0] + "</b> concentra " + num(mxT / c.cur * 100, 0) + "% das ocorrências. " : "") +
         "O turno vale pela hora da ocorrência; no turno C, o que passa da meia-noite conta no dia em que aconteceu." + semH + "</p>", "rz-larga") + "</div>");
+
+      // Picos por hora: gráfico das 24 horas e as 3 horas com mais ocorrências.
+      var totH = sum(c.hr, function (v) { return v; });
+      if (totH) {
+        var ordH = c.hr.map(function (v, h) { return { h: h, n: v }; }).filter(function (x) { return x.n; }).sort(function (x, y) { return y.n - x.n || x.h - y.h; });
+        var picos = ordH.slice(0, 3), ePico = {}; picos.forEach(function (x) { ePico[x.h] = 1; });
+        var turnoDe = function (h) { var m = h * 60 + 30; return m >= 420 && m < 910 ? "A" : m >= 910 && m < 1390 ? "B" : "C"; };
+        var faixaH = function (h) { return pad(h) + "h – " + pad((h + 1) % 24) + "h"; };
+        var W = 720, H = 190, pl = 6, pr = 6, pt = 22, base = 150, bw = (W - pl - pr) / 24, mxH = Math.max.apply(null, c.hr) || 1;
+        var xm = function (min) { return pl + min / 60 * bw; };
+        var g = '<svg class="rz-hrs" viewBox="0 0 ' + W + " " + H + '" role="img" aria-label="' + esc("Ocorrências por hora do dia. Picos: " + picos.map(function (x) { return faixaH(x.h) + ", " + x.n; }).join("; ")) + '">';
+        [[0, 420, "C"], [420, 910, "A"], [910, 1390, "B"], [1390, 1440, "C"]].forEach(function (b, i) {
+          g += '<rect class="rz-hb-t t' + b[2] + '" x="' + xm(b[0]).toFixed(1) + '" y="' + (base + 22) + '" width="' + (xm(b[1]) - xm(b[0])).toFixed(1) + '" height="14" rx="2"/>';
+          if (b[1] - b[0] > 100) g += '<text class="rz-hb-l" x="' + ((xm(b[0]) + xm(b[1])) / 2).toFixed(1) + '" y="' + (base + 32.5) + '" text-anchor="middle">Turno ' + b[2] + "</text>";
+        });
+        c.hr.forEach(function (v, h) {
+          var x = pl + h * bw, hh = v ? Math.max(v / mxH * (base - pt), 2) : 0;
+          if (hh) g += '<rect class="rz-hbar' + (ePico[h] ? " pico" : "") + '" x="' + (x + bw * .14).toFixed(1) + '" y="' + (base - hh).toFixed(1) + '" width="' + (bw * .72).toFixed(1) + '" height="' + hh.toFixed(1) + '" rx="2"/>';
+          if (ePico[h]) g += '<text class="rz-hv" x="' + (x + bw / 2).toFixed(1) + '" y="' + (base - hh - 5).toFixed(1) + '" text-anchor="middle">' + num(v, 0) + "</text>";
+          if (h % 3 === 0) g += '<text class="tl" x="' + (x + bw / 2).toFixed(1) + '" y="' + (base + 14) + '" text-anchor="middle">' + pad(h) + "h</text>";
+          g += '<rect class="rz-hit" x="' + x.toFixed(1) + '" y="0" width="' + bw.toFixed(1) + '" height="' + (base + 4) + '"><title>' + esc(faixaH(h) + ": " + num(v, 0) + " " + plural(v, "ocorrência", "ocorrências")) + "</title></rect>";
+        });
+        g += '<line class="rz-hax" x1="' + pl + '" x2="' + (W - pr) + '" y1="' + base + '" y2="' + base + '"/></svg>';
+        var lp = '<ol class="rz-pic">' + picos.map(function (x, i) {
+          var top = x.n ? c.hrC[x.h].map(function (v, j) { return { c: CATS[j], n: v }; }).filter(function (y) { return y.n; }).sort(function (p, q) { return q.n - p.n; }) : [];
+          return "<li><span class=\"rz-pn\">" + (i + 1) + "º</span><div><b>" + faixaH(x.h) + "</b> <small>turno " + turnoDe(x.h) + "</small><p><strong>" + num(x.n, 0) + "</strong> " + plural(x.n, "ocorrência", "ocorrências") +
+            " · " + num(x.n / totH * 100, 0) + "% da semana" + (top.length ? "<br>" + top.slice(0, 2).map(function (y) { return esc(y.c.nome.toLowerCase()) + " " + num(y.n, 0); }).join(", ") : "") + "</p></div></li>";
+        }).join("") + "</ol>";
+        var p3 = sum(picos, function (x) { return x.n; });
+        var menos = ordH[ordH.length - 1];
+        linhas.push('<div class="rz-row">' + rzCard("Horas de pico", "comportamental · semana " + dd(S.ini) + " – " + dd(S.fim),
+          '<div class="rz-hrw"><div class="rz-hrg">' + g + '</div>' + lp + '</div><p class="rz-nota">As 3 horas de pico somam <b>' + num(p3 / totH * 100, 0) + "%</b> das ocorrências da semana." +
+          (menos ? " Hora mais tranquila: " + faixaH(menos.h) + " (" + num(menos.n, 0) + ")." : "") + " Passe o mouse (ou toque) nas barras para ver cada hora.</p>", "rz-larga") + "</div>");
+      }
     }
 
     // 3. Por processo (ou por veículo, com processo escolhido), motor ocioso e conectividade.

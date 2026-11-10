@@ -16,7 +16,7 @@ Ultrapassagem em faixa contínua não tem tipo próprio: vale o ULTIMO_COMENTARI
 "ALARME VERDADEIRO - ULTRAPASSAGEM EM FAIXA CONTÍNUA", seja qual for o TIPO da linha (pedido do usuário
 em 10/11/2026). A ocorrência passa a contar só como ultrapassagem, não pelo tipo original.
 Cada ocorrência leva o turno pela HORA (A 07:00–15:10, B 15:10–23:10, C 23:10–07:00), usado no
-balanço por turno da aba Resumo (pedido do usuário em 10/11/2026).
+balanço por turno da aba Resumo, e a hora cheia (0–23), usada nos picos por hora (pedido do usuário em 10/11/2026).
 """
 import json, os, sys
 from datetime import date, datetime, time
@@ -80,7 +80,7 @@ def aba(wb, nome, leve, corr=None):
             tipo = corr[k]
         out.append({
             "f": f, "placa": txt(col(r, "PLACA")), "grupo": txt(col(r, "GRUPO")), "tipo": tipo,
-            "lim": txt(col(r, "LIMIAR")), "exc": txt(col(r, "EXCESSO")), "d": d.strftime("%Y-%m-%d"), "turno": turno(k[2]),
+            "lim": txt(col(r, "LIMIAR")), "exc": txt(col(r, "EXCESSO")), "d": d.strftime("%Y-%m-%d"), "turno": turno(k[2]), "hora": int(k[2][:2]) if turno(k[2]) is not None else None,
             "proc": txt(col(r, "PROCESSO")) if leve else None, "ger": txt(col(r, "GERENCIA", "GERÊNCIA")),
             "rot": txt(col(r, "RÓTULO")) or None, "desc": txt(col(r, "ALERTA DESCONSIDERADO")) or None,
         })
