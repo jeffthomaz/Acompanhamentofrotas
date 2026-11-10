@@ -8,6 +8,8 @@ Uso:
 Abas usadas: "Frota Leve" e "Frota Pesada" (cabeçalho na linha 2) e "BASE DE INFORMAÇÃO" (processo de
 cada frota pesada). Mesmas regras de comportamento_do_powerbi.py: faixas de excesso de velocidade da
 nova política, só ALARME VERDADEIRO e não desconsiderado, sem freada/curva/aceleração brusca.
+Ocorrência com ULTIMO_COMENTARIO "ALARME VERDADEIRO.( PRESTADORES DE SERVIÇO )" é desconsiderada,
+de qualquer tipo (pedido do usuário em 10/11/2026).
 A planilha tem o ano todo, então ela substitui o que estava salvo do primeiro dia dela em diante.
 Ultrapassagem em faixa contínua não está na planilha: continua vindo das tabelas de e-mail dos PBI
 (comportamento_do_powerbi.py --faixa) e é mantida.
@@ -34,11 +36,14 @@ def aba(wb, nome, leve):
             if n in ix and ix[n] < len(r):
                 return r[ix[n]]
         return None
-    out = []
+    out, prest = [], 0
     for r in it:
         f = txt(col(r, "PREFIXO"))
         d = col(r, "DATA")
         if not f or not isinstance(d, (date, datetime)):
+            continue
+        if "PRESTADORES DE SERVI" in txt(col(r, "ULTIMO_COMENTARIO")).upper():
+            prest += 1
             continue
         out.append({
             "f": f, "placa": txt(col(r, "PLACA")), "grupo": txt(col(r, "GRUPO")), "tipo": txt(col(r, "TIPO")),
@@ -46,6 +51,7 @@ def aba(wb, nome, leve):
             "proc": txt(col(r, "PROCESSO")) if leve else None, "ger": txt(col(r, "GERENCIA", "GERÊNCIA")),
             "rot": txt(col(r, "RÓTULO")) or None, "desc": txt(col(r, "ALERTA DESCONSIDERADO")) or None,
         })
+    print("%s: %d ocorrência(s) de prestadores de serviço desconsiderada(s)" % (nome, prest))
     return out
 
 
