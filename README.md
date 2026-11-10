@@ -59,7 +59,13 @@ lista; a constante `EXCLUIR` do `app.js` (leitura de arquivos no navegador) deve
   DIAS OFFLINE, RESPONSÁVEL e OBSERVAÇÃO: os equipamentos em manutenção, parados ou offline 2+ dias, com o
   STATUS da última atualização para o usuário conferir (OFFLINE não muda nada; PARADO, MANUTENÇÃO e OPERANDO
   valem). A data em que um status passou a valer fica guardada na base (`manual_desde`).
-- Comportamento: dados reais dos Power BI "Dados Monitoramento Comportamental Frotas Leves 2026"
+- Comportamento (desde 10/11/2026): planilha "Ocorrências monitoramento comportamental Nova..xlsx"
+  (abas Frota Leve, Frota Pesada e BASE DE INFORMAÇÃO), com `ferramentas/comportamento_da_planilha.py`:
+
+      python ferramentas/comportamento_da_planilha.py "Ocorrências monitoramento comportamental Nova..xlsx" dados-fonte.json
+
+  Ultrapassagem em faixa contínua não está na planilha e continua vindo das tabelas de e-mail dos PBI.
+- Comportamento (até 09/11/2026): dados reais dos Power BI "Dados Monitoramento Comportamental Frotas Leves 2026"
   (tabela OCORRÊNCIAS FROTA LEVA PO.GE.03) e "... Frotas Pesadas 2026" (tabela Frota Pesada POLGE03),
   extraídos com `ferramentas/comportamento_do_powerbi.py`. Excesso de velocidade nas faixas da nova
   política (até 20%, 20% a 50%, acima de 50%). O processo da frota pesada vem da aba

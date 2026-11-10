@@ -117,11 +117,16 @@ def relatar_mudancas(antes, novo, velho, frotas, ultimo):
 def main(leves, pesadas, base_xlsx, destino):
     wb = openpyxl.load_workbook(base_xlsx, read_only=True, data_only=True)
     base = {str(x[0]).strip(): nome_proc(x[3]) for x in wb.worksheets[2].iter_rows(min_row=2, values_only=True) if x[0]}
+    montar(linhas(leves), linhas(pesadas), base, destino)
+
+
+def montar(rows_leves, rows_pesadas, base, destino):
+    """rows_*: dicts com f, placa, grupo, tipo, lim, exc, d (aaaa-mm-dd), proc (só leves), ger, rot, desc."""
 
     frotas, proc_v, ger_v = {}, defaultdict(Counter), defaultdict(Counter)
     cont, ignorados = Counter(), Counter()
     dias = set()
-    for origem, rows in (("Leve", linhas(leves)), ("Pesada", linhas(pesadas))):
+    for origem, rows in (("Leve", rows_leves), ("Pesada", rows_pesadas)):
         for r in rows:
             if (r.get("rot") or "ALARME VERDADEIRO").strip() != "ALARME VERDADEIRO" or (r.get("desc") or "NÃO").strip() == "SIM":
                 ignorados["alarme falso/desconsiderado"] += 1; continue
@@ -152,7 +157,8 @@ def main(leves, pesadas, base_xlsx, destino):
             d = (ini_v + timedelta(days=d0)).isoformat()
             if ids_v[ti] not in validos:
                 continue
-            if d < corte:
+            if d < corte or ids_v[ti] == "faixa":
+                # ultrapassagem em faixa contínua vem das tabelas de e-mail (--faixa), não desta fonte
                 cont[(d, ids_v[ti], f)] += n; dias.add(d); mantidos += n
                 if f not in frotas and f in velho["frotas"]:
                     frotas[f] = velho["frotas"][f]
@@ -178,7 +184,7 @@ def main(leves, pesadas, base_xlsx, destino):
     print("%d ocorrências, %d frotas, %d linhas, %s" % (tot, len(frotas), len(ev), D["comportamento"]["periodo"]))
     print("por tipo:", {t["id"]: sum(n for (d, tt, f), n in cont.items() if tt == t["id"]) for t in TIPOS})
     print("fora:", dict(ignorados))
-    print("acumulado: %d ocorrências salvas antes de %s mantidas; dali em diante vale o Power BI" % (mantidos, corte))
+    print("acumulado: %d ocorrências mantidas do que estava salvo (dias antes de %s e ultrapassagens das tabelas de e-mail); o resto vem da fonte" % (mantidos, corte))
 
 
 def faixa(email_leves, email_pesadas, destino):
