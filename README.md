@@ -64,6 +64,9 @@ lista; a constante `EXCLUIR` do `app.js` (leitura de arquivos no navegador) deve
   extraídos com `ferramentas/comportamento_do_powerbi.py`. Excesso de velocidade nas faixas da nova
   política (até 20%, 20% a 50%, acima de 50%). O processo da frota pesada vem da aba
   BASE DE INFORMAÇÃO da planilha "Ocorrências monitoramento 2026.B". Não leva motorista nem CPF.
+  Ultrapassagem em faixa contínua vem das tabelas de e-mail ("Email enviado PO.GE.03" no PBI leves,
+  "Notificação de email POL.GE.03" no PBI pesadas), com `comportamento_do_powerbi.py --faixa`, depois
+  da extração principal.
 - Câmeras: visualizador só do dia (sem histórico), alimentado pelo CSV "Saúde do Veículo - Análise"
   exportado do sistema, com `ferramentas/cameras.py`. Um quadro por tipo de câmera (motorista, pista,
   auditoria) e a lista de veículos com defeito ("Sim" ou quantidade acima de zero). O processo vem do

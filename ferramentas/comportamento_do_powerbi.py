@@ -26,6 +26,14 @@ Excesso de velocidade nas faixas da nova política de frotas, pelo % acima do li
 Acumulado: a extração substitui só os dias que ela cobre (do primeiro dia dela em diante). Os dias
 anteriores já salvos no dados-fonte.json ficam guardados, então a consulta pode trazer só os últimos
 dias e o histórico não se perde se o BI mudar.
+Ultrapassagem em faixa contínua não vem nas tabelas de ocorrências: vem das tabelas de e-mail
+("Email enviado PO.GE.03" no PBI leves, "Notificação de email POL.GE.03" no PBI pesadas). Depois
+da extração principal, rode:
+    python comportamento_do_powerbi.py --faixa <email-leves.json> <email-pesadas.json> <dados-fonte.json>
+com o resultado desta consulta em cada PBI (troque a tabela):
+    EVALUATE SELECTCOLUMNS(FILTER('Email enviado PO.GE.03', [Ocorrência ] = "ULTRAPASSAGEM EM FAIXA CONTÍNUA"),
+        "f", [Frota ], "d", FORMAT([Data], "yyyy-mm-dd"), "proc", [Processo])
+Todas as ultrapassagens do dados-fonte.json são trocadas pelas dessas tabelas (elas têm o ano todo).
 """
 import json, re, sys
 from collections import Counter, defaultdict
@@ -173,7 +181,43 @@ def main(leves, pesadas, base_xlsx, destino):
     print("acumulado: %d ocorrências salvas antes de %s mantidas; dali em diante vale o Power BI" % (mantidos, corte))
 
 
+def faixa(email_leves, email_pesadas, destino):
+    """Troca as ultrapassagens em faixa contínua pelas das tabelas de e-mail dos dois PBI."""
+    D = json.load(open(destino, encoding="utf-8"))
+    C = D["comportamento"]
+    ini = date.fromisoformat(C["inicio"])
+    ids = [t["id"] for t in C["tipos"]]
+    tf = ids.index("faixa")
+    cont = Counter()
+    for origem, cam in (("Leve", email_leves), ("Pesada", email_pesadas)):
+        for r in linhas(cam):
+            f, d = str(r["f"] or "").strip(), (r["d"] or "")[:10]
+            if not f or not d:
+                continue
+            k = (date.fromisoformat(d) - ini).days
+            if k < 0:
+                continue
+            cont[(k, f)] += 1
+            if f not in C["frotas"]:
+                C["frotas"][f] = {"placa": "", "frota": origem, "grupo": "", "processo": nome_proc(r.get("proc")), "gerencia": "Sem gerência"}
+    antes = sum(e[3] for e in C["ev"] if e[1] == tf)
+    ev = [e for e in C["ev"] if e[1] != tf] + [[k, tf, f, n] for (k, f), n in cont.items()]
+    C["ev"] = sorted(ev)
+    ultimo = max(e[0] for e in C["ev"])
+    if ultimo + 1 > C["ndias"]:
+        fim = ini + timedelta(days=ultimo)
+        C["fim"], C["ndias"] = fim.isoformat(), ultimo + 1
+        C["periodo"] = "%s a %s" % (ini.strftime("%d/%m/%Y"), fim.strftime("%d/%m/%Y"))
+    json.dump(D, open(destino, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+    print("ultrapassagem em faixa contínua: %d (antes %d)" % (sum(cont.values()), antes))
+    for (k, f), n in sorted(cont.items()):
+        print("  %s frota %s: %d" % ((ini + timedelta(days=k)).strftime("%d/%m"), f, n))
+
+
 if __name__ == "__main__":
+    if len(sys.argv) == 5 and sys.argv[1] == "--faixa":
+        faixa(*sys.argv[2:])
+        sys.exit()
     if len(sys.argv) != 5:
         sys.exit(__doc__)
     main(*sys.argv[1:])
