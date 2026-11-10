@@ -94,8 +94,7 @@ def main(pasta, destino, geral=False):
     json.dump(cache, open(cache_c, "w", encoding="utf-8"), ensure_ascii=False)
     print("%d arquivo(s) novo(s) ou alterado(s), %d eventos de permanência (cerca e ponto), %d desconsiderados" % (arquivos, len(novos_rows), desc))
     if not arquivos:
-        print("nada novo")
-        return
+        print("nenhum CSV novo: remonta a partir da base guardada")
     rows = []
     for d in sorted(cache["dias"]):
         for r in cache["dias"][d]:
