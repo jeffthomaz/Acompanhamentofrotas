@@ -124,7 +124,7 @@ def montar(rows_leves, rows_pesadas, base, destino, manter_faixa=True):
     """rows_*: dicts com f, placa, grupo, tipo, lim, exc, d (aaaa-mm-dd), proc (só leves), ger, rot, desc."""
 
     frotas, proc_v, ger_v = {}, defaultdict(Counter), defaultdict(Counter)
-    cont, ignorados = Counter(), Counter()
+    cont, ignorados, pts = Counter(), Counter(), Counter()
     dias = set()
     for origem, rows in (("Leve", rows_leves), ("Pesada", rows_pesadas)):
         for r in rows:
@@ -138,6 +138,8 @@ def montar(rows_leves, rows_pesadas, base, destino, manter_faixa=True):
             proc_v[f][nome_proc(r.get("proc")) if origem == "Leve" else base.get(f, "SEM PROCESSO")] += 1
             ger_v[f][(r.get("ger") or "").strip().title() or "Sem gerência"] += 1
             cont[(r["d"], t, f, r.get("turno"), r.get("hora"))] += 1
+            if t != "bocejo" and r.get("lat") and r.get("lon"):  # mapa de calor (sem bocejo)
+                pts[(r["d"], t, f, round(r["lat"], 3), round(r["lon"], 3), r.get("loc") or "Sem local")] += 1
             dias.add(r["d"])
     for f, x in frotas.items():
         x["processo"] = proc_v[f].most_common(1)[0][0]
@@ -189,6 +191,13 @@ def montar(rows_leves, rows_pesadas, base, destino, manter_faixa=True):
         "periodo": "%s a %s" % (ini.strftime("%d/%m/%Y"), fim.strftime("%d/%m/%Y")),
         "tipos": TIPOS, "frotas": frotas, "ev": ev,
     }
+    if pts:
+        # Mapa de calor: [dia, tipo, frota, lat×1000, lon×1000, quantidade, local] (sem bocejo)
+        nomes = sorted({k[5] for k in pts})
+        li = {n: i for i, n in enumerate(nomes)}
+        D["comportamento"]["locais"] = nomes
+        D["comportamento"]["pts"] = sorted([[(date.fromisoformat(d) - ini).days, tid[t], f, int(round(la * 1000)), int(round(lo * 1000)), n, li[loc]]
+                                            for (d, t, f, la, lo, loc), n in pts.items()])
     json.dump(D, open(destino, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
     tot = sum(cont.values())
     print("%d ocorrências, %d frotas, %d linhas, %s" % (tot, len(frotas), len(ev), D["comportamento"]["periodo"]))

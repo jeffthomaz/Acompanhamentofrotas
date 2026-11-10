@@ -24,6 +24,33 @@ from datetime import date, datetime, time
 import openpyxl
 
 from comportamento_do_powerbi import montar, nome_proc
+from permanencia_do_powerbi import classifica, excluida
+
+
+def coord(v):
+    """LATITUDE/LONGITUDE da planilha vêm sem o ponto decimal (ex.: -18564455 = -18,564455)."""
+    if v is None or v == "" or str(v).strip() in ("-", "0"):
+        return None
+    try:
+        x = float(str(v).replace(",", "."))
+    except ValueError:
+        return None
+    if abs(x) <= 180:
+        return x
+    s = str(abs(int(x)))
+    return (-1 if x < 0 else 1) * float(s[:2] + "." + s[2:])
+
+
+def local(r, col):
+    """Nome do local para o mapa de calor: a cerca (se não for de pessoa), senão a via e a cidade."""
+    cerca = txt(col(r, "CERCA ELETRÔNICA")).strip(" -")
+    if cerca and not excluida(cerca):
+        nome, tipo = classifica(cerca)
+        if tipo != "colaborador":
+            return nome
+    via, cid = txt(col(r, "LOGRADOURO")).strip(" -"), txt(col(r, "CIDADE")).strip(" -")
+    via = via.split(";")[0].strip()
+    return " · ".join(x for x in (via, cid) if x) or "Sem local"
 
 
 def txt(v):
@@ -83,6 +110,7 @@ def aba(wb, nome, leve, corr=None):
             "lim": txt(col(r, "LIMIAR")), "exc": txt(col(r, "EXCESSO")), "d": d.strftime("%Y-%m-%d"), "turno": turno(k[2]), "hora": int(k[2][:2]) if turno(k[2]) is not None else None,
             "proc": txt(col(r, "PROCESSO")) if leve else None, "ger": txt(col(r, "GERENCIA", "GERÊNCIA")),
             "rot": txt(col(r, "RÓTULO")) or None, "desc": txt(col(r, "ALERTA DESCONSIDERADO")) or None,
+            "lat": coord(col(r, "LATITUDE")), "lon": coord(col(r, "LONGITUDE")), "loc": local(r, col),
         })
     print("%s: %d ocorrência(s) de prestadores de serviço desconsiderada(s)" % (nome, prest))
     return out

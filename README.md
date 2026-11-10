@@ -75,6 +75,9 @@ geral só quando o usuário pedir.
 
       python ferramentas/comportamento_da_planilha.py "Ocorrências monitoramento comportamental Nova..xlsx" dados-fonte.json
 
+  Mapa de calor (aba Comportamental, no fim): latitude/longitude e local (cerca, ou via + cidade) de cada
+  ocorrência, sem bocejo; o gerar_acesso.py compacta em células de ~500 m, faixas de período e grupos
+  (tipo de frota, processo, gerência) em comportamento.mapa.
   Ultrapassagem em faixa contínua não tem tipo próprio: conta a linha cujo ULTIMO_COMENTARIO é
   "ALARME VERDADEIRO - ULTRAPASSAGEM EM FAIXA CONTÍNUA", qualquer que seja o TIPO.
   Cada ocorrência guarda o turno pela HORA (5º item do `ev`: 0 = A 07:00–15:10, 1 = B 15:10–23:10,

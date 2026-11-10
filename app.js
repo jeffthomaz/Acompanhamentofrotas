@@ -235,7 +235,77 @@ window.iniciarPainel = function (D) {
       return '<li><span class="ai ' + a[0] + '" aria-hidden="true">' + a[1] + "</span><span>" + a[2] + "</span></li>";
     }).join("") + "</ul></section>";
 
-    return filtros + kpis + '<div class="g3 g-a">' + evolucao + part + tend + '</div><div class="g3 g-b">' + velCard + conc + alerta + "</div>";
+    return filtros + kpis + '<div class="g3 g-a">' + evolucao + part + tend + '</div><div class="g3 g-b">' + velCard + conc + alerta + "</div>" + mapaComp(C, fc, N);
+  }
+
+  // ---------- Comportamental: mapa de calor por tipo de ocorrência (sem bocejo) ----------
+  var cm = { tipo: "", mapa: null, base: "ruas", pontos: [], locs: [], marcas: [] };
+  function mapaComp(C, fc, N) {
+    var M = C.mapa; if (!M || !M.pts || !M.pts.length) return "";
+    var T = C.tipos, iBoc = T.map(function (t) { return t.id; }).indexOf("bocejo");
+    var cats = CATS.map(function (c) {
+      var ix = T.map(function (t, i) { return (t.grupo || t.id) === c.id && i !== iBoc ? i : -1; }).filter(function (i) { return i >= 0; });
+      return { id: c.id, nome: c.id === "fadiga" ? "Fadiga" : c.nome, ix: ix };
+    }).filter(function (c) { return c.ix.length; });
+    if (cm.tipo && !cats.some(function (c) { return c.id === cm.tipo; })) cm.tipo = "";
+    var J = fc.janela && fc.janela < N ? fc.janela : 0, fxMax = J === 7 ? 0 : J === 28 ? 1 : J === 91 ? 2 : 3;
+    var gOk = M.grupos.map(function (g) { return (!fc.frota || g[0] === fc.frota) && (!fil_.processo || g[1] === fil_.processo) && (!fc.gerencia || g[2] === fc.gerencia); });
+    var porTipo = {}, tOk = {};
+    cats.forEach(function (c) { c.n = 0; c.ix.forEach(function (i) { porTipo[i] = c; if (!cm.tipo || cm.tipo === c.id) tOk[i] = 1; }); });
+    var cel = {}, loc = {}, total = 0;
+    M.pts.forEach(function (e) {
+      if (e[0] > fxMax || !gOk[e[2]] || !porTipo[e[1]]) return;
+      porTipo[e[1]].n += e[6];
+      if (!tOk[e[1]]) return;
+      total += e[6];
+      var k = e[3] + "," + e[4]; cel[k] = (cel[k] || 0) + e[6];
+      var l = loc[e[5]] || (loc[e[5]] = { i: e[5], n: 0, la: 0, lo: 0, t: {} });
+      l.n += e[6]; l.la += e[3] * e[6]; l.lo += e[4] * e[6]; l.t[e[1]] = (l.t[e[1]] || 0) + e[6];
+    });
+    cm.pontos = Object.keys(cel).map(function (k) { var p = k.split(","); return [p[0] * M.cel, p[1] * M.cel, cel[k]]; });
+    cm.locs = Object.keys(loc).map(function (k) { var l = loc[k]; return { nome: M.locais[l.i], n: l.n, lat: l.la / l.n * M.cel, lon: l.lo / l.n * M.cel, t: l.t }; })
+      .sort(function (a, b) { return b.n - a.n; }).slice(0, 10);
+    var todos = sum(cats, function (c) { return c.n; });
+    var pills = '<div class="pills mc-tipos" role="group" aria-label="Tipo de ocorrência no mapa"><button type="button" data-mtipo="" aria-pressed="' + !cm.tipo + '">Todos <small>' + num(todos, 0) + "</small></button>" +
+      cats.map(function (c) { return '<button type="button" class="c-' + c.id + '" data-mtipo="' + c.id + '" aria-pressed="' + (cm.tipo === c.id) + '"' + (c.n ? "" : " disabled") + '><i></i>' + esc(c.nome) + " <small>" + num(c.n, 0) + "</small></button>"; }).join("") + "</div>";
+    var mx = Math.max.apply(null, [1].concat(cm.locs.map(function (x) { return x.n; })));
+    var ranking = '<section class="card"><h3>Locais com maior incidência</h3><p class="cs">' + (cm.tipo ? esc(cats.filter(function (c) { return c.id === cm.tipo; })[0].nome) : "Todos os tipos, sem bocejo") + ". Clique para ver no mapa.</p>" +
+      (cm.locs.length ? '<div class="rolagem alta">' + cm.locs.map(function (x, k) {
+        var tp = Object.keys(x.t).sort(function (a, b) { return x.t[b] - x.t[a]; })[0], tn = T[tp] ? (porTipo[tp] ? porTipo[tp].nome : T[tp].nome) : "";
+        return '<button type="button" class="li lib" data-cloc="' + k + '"><span class="t">' + (k + 1) + ". " + esc(x.nome) + "<small>" + (cm.tipo ? "" : "mais comum: " + esc(tn.toLowerCase())) + '</small></span><span class="n">' + num(x.n, 0) + "<small>" + (total ? num(x.n / total * 100, 0) + "%" : "") + '</small></span><div class="bb"><div class="ff" style="width:' + (x.n / mx * 100).toFixed(1) + "%;--i:" + k + '"></div></div></button>';
+      }).join("") + "</div>" : '<p class="cs">Nenhuma ocorrência com local para esse filtro.</p>') + "</section>";
+    return '<section class="sec mc"><h2>Mapa de calor das ocorrências</h2><p class="sub">Onde as ocorrências acontecem, no período e nos filtros escolhidos acima. Escolha um tipo para ver os locais com maior incidência. Bocejo fica de fora.</p>' + pills +
+      '<div class="mapa-g"><section class="card mapa-card"><div id="mapa-comp" class="mapa" role="region" aria-label="Mapa de calor das ocorrências comportamentais"><p class="mapa-msg">Carregando mapa…</p></div>' +
+      '<p class="mapa-leg"><span>Menos</span><i class="esc"></i><span>Mais ocorrências</span></p></section><div class="mapa-lado">' + ranking + "</div></div></section>";
+  }
+  function montarMapaComp() {
+    var el = document.getElementById("mapa-comp"); if (!el) return;
+    var L = window.L;
+    if (!L || !L.map) {
+      var t = (montarMapaComp.t = (montarMapaComp.t || 0) + 1);
+      if (t > 60) { el.innerHTML = '<p class="mapa-msg">Não foi possível carregar o mapa. Verifique a internet e atualize a página.</p>'; return; }
+      return setTimeout(montarMapaComp, 150);
+    }
+    montarMapaComp.t = 0;
+    if (cm.mapa) { cm.mapa.remove(); cm.mapa = null; }
+    el.innerHTML = "";
+    var mapa = cm.mapa = L.map(el, { scrollWheelZoom: false, zoomControl: true });
+    var ruas = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, attribution: "&copy; OpenStreetMap" });
+    var sat = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", { maxZoom: 19, attribution: "Imagens &copy; Esri" });
+    (cm.base === "sat" ? sat : ruas).addTo(mapa);
+    L.control.layers({ "Mapa": ruas, "Satélite": sat }, null, { position: "topright" }).addTo(mapa);
+    mapa.on("baselayerchange", function (e) { cm.base = e.layer === sat ? "sat" : "ruas"; });
+    mapa.on("focus", function () { mapa.scrollWheelZoom.enable(); });
+    mapa.on("blur", function () { mapa.scrollWheelZoom.disable(); });
+    if (cm.pontos.length) camadaCalor(L, cm.pontos, 12).addTo(mapa);
+    var mx = Math.max.apply(null, [1].concat(cm.locs.map(function (x) { return x.n; })));
+    cm.marcas = cm.locs.map(function (x, k) {
+      return L.circleMarker([x.lat, x.lon], { radius: 5 + Math.sqrt(x.n / mx) * 9, color: "#16251E", weight: 1.5, fillColor: "#FFFFFF", fillOpacity: .85 })
+        .bindPopup("<b>" + (k + 1) + ". " + esc(x.nome) + "</b><br>" + num(x.n, 0) + " " + plural(x.n, "ocorrência", "ocorrências"))
+        .bindTooltip(esc(x.nome), { direction: "top", offset: [0, -6] }).addTo(mapa);
+    });
+    if (cm.pontos.length) mapa.fitBounds(L.latLngBounds(cm.pontos.map(function (p) { return [p[0], p[1]]; })).pad(.1), { maxZoom: 13 });
+    else mapa.setView([-18.6, -48.6], 9);
   }
 
   // ---------- Motor ocioso (dados reais do Power BI "Ociosidade Frota Leve") ----------
@@ -1406,8 +1476,10 @@ window.iniciarPainel = function (D) {
     }).join("");
     painel.setAttribute("aria-labelledby", "tab-" + id);
     if (pm.mapa && id !== "permanencia") { pm.mapa.remove(); pm.mapa = null; }
+    if (cm.mapa) { cm.mapa.remove(); cm.mapa = null; }
     painel.innerHTML = VIEWS[id]();
     if (id === "permanencia") montarMapa();
+    if (id === "comportamento") montarMapaComp();
     fil.hidden = true;
     var blocos = { "resumo": { real: !D.exemplo, periodo: "Semana de segunda a domingo" }, "comportamento": D.comportamento, "motor-ocioso": D.motorOcioso, "permanencia": D.permanencia, "conectividade": D.conectividade, "cameras": D.cameras }, b = blocos[id], real = b && b.real;
     document.getElementById("periodo").textContent = real ? b.periodo + " · dados reais" : D.periodo;
@@ -1458,6 +1530,10 @@ window.iniciarPainel = function (D) {
     if (kd) { fco.dia = +kd.getAttribute("data-kdia"); render(); return; }
     var cf = e.target.closest("[data-cfrota]");
     if (cf) { fil_.comp.frota = cf.dataset.cfrota; render(); return; }
+    var mt = e.target.closest("[data-mtipo]");
+    if (mt) { cm.tipo = mt.dataset.mtipo; render(); var s0 = document.querySelector(".mc"); if (s0) s0.scrollIntoView({ block: "start" }); return; }
+    var cl = e.target.closest("[data-cloc]");
+    if (cl && cm.mapa && cm.marcas[cl.dataset.cloc]) { var m0 = cm.marcas[cl.dataset.cloc]; cm.mapa.flyTo(m0.getLatLng(), 13); m0.openPopup(); document.getElementById("mapa-comp").scrollIntoView({ behavior: "smooth", block: "center" }); return; }
     var md = e.target.closest("[data-medida]");
     if (md) { pm.medida = md.dataset.medida; render(); return; }
     var fa = e.target.closest("[data-frotas]");

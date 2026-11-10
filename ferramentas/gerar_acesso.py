@@ -66,6 +66,10 @@ def recorte(D, procs):
         C = d["comportamento"]
         C["frotas"] = {f: v for f, v in C["frotas"].items() if chave_proc(v["processo"]) in procs}
         C["ev"] = [e for e in C["ev"] if e[2] in C["frotas"]]
+        if "mapa" in C:
+            M = C["mapa"]
+            ok = {i for i, g in enumerate(M["grupos"]) if chave_proc(g[1]) in procs}
+            M["pts"] = [e for e in M["pts"] if e[2] in ok]
         if not C["ev"]:
             d.pop("comportamento")
     if "motorOcioso" in d:
@@ -194,6 +198,19 @@ def remover_ocorrencias(D):
                     resta -= n
                     if resta <= 0: break
     C["ev"] = [e for e in C["ev"] if e[3] > 0]
+    # mesmo pedido no mapa de calor
+    for o in json.load(open(caminho, encoding="utf-8")).get("ocorrencias", []):
+        dia = (datetime.date.fromisoformat(o["data"]) - ini).days
+        ti, resta = tipos.get(o["tipo"]), o.get("qtd")
+        for e in C.get("pts", []):
+            if e[0] == dia and e[1] == ti and norm(e[2]) == norm(o["frota"]) and e[5] > 0:
+                n = e[5] if resta is None else min(e[5], resta)
+                e[5] -= n
+                if resta is not None:
+                    resta -= n
+                    if resta <= 0: break
+    if "pts" in C:
+        C["pts"] = [e for e in C["pts"] if e[5] > 0]
     return tirados
 
 
@@ -220,6 +237,8 @@ def aplicar_de_para(D):
         for e in C["ev"]:
             k = (e[0], e[1], nf(e[2])) + tuple(e[4:]); soma[k] = soma.get(k, 0) + e[3]
         C["ev"] = sorted([list(k[:3]) + [n] + list(k[3:]) for k, n in soma.items()])
+        for e in C.get("pts", []):
+            e[2] = nf(e[2])
     if "permanencia" in D:
         P = D["permanencia"]
         P["veiculos"] = juntar_dict(P["veiculos"])
@@ -260,6 +279,30 @@ def aplicar_de_para(D):
             x["f"] = nf(x["f"])
 
 
+def compactar_mapa(D):
+    """Mapa de calor do Comportamental, compacto para o site: células de ~500 m, faixas de período
+    (0 = últimos 7 dias, 1 = 8 a 28, 2 = 29 a 91, 3 = antes) e grupos [tipo de frota, processo, gerência]
+    no lugar da frota. Fica em comportamento.mapa = {cel, grupos, locais, pts: [faixa, tipo, grupo, lat, lon, local, n]}."""
+    C = D.get("comportamento")
+    if not C or "pts" not in C:
+        return
+    N, F, CEL = C["ndias"], C["frotas"], 5  # célula em milésimos de grau
+    grupos, gi, cont = [], {}, {}
+    for d, t, f, la, lo, n, li in C.pop("pts"):
+        v = F.get(f)
+        if not v:
+            continue
+        g = (v.get("frota"), v.get("processo"), v.get("gerencia"))
+        if g not in gi:
+            gi[g] = len(grupos); grupos.append(list(g))
+        w = (N - 1 - d) // 7
+        fx = 0 if w < 1 else 1 if w < 4 else 2 if w < 13 else 3
+        k = (fx, t, gi[g], int(round(la / CEL)), int(round(lo / CEL)), li)
+        cont[k] = cont.get(k, 0) + n
+    C["mapa"] = {"cel": CEL / 1000.0, "grupos": grupos, "locais": C.pop("locais", []),
+                 "pts": sorted(list(k) + [n] for k, n in cont.items())}
+
+
 def remover_excluidas(D):
     """Tira de todas as abas as frotas de ferramentas/frotas_excluidas.json (inativas)."""
     caminho = os.path.join(os.path.dirname(os.path.abspath(__file__)), "frotas_excluidas.json")
@@ -271,6 +314,8 @@ def remover_excluidas(D):
         C = D["comportamento"]
         C["frotas"] = {f: v for f, v in C["frotas"].items() if not sai(f)}
         C["ev"] = [e for e in C["ev"] if not sai(e[2])]
+        if "pts" in C:
+            C["pts"] = [e for e in C["pts"] if not sai(e[2])]
     if "motorOcioso" in D:
         D["motorOcioso"]["veiculos"] = [v for v in D["motorOcioso"]["veiculos"] if not sai(v.get("id", ""))]
     if "permanencia" in D:
@@ -310,6 +355,7 @@ def main(cad, fonte, saida):
     tiradas = remover_ocorrencias(D)
     if tiradas:
         print("%d ocorrência(s) do Comportamental desconsiderada(s)" % tiradas)
+    compactar_mapa(D)
     conhecidos = {chave_proc(v["processo"]): v["processo"] for v in D.get("comportamento", {}).get("frotas", {}).values()}
     conhecidos.update({chave_proc(v["processo"]): v["processo"] for v in D.get("motorOcioso", {}).get("veiculos", [])})
     conhecidos.update({chave_proc(v["processo"]): v["processo"] for v in D.get("permanencia", {}).get("veiculos", {}).values()})
