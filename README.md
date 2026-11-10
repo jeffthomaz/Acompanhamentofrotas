@@ -64,7 +64,8 @@ lista; a constante `EXCLUIR` do `app.js` (leitura de arquivos no navegador) deve
 
       python ferramentas/comportamento_da_planilha.py "Ocorrências monitoramento comportamental Nova..xlsx" dados-fonte.json
 
-  Ultrapassagem em faixa contínua não está na planilha e continua vindo das tabelas de e-mail dos PBI.
+  Ultrapassagem em faixa contínua não tem tipo próprio: conta a linha cujo ULTIMO_COMENTARIO é
+  "ALARME VERDADEIRO - ULTRAPASSAGEM EM FAIXA CONTÍNUA", qualquer que seja o TIPO.
 - Comportamento (até 09/11/2026): dados reais dos Power BI "Dados Monitoramento Comportamental Frotas Leves 2026"
   (tabela OCORRÊNCIAS FROTA LEVA PO.GE.03) e "... Frotas Pesadas 2026" (tabela Frota Pesada POLGE03),
   extraídos com `ferramentas/comportamento_do_powerbi.py`. Excesso de velocidade nas faixas da nova

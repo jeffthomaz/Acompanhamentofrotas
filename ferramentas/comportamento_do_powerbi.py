@@ -120,7 +120,7 @@ def main(leves, pesadas, base_xlsx, destino):
     montar(linhas(leves), linhas(pesadas), base, destino)
 
 
-def montar(rows_leves, rows_pesadas, base, destino):
+def montar(rows_leves, rows_pesadas, base, destino, manter_faixa=True):
     """rows_*: dicts com f, placa, grupo, tipo, lim, exc, d (aaaa-mm-dd), proc (só leves), ger, rot, desc."""
 
     frotas, proc_v, ger_v = {}, defaultdict(Counter), defaultdict(Counter)
@@ -157,6 +157,8 @@ def montar(rows_leves, rows_pesadas, base, destino):
             d = (ini_v + timedelta(days=d0)).isoformat()
             if ids_v[ti] not in validos:
                 continue
+            if ids_v[ti] == "faixa" and not manter_faixa:
+                continue  # a fonte já traz as ultrapassagens
             if d < corte or ids_v[ti] == "faixa":
                 # ultrapassagem em faixa contínua vem das tabelas de e-mail (--faixa), não desta fonte
                 cont[(d, ids_v[ti], f)] += n; dias.add(d); mantidos += n

@@ -12,8 +12,9 @@ Ocorrência com ULTIMO_COMENTARIO "ALARME VERDADEIRO.( PRESTADORES DE SERVIÇO )
 de qualquer tipo (pedido do usuário em 10/11/2026). Tipos que chegaram errados são trocados pela lista
 ferramentas/ocorrencias_corrigidas.json (frota, data, hora, de, para).
 A planilha tem o ano todo, então ela substitui o que estava salvo do primeiro dia dela em diante.
-Ultrapassagem em faixa contínua não está na planilha: continua vindo das tabelas de e-mail dos PBI
-(comportamento_do_powerbi.py --faixa) e é mantida.
+Ultrapassagem em faixa contínua não tem tipo próprio: vale o ULTIMO_COMENTARIO
+"ALARME VERDADEIRO - ULTRAPASSAGEM EM FAIXA CONTÍNUA", seja qual for o TIPO da linha (pedido do usuário
+em 10/11/2026). A ocorrência passa a contar só como ultrapassagem, não pelo tipo original.
 """
 import json, os, sys
 from datetime import date, datetime, time
@@ -59,6 +60,8 @@ def aba(wb, nome, leve, corr=None):
             prest += 1
             continue
         tipo = txt(col(r, "TIPO"))
+        if "ULTRAPASSAGEM EM FAIXA CONT" in txt(col(r, "ULTIMO_COMENTARIO")).upper():
+            tipo = "ULTRAPASSAGEM_FAIXA_CONTINUA"
         k = (f, d.strftime("%Y-%m-%d"), hora(col(r, "HORA")), tipo)
         if k in corr:
             print("%s: %s %s %s corrigida de %s para %s" % (nome, f, d.strftime("%d/%m"), k[2], tipo, corr[k]))
@@ -80,7 +83,7 @@ def main(planilha, destino):
     corr = correcoes()
     leves, pesadas = aba(wb, "Frota Leve", True, corr), aba(wb, "Frota Pesada", False, corr)
     print("planilha: %d linhas de frota leve, %d de frota pesada" % (len(leves), len(pesadas)))
-    montar(leves, pesadas, base, destino)
+    montar(leves, pesadas, base, destino, manter_faixa=False)
 
 
 if __name__ == "__main__":
