@@ -137,7 +137,7 @@ def montar(rows_leves, rows_pesadas, base, destino, manter_faixa=True):
             frotas.setdefault(f, {"placa": (r["placa"] or "").strip(), "frota": origem, "grupo": (r["grupo"] or "").strip().title()})
             proc_v[f][nome_proc(r.get("proc")) if origem == "Leve" else base.get(f, "SEM PROCESSO")] += 1
             ger_v[f][(r.get("ger") or "").strip().title() or "Sem gerência"] += 1
-            cont[(r["d"], t, f)] += 1
+            cont[(r["d"], t, f, r.get("turno"))] += 1
             dias.add(r["d"])
     for f, x in frotas.items():
         x["processo"] = proc_v[f].most_common(1)[0][0]
@@ -153,7 +153,9 @@ def montar(rows_leves, rows_pesadas, base, destino, manter_faixa=True):
         ini_v = date.fromisoformat(velho["inicio"])
         ids_v = [t["id"] for t in velho["tipos"]]
         validos = {t["id"] for t in TIPOS}
-        for d0, ti, f, n in velho["ev"]:
+        for e in velho["ev"]:
+            d0, ti, f, n = e[:4]
+            tn = e[4] if len(e) > 4 else None
             d = (ini_v + timedelta(days=d0)).isoformat()
             if ids_v[ti] not in validos:
                 continue
@@ -161,18 +163,22 @@ def montar(rows_leves, rows_pesadas, base, destino, manter_faixa=True):
                 continue  # a fonte já traz as ultrapassagens
             if d < corte or ids_v[ti] == "faixa":
                 # ultrapassagem em faixa contínua vem das tabelas de e-mail (--faixa), não desta fonte
-                cont[(d, ids_v[ti], f)] += n; dias.add(d); mantidos += n
+                cont[(d, ids_v[ti], f, tn)] += n; dias.add(d); mantidos += n
                 if f not in frotas and f in velho["frotas"]:
                     frotas[f] = velho["frotas"][f]
             else:
                 antes[(d, ids_v[ti], f)] += n
-        relatar_mudancas(antes, novo, velho, frotas, max(d for d, _, _ in novo))
+        novo3 = Counter()
+        for (d, t, f, _), n in novo.items():
+            novo3[(d, t, f)] += n
+        relatar_mudancas(antes, novo3, velho, frotas, max(d for d, _, _ in novo3))
 
     dias = sorted(dias)
     ini = date.fromisoformat(dias[0])
     tid = {t["id"]: i for i, t in enumerate(TIPOS)}
-    # [dia (0 = primeiro dia), tipo, frota, quantidade]
-    ev = sorted([[(date.fromisoformat(d) - ini).days, tid[t], f, n] for (d, t, f), n in cont.items()])
+    # [dia (0 = primeiro dia), tipo, frota, quantidade, turno (0 = A, 1 = B, 2 = C; sem o 5º item = sem hora)]
+    ev = sorted([[(date.fromisoformat(d) - ini).days, tid[t], f, n] + ([tn] if tn is not None else [])
+                 for (d, t, f, tn), n in cont.items()])
     fim = date.fromisoformat(dias[-1])
     D["comportamento"] = {
         "real": True,
@@ -184,7 +190,8 @@ def montar(rows_leves, rows_pesadas, base, destino, manter_faixa=True):
     json.dump(D, open(destino, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
     tot = sum(cont.values())
     print("%d ocorrências, %d frotas, %d linhas, %s" % (tot, len(frotas), len(ev), D["comportamento"]["periodo"]))
-    print("por tipo:", {t["id"]: sum(n for (d, tt, f), n in cont.items() if tt == t["id"]) for t in TIPOS})
+    print("por tipo:", {t["id"]: sum(n for (d, tt, f, _), n in cont.items() if tt == t["id"]) for t in TIPOS})
+    print("por turno:", {"ABC"[k] if k is not None else "sem hora": sum(n for (_, _, _, tn), n in cont.items() if tn == k) for k in (0, 1, 2, None)})
     print("fora:", dict(ignorados))
     print("acumulado: %d ocorrências mantidas do que estava salvo (dias antes de %s e ultrapassagens das tabelas de e-mail); o resto vem da fonte" % (mantidos, corte))
 

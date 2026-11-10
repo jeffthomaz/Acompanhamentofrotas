@@ -1036,14 +1036,17 @@ window.iniciarPainel = function (D) {
     var cur = 0, ant = 0, porT = T.map(function () { return 0; }), porTA = porT.slice(), porP = {}, porF = {};
     var ci = T.map(function (t) { var g = t.grupo || t.id; for (var j = 0; j < CATS.length; j++) if (CATS[j].id === g) return j; return -1; });
     var porDC = S.dias.map(function () { return CATS.map(function () { return 0; }); });
+    // Turno pela hora da ocorrência (5º item do ev): 0 = A, 1 = B, 2 = C; sem o item = sem hora.
+    var tu = [0, 0, 0, 0], tuA = [0, 0, 0, 0], tuC = [0, 1, 2, 3].map(function () { return CATS.map(function () { return 0; }); });
     C.ev.forEach(function (e) {
       var f = F[e[2]]; if (!f || !noProc(f.processo) || e[0] > fimC || ci[e[1]] < 0) return; // só tipos com card
       var k = e[0] - i0, q = e[0] - a0;
       if (k >= 0 && k < 7 && por[k] !== null) {
         por[k] += e[3]; cur += e[3]; porT[e[1]] += e[3]; porP[f.processo] = (porP[f.processo] || 0) + e[3]; porF[e[2]] = (porF[e[2]] || 0) + e[3];
         porDC[k][ci[e[1]]] += e[3];
+        var t0 = e.length > 4 ? e[4] : 3; tu[t0] += e[3]; tuC[t0][ci[e[1]]] += e[3];
       }
-      else if (q >= 0 && q < 7 && okA[q]) { ant += e[3]; porTA[e[1]] += e[3]; }
+      else if (q >= 0 && q < 7 && okA[q]) { ant += e[3]; porTA[e[1]] += e[3]; tuA[e.length > 4 ? e[4] : 3] += e[3]; }
     });
     var cats = CATS.map(function (c) {
       var ix = T.map(function (t, i) { return (t.grupo || t.id) === c.id ? i : -1; }).filter(function (i) { return i >= 0; });
@@ -1064,7 +1067,7 @@ window.iniciarPainel = function (D) {
     return { aba: "comportamento", nome: "Comportamental", ini: S.ini, fim: S.fim, ate: dFim < S.fim ? dFim : null,
       valor: num(cur, 0), un: plural(cur, "ocorrência", "ocorrências"), delta: ant ? delta(cur, ant) : '<span class="dl neutro">sem base</span>',
       graf: barras7(por, S.dias, function (v) { return num(v, 0) + " " + plural(v, "ocorrência", "ocorrências"); }, "Ocorrências por dia"),
-      diag: diag, alertas: al, cur: cur, ant: ant, vals: por, porDC: porDC, cats: cats, porP: porP, porF: porF, frotas: F,
+      diag: diag, alertas: al, cur: cur, ant: ant, tu: tu, tuA: tuA, tuC: tuC, vals: por, porDC: porDC, cats: cats, porP: porP, porF: porF, frotas: F,
       vel: ["vel1", "vel2", "vel3"].map(function (id) { var i = T.map(function (t) { return t.id; }).indexOf(id); return i >= 0 ? { nome: T[i].nome, n: porT[i] } : null; }).filter(Boolean) };
   }
 
@@ -1274,6 +1277,23 @@ window.iniciarPainel = function (D) {
         ' <a class="rz-aba" href="#' + a.aba + '">Abrir ' + esc(a.nome.toLowerCase()) + "</a></p></div></li>";
     }).join("") + "</ul>", "rz-larga");
     linhas.push('<div class="rz-row">' + g1 + (c ? g2 : "") + "</div>");
+
+    // Balanço por turno das ocorrências comportamentais (A 07:00–15:10, B 15:10–23:10, C 23:10–07:00).
+    if (c && c.cur) {
+      var TURNOS = [["A", "07:00 – 15:10"], ["B", "15:10 – 23:10"], ["C", "23:10 – 07:00"]];
+      var mxT = Math.max.apply(null, c.tu.slice(0, 3)), iMx = c.tu.indexOf(mxT);
+      var tiles = TURNOS.map(function (t, i) {
+        var n = c.tu[i], top = c.tuC[i].map(function (v, j) { return { c: CATS[j], n: v }; }).filter(function (x) { return x.n; }).sort(function (x, y) { return y.n - x.n; });
+        return '<li class="' + (i === iMx && n ? "mx" : "") + '"><p class="rz-tuh"><b>Turno ' + t[0] + "</b><span>" + t[1] + "</span></p>" +
+          '<p class="rz-tuv"><strong>' + num(n, 0) + "</strong>" + (c.tuA[i] ? delta(n, c.tuA[i]) : '<span class="dl neutro">sem base</span>') + "</p>" +
+          '<div class="bb"><div class="ff" style="width:' + (mxT ? n / mxT * 100 : 0).toFixed(1) + '%"></div></div>' +
+          '<p class="rz-tus">' + num(n / c.cur * 100, 0) + "% das ocorrências" + (top.length ? " · mais comum: " + esc(top[0].c.nome.toLowerCase()) + " (" + num(top[0].n, 0) + ")" : "") + "</p></li>";
+      }).join("");
+      var semH = c.tu[3] ? " " + num(c.tu[3], 0) + " " + plural(c.tu[3], "ocorrência", "ocorrências") + " sem hora ficaram fora dos turnos." : "";
+      linhas.push('<div class="rz-row">' + rzCard("Ocorrências por turno", "comportamental · semana " + dd(S.ini) + " – " + dd(S.fim) + " · variação sobre a semana anterior",
+        '<ul class="rz-tu">' + tiles + '</ul><p class="rz-nota">' + (mxT ? "<b>Turno " + TURNOS[iMx][0] + "</b> concentra " + num(mxT / c.cur * 100, 0) + "% das ocorrências. " : "") +
+        "O turno vale pela hora da ocorrência; no turno C, o que passa da meia-noite conta no dia em que aconteceu." + semH + "</p>", "rz-larga") + "</div>");
+    }
 
     // 3. Por processo (ou por veículo, com processo escolhido), motor ocioso e conectividade.
     var trio = [];
