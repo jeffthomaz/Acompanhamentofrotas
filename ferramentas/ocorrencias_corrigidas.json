@@ -1,6 +1,7 @@
 {
   "_comentario": "Ocorrências da planilha que chegaram com o tipo errado. Aplicado em comportamento_da_planilha.py. de/para = TIPO como está na planilha (EXCESSO_VELOCIDADE, MANUSEIO_CELULAR, SEM_CINTO, DISTRACAO_MOTORISTA, BOCEJO, FADIGA_MOTORISTA, USO_CIGARRO...). hora no formato hh:mm:ss.",
   "ocorrencias": [
-    {"frota": "30132", "data": "2026-09-02", "hora": "16:21:15", "de": "DISTRACAO_MOTORISTA", "para": "MANUSEIO_CELULAR", "motivo": "era uso de celular, chegou como distração (pedido do usuário em 10/11/2026)"}
+    {"frota": "30132", "data": "2026-09-02", "hora": "16:21:15", "de": "DISTRACAO_MOTORISTA", "para": "MANUSEIO_CELULAR", "motivo": "era uso de celular, chegou como distração (pedido do usuário em 10/11/2026)"},
+    {"frota": "40894", "data": "2026-10-09", "hora": "05:55:35", "de": "DISTRACAO_MOTORISTA", "para": "MANUSEIO_CELULAR", "motivo": "considerar como uso de celular (pedido do usuário em 10/11/2026)"}
   ]
 }
