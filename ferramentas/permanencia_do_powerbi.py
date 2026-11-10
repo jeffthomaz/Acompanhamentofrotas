@@ -57,6 +57,11 @@ def limpo(s):
 
 def main(origem, destino):
     rows = [{k.strip("[]"): v for k, v in l.items()} for l in json.load(open(origem, encoding="utf-8"))["data"]["rows"]]
+    montar(rows, destino, "Power BI Ociosidade Frota Leve, tabela Ocorrências")
+
+
+def montar(rows, destino, fonte):
+    """rows: dicts com f, placa, proc, resp, ponto, cerca, cat, cid, rot, lat, lon, dur (segundos), d, h."""
     rows = [r for r in rows if limpo(r["rot"]) != "ALARME FALSO" and r["lat"] and r["lon"]]
     locais, idx, veiculos, eventos, cidades = [], {}, {}, [], {}
     datas = sorted({r["d"] for r in rows})  # período completo do relatório
@@ -84,7 +89,7 @@ def main(origem, destino):
     ini, fim = date.fromisoformat(datas[0]), date.fromisoformat(datas[-1])
     D["permanencia"] = {
         "real": True,
-        "fonte": "Power BI Ociosidade Frota Leve, tabela Ocorrências",
+        "fonte": fonte,
         "periodo": "%s a %s" % (ini.strftime("%d/%m/%Y"), fim.strftime("%d/%m/%Y")),
         "locais": locais, "veiculos": veiculos, "eventos": eventos,
     }

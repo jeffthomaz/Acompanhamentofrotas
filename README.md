@@ -46,7 +46,12 @@ lista; a constante `EXCLUIR` do `app.js` (leitura de arquivos no navegador) deve
   VEÍCULOS LEVES, processo e responsável pelo cadastro de frotas). Mesmos números do Power BI
   "Ociosidade Frota Leve" (o `ociosidade_do_powerbi.py` antigo continua no repositório).
 - Motor ocioso e Permanência têm filtro Dia (um dia específico) além do período todo.
-- Permanência: mapa de calor com dados reais da tabela Ocorrências (eventos PERMANENCIA_CERCA e
+- Permanência (desde 10/11/2026): base bruta de alertas, pasta "COA - BASE DE DADOS MONITORAMENTO
+  COMPORTAMENTAL" (um CSV Historico_Alertas por dia), só eventos PERMANENCIA_CERCA e PERMANENCIA_PONTO:
+
+      python ferramentas/permanencia_dos_csv.py "<pasta COA - BASE DE DADOS MONITORAMENTO COMPORTAMENTAL>" dados-fonte.json
+
+- Permanência (até 09/11/2026): mapa de calor com dados reais da tabela Ocorrências (eventos PERMANENCIA_CERCA e
   PERMANENCIA_PONTO) do mesmo Power BI, extraídos com `ferramentas/permanencia_do_powerbi.py`.
   O local é a coluna CERCA ELETRÔNICA (sem cerca, usa o ponto de referência). Não leva motorista
   nem CPF; alarmes falsos e pontos de Liberação ficam de fora. Mapa com Leaflet (CDN) e camada de calor própria.
