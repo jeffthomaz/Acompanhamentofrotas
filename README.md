@@ -51,6 +51,12 @@ lista; a constante `EXCLUIR` do `app.js` (leitura de arquivos no navegador) deve
 
       python ferramentas/permanencia_dos_csv.py "<pasta COA - BASE DE DADOS MONITORAMENTO COMPORTAMENTAL>" dados-fonte.json
 
+  Incremental: lê só os CSVs novos ou alterados (base em painel-dados/permanencia_base.json); `--geral`
+  relê tudo, só quando o usuário pedir.
+
+Regra geral (10/11/2026): toda atualização lê só os arquivos novos, para economizar dados; atualização
+geral só quando o usuário pedir.
+
 - Permanência (até 09/11/2026): mapa de calor com dados reais da tabela Ocorrências (eventos PERMANENCIA_CERCA e
   PERMANENCIA_PONTO) do mesmo Power BI, extraídos com `ferramentas/permanencia_do_powerbi.py`.
   O local é a coluna CERCA ELETRÔNICA (sem cerca, usa o ponto de referência). Não leva motorista
