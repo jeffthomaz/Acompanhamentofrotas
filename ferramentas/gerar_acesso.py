@@ -280,9 +280,9 @@ def aplicar_de_para(D):
 
 
 def compactar_mapa(D):
-    """Mapa de calor do Comportamental, compacto para o site: células de ~500 m, faixas de período
-    (0 = últimos 7 dias, 1 = 8 a 28, 2 = 29 a 91, 3 = antes) e grupos [tipo de frota, processo, gerência]
-    no lugar da frota. Fica em comportamento.mapa = {cel, grupos, locais, pts: [faixa, tipo, grupo, lat, lon, local, n]}."""
+    """Mapa de calor do Comportamental, compacto para o site: células de ~500 m, semana (dia // 7, a contar
+    do início dos dados, para filtrar por período) e grupos [tipo de frota, processo, gerência] no lugar da
+    frota. Fica em comportamento.mapa = {cel, grupos, locais, pts: [semana, tipo, grupo, lat, lon, local, n]}."""
     C = D.get("comportamento")
     if not C or "pts" not in C:
         return
@@ -295,9 +295,7 @@ def compactar_mapa(D):
         g = (v.get("frota"), v.get("processo"), v.get("gerencia"))
         if g not in gi:
             gi[g] = len(grupos); grupos.append(list(g))
-        w = (N - 1 - d) // 7
-        fx = 0 if w < 1 else 1 if w < 4 else 2 if w < 13 else 3
-        k = (fx, t, gi[g], int(round(la / CEL)), int(round(lo / CEL)), li)
+        k = (d // 7, t, gi[g], int(round(la / CEL)), int(round(lo / CEL)), li)
         cont[k] = cont.get(k, 0) + n
     C["mapa"] = {"cel": CEL / 1000.0, "grupos": grupos, "locais": C.pop("locais", []),
                  "pts": sorted(list(k) + [n] for k, n in cont.items())}

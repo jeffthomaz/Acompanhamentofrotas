@@ -118,9 +118,40 @@ window.iniciarPainel = function (D) {
     return sv + '<text x="21" y="21.5" text-anchor="middle" class="rc-n">' + num(total, 0) + '</text><text x="21" y="26.5" text-anchor="middle" class="rc-t">Total</text></svg>';
   }
 
+  // ---------- Período com calendário (Comportamental, Motor ocioso, Permanência, Conectividade) ----------
+  // Atalhos (últimos 7 dias, últimas 4 semanas, todo o período) ou datas De/Até escolhidas no calendário.
+  var PER = {};
+  function perEstado(aba, padrao) { return PER[aba] || (PER[aba] = { p: padrao, padrao: padrao, de: "", ate: "" }); }
+  function isoMais(iso, n) { var d = new Date(iso + "T12:00:00"); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); }
+  function perFaixa(st, dias) {
+    var ini = dias[0], fim = dias[dias.length - 1];
+    if (!ini) return { de: "", ate: "", todo: true };
+    if (st.p === "custom") {
+      var de = st.de || ini, ate = st.ate || fim;
+      if (de > ate) { var t = de; de = ate; ate = t; }
+      de = de < ini ? ini : de > fim ? fim : de; ate = ate > fim ? fim : ate < ini ? ini : ate;
+      // dias que não estão na lista (sem dados): usa o dia com dados mais próximo dentro do período
+      if (dias.indexOf(de) < 0) de = dias.filter(function (d) { return d >= de; })[0] || fim;
+      if (dias.indexOf(ate) < 0) ate = dias.filter(function (d) { return d <= ate; }).pop() || ini;
+      if (de > ate) de = ate;
+      return { de: de, ate: ate, todo: de === ini && ate === fim };
+    }
+    if (st.p === "todo") return { de: ini, ate: fim, todo: true };
+    var d0 = isoMais(fim, -(+st.p) + 1);
+    if (dias.indexOf(d0) < 0) d0 = dias.filter(function (d) { return d >= d0; })[0] || fim;
+    return { de: d0 < ini ? ini : d0, ate: fim, todo: d0 <= ini };
+  }
+  function perControle(aba, st, dias, f) {
+    var ops = [["7", "Últimos 7 dias"], ["28", "Últimas 4 semanas"], ["todo", "Todo o período"], ["custom", "Escolher datas"]];
+    return '<label>Período<select data-per="' + aba + '" id="per-' + aba + '">' + ops.map(function (o) { return '<option value="' + o[0] + '"' + (st.p === o[0] ? " selected" : "") + ">" + o[1] + "</option>"; }).join("") + "</select></label>" +
+      '<label>De<input type="date" data-perde="' + aba + '" id="perde-' + aba + '" value="' + f.de + '" min="' + dias[0] + '" max="' + dias[dias.length - 1] + '"></label>' +
+      '<label>Até<input type="date" data-perate="' + aba + '" id="perate-' + aba + '" value="' + f.ate + '" min="' + dias[0] + '" max="' + dias[dias.length - 1] + '"></label>';
+  }
+  function perTexto(f) { return f.de === f.ate ? dataBR(f.de) : dataBR(f.de) + " a " + dataBR(f.ate); }
+
   function abaComportamento() {
     var C = D.comportamento, T = C.tipos, F = C.frotas, NT = T.length;
-    var fc = fil_.comp || (fil_.comp = { frota: "", gerencia: "", janela: 28 });
+    var fc = fil_.comp || (fil_.comp = { frota: "", gerencia: "" });
     // Filtros: tipo de frota, processo e gerência.
     var ids = Object.keys(F).filter(function (f) { return !fc.frota || F[f].frota === fc.frota; });
     var processos = unicos(ids.map(function (f) { return F[f].processo; }));
@@ -132,8 +163,11 @@ window.iniciarPainel = function (D) {
     var sel = {}; ids.forEach(function (f) { sel[f] = 1; });
     var ev = C.ev.filter(function (e) { return sel[e[2]]; });
 
-    // Janela atual e anterior (mesmo tamanho), terminando no último dia com dados.
-    var N = C.ndias, J = fc.janela && fc.janela < N ? fc.janela : N, a0 = N - J, b0 = a0 - J;
+    // Período escolhido [a0, a1] e o anterior de mesmo tamanho [b0, a0 - 1].
+    var N = C.ndias, diasC = [];
+    for (var di0 = 0; di0 < N; di0++) diasC.push(isoMais(C.inicio, di0));
+    var stC = perEstado("comportamento", "28"), fC = perFaixa(stC, diasC);
+    var a0 = diasC.indexOf(fC.de), a1 = diasC.indexOf(fC.ate), J = a1 - a0 + 1, b0 = a0 - J;
     var dia0 = new Date(C.inicio + "T12:00:00");
     function rot(i) { var d = new Date(dia0); d.setDate(d.getDate() + i); return ("0" + d.getDate()).slice(-2) + "/" + ("0" + (d.getMonth() + 1)).slice(-2); }
     var cur = [], ant = [], k;
@@ -150,12 +184,12 @@ window.iniciarPainel = function (D) {
     ev.forEach(function (e) {
       porDia[e[0]][e[1]] += e[3];
       var t0 = e.length > 4 ? e[4] : 3;
-      if (e[0] >= a0) {
+      if (e[0] >= a0 && e[0] <= a1) {
         cur[e[1]] += e[3]; porFrota[e[2]] = (porFrota[e[2]] || 0) + e[3];
         hz.cur += e[3]; hz.tu[t0] += e[3]; if (ciT[e[1]] >= 0) hz.tuC[t0][ciT[e[1]]] += e[3];
         if (e.length > 5) { hz.hr[e[5]] += e[3]; if (ciT[e[1]] >= 0) hz.hrC[e[5]][ciT[e[1]]] += e[3]; }
       }
-      else if (b0 >= 0 && e[0] >= b0) { ant[e[1]] += e[3]; hz.tuA[t0] += e[3]; }
+      else if (b0 >= 0 && e[0] >= b0 && e[0] < a0) { ant[e[1]] += e[3]; hz.tuA[t0] += e[3]; }
     });
     var temBase = b0 >= 0;
     CATS.forEach(function (c) {
@@ -166,16 +200,15 @@ window.iniciarPainel = function (D) {
     var nVeic = Object.keys(porFrota).length;
     function dl(cur, ant) { return temBase ? delta(cur, ant) : '<span class="dl neutro">período todo</span>'; }
 
-    var janelas = [[7, "Últimos 7 dias"], [28, "Últimas 4 semanas"], [91, "Últimos 3 meses"], [0, "Todo o período"]];
     var filtros = '<div class="filtros">' +
       '<div class="campo"><span class="rot">Frota</span><div class="pills" role="group" aria-label="Tipo de frota">' + [["", "Todas"], ["Leve", "Leve"], ["Pesada", "Pesada"]].map(function (o) {
         return '<button type="button" data-cfrota="' + o[0] + '" aria-pressed="' + (fc.frota === o[0]) + '">' + o[1] + "</button>";
       }).join("") + "</div></div>" +
       '<label>Processo<select data-fil="processo" id="c-processo">' + opcoes(processos, fil_.processo, D.escopo && D.escopo !== "todos" ? "Todos os meus processos" : "Todos os processos") + "</select></label>" +
       '<label>Gerência<select data-comp="gerencia" id="c-gerencia">' + opcoes(gerencias, fc.gerencia, "Todas as gerências") + "</select></label>" +
-      '<label>Período<select data-comp="janela" id="c-janela">' + janelas.map(function (o) { return '<option value="' + o[0] + '"' + (fc.janela === o[0] ? " selected" : "") + ">" + o[1] + "</option>"; }).join("") + "</select></label>" +
-      (fc.frota || fil_.processo || fc.gerencia ? '<button type="button" class="limpar" data-limpar="1">Limpar filtros</button>' : "") +
-      '<p class="ctx">' + num(nVeic, 0) + " " + plural(nVeic, "veículo", "veículos") + " com ocorrência, " + rot(a0) + " a " + rot(N - 1) + (temBase ? " (comparado com " + rot(b0) + " a " + rot(a0 - 1) + ")" : "") + "</p></div>";
+      perControle("comportamento", stC, diasC, fC) +
+      (fc.frota || fil_.processo || fc.gerencia || stC.p !== stC.padrao ? '<button type="button" class="limpar" data-limpar="1">Limpar filtros</button>' : "") +
+      '<p class="ctx">' + num(nVeic, 0) + " " + plural(nVeic, "veículo", "veículos") + " com ocorrência, " + rot(a0) + " a " + rot(a1) + (temBase ? " (comparado com " + rot(b0) + " a " + rot(a0 - 1) + ")" : "") + "</p></div>";
 
     var kpis = '<div class="kpis">' +
       CATS.map(function (c) {
@@ -187,10 +220,10 @@ window.iniciarPainel = function (D) {
     // Evolução: por dia até 14 dias, senão por semana.
     var dados = [];
     if (J <= 14) {
-      for (k = a0; k < N; k++) dados.push({ d: rot(k), partes: CATS.map(function (c) { return sum(c.ix, function (i) { return porDia[k][i]; }); }) });
+      for (k = a0; k <= a1; k++) dados.push({ d: rot(k), partes: CATS.map(function (c) { return sum(c.ix, function (i) { return porDia[k][i]; }); }) });
     } else {
-      for (var s = a0; s < N; s += 7) {
-        var e2 = Math.min(s + 7, N), partes = CATS.map(function (c) { var t = 0; for (var q = s; q < e2; q++) t += sum(c.ix, function (i) { return porDia[q][i]; }); return t; });
+      for (var s = a0; s <= a1; s += 7) {
+        var e2 = Math.min(s + 7, a1 + 1), partes = CATS.map(function (c) { var t = 0; for (var q = s; q < e2; q++) t += sum(c.ix, function (i) { return porDia[q][i]; }); return t; });
         dados.push({ d: rot(s), partes: partes });
       }
       if (dados.length > 14) { // muitas semanas: agrupa de duas em duas
@@ -206,10 +239,10 @@ window.iniciarPainel = function (D) {
       return '<li><i class="c-' + c.id + '"></i><span>' + esc(c.nome) + "</span><b>" + (total ? num(c.n / total * 100, 1) : "0,0") + "%</b></li>";
     }).join("") + "</ul></div></section>";
 
-    // Tendência: totais das últimas 8 semanas completas até o último dia.
+    // Tendência: totais das 8 semanas completas até o fim do período escolhido.
     var sem = [];
-    for (k = N; k - 7 >= 0 && sem.length < 8; k -= 7) { var t2 = 0; for (var q = k - 7; q < k; q++) t2 += sum(porDia[q], function (v) { return v; }); sem.unshift({ d: rot(k - 7), partes: [], total: t2 }); }
-    var tend = '<section class="card"><h3>Tendência semanal</h3><p class="cs">Total por semana nas últimas ' + sem.length + " semanas. A última termina em " + rot(N - 1) + ".</p>" + empilhado(sem, true, 360) + "</section>";
+    for (k = a1 + 1; k - 7 >= 0 && sem.length < 8; k -= 7) { var t2 = 0; for (var q = k - 7; q < k; q++) t2 += sum(porDia[q], function (v) { return v; }); sem.unshift({ d: rot(k - 7), partes: [], total: t2 }); }
+    var tend = '<section class="card"><h3>Tendência semanal</h3><p class="cs">Total por semana nas últimas ' + sem.length + " semanas. A última termina em " + rot(a1) + ".</p>" + empilhado(sem, true, 360) + "</section>";
 
     var velC = CATS[0], velIx = velC.ix, mxV = Math.max.apply(null, [1].concat(velIx.map(function (i) { return cur[i]; })));
     var velCard = '<section class="card"><h3>Excesso de velocidade por faixa</h3><p class="cs">Faixas da nova política de frotas, pelo quanto passou do limite da via. ' + num(velC.n, 0) + " " + plural(velC.n, "ocorrência", "ocorrências") + " no período.</p>" + velIx.map(function (i, kk) {
@@ -244,14 +277,14 @@ window.iniciarPainel = function (D) {
       return '<li><span class="ai ' + a[0] + '" aria-hidden="true">' + a[1] + "</span><span>" + a[2] + "</span></li>";
     }).join("") + "</ul></section>";
 
-    var horario = blocosHorario(hz, rot(a0) + " – " + rot(N - 1), "do período", temBase ? "variação sobre " + rot(b0) + " – " + rot(a0 - 1) : "");
+    var horario = blocosHorario(hz, rot(a0) + " – " + rot(a1), "do período", temBase ? "variação sobre " + rot(b0) + " – " + rot(a0 - 1) : "");
     return filtros + kpis + '<div class="g3 g-a">' + evolucao + part + tend + '</div><div class="g3 g-b">' + velCard + conc + alerta + "</div>" +
-      (horario ? '<div class="rz-dash comp-hz">' + horario + "</div>" : "") + mapaComp(C, fc, N);
+      (horario ? '<div class="rz-dash comp-hz">' + horario + "</div>" : "") + mapaComp(C, fc, a0, a1);
   }
 
   // ---------- Comportamental: mapa de calor por tipo de ocorrência (sem bocejo) ----------
   var cm = { tipo: "", mapa: null, base: "ruas", pontos: [], locs: [], marcas: [] };
-  function mapaComp(C, fc, N) {
+  function mapaComp(C, fc, a0, a1) {
     var M = C.mapa; if (!M || !M.pts || !M.pts.length) return "";
     var T = C.tipos, iBoc = T.map(function (t) { return t.id; }).indexOf("bocejo");
     var cats = CATS.map(function (c) {
@@ -259,13 +292,14 @@ window.iniciarPainel = function (D) {
       return { id: c.id, nome: c.id === "fadiga" ? "Fadiga" : c.nome, ix: ix };
     }).filter(function (c) { return c.ix.length; });
     if (cm.tipo && !cats.some(function (c) { return c.id === cm.tipo; })) cm.tipo = "";
-    var J = fc.janela && fc.janela < N ? fc.janela : 0, fxMax = J === 7 ? 0 : J === 28 ? 1 : J === 91 ? 2 : 3;
+    // Os pontos do mapa vêm por semana (dias 0–6, 7–13...): entra a semana que toca o período.
+    var semOk = function (w) { return w * 7 <= a1 && w * 7 + 6 >= a0; }, aprox = a0 % 7 !== 0 || (a1 + 1) % 7 !== 0;
     var gOk = M.grupos.map(function (g) { return (!fc.frota || g[0] === fc.frota) && (!fil_.processo || g[1] === fil_.processo) && (!fc.gerencia || g[2] === fc.gerencia); });
     var porTipo = {}, tOk = {};
     cats.forEach(function (c) { c.n = 0; c.ix.forEach(function (i) { porTipo[i] = c; if (!cm.tipo || cm.tipo === c.id) tOk[i] = 1; }); });
     var cel = {}, loc = {}, total = 0;
     M.pts.forEach(function (e) {
-      if (e[0] > fxMax || !gOk[e[2]] || !porTipo[e[1]]) return;
+      if (!semOk(e[0]) || !gOk[e[2]] || !porTipo[e[1]]) return;
       porTipo[e[1]].n += e[6];
       if (!tOk[e[1]]) return;
       total += e[6];
@@ -285,7 +319,7 @@ window.iniciarPainel = function (D) {
         var tp = Object.keys(x.t).sort(function (a, b) { return x.t[b] - x.t[a]; })[0], tn = T[tp] ? (porTipo[tp] ? porTipo[tp].nome : T[tp].nome) : "";
         return '<button type="button" class="li lib" data-cloc="' + k + '"><span class="t">' + (k + 1) + ". " + esc(x.nome) + "<small>" + (cm.tipo ? "" : "mais comum: " + esc(tn.toLowerCase())) + '</small></span><span class="n">' + num(x.n, 0) + "<small>" + (total ? num(x.n / total * 100, 0) + "%" : "") + '</small></span><div class="bb"><div class="ff" style="width:' + (x.n / mx * 100).toFixed(1) + "%;--i:" + k + '"></div></div></button>';
       }).join("") + "</div>" : '<p class="cs">Nenhuma ocorrência com local para esse filtro.</p>') + "</section>";
-    return '<section class="sec mc"><h2>Mapa de calor das ocorrências</h2><p class="sub">Onde as ocorrências acontecem, no período e nos filtros escolhidos acima. Escolha um tipo para ver os locais com maior incidência. Bocejo fica de fora.</p>' + pills +
+    return '<section class="sec mc"><h2>Mapa de calor das ocorrências</h2><p class="sub">Onde as ocorrências acontecem, no período e nos filtros escolhidos acima. Escolha um tipo para ver os locais com maior incidência. Bocejo fica de fora.' + (aprox ? " O mapa conta semanas inteiras, então pode incluir alguns dias antes ou depois do período." : "") + "</p>" + pills +
       '<div class="mapa-g"><section class="card mapa-card"><div id="mapa-comp" class="mapa" role="region" aria-label="Mapa de calor das ocorrências comportamentais"><p class="mapa-msg">Carregando mapa…</p></div>' +
       '<p class="mapa-leg"><span>Menos</span><i class="esc"></i><span>Mais ocorrências</span></p></section><div class="mapa-lado">' + ranking + "</div></div></section>";
   }
@@ -325,9 +359,10 @@ window.iniciarPainel = function (D) {
   function abaOcioso() {
     var m = D.motorOcioso, meta = m.metaPct, V = m.veiculos;
     // Dia: só os dias com dados que têm a coluna dia a dia (ultDias).
-    var U = m.ultDias || [], diasOp = (m.diasIncluidos || []).filter(function (d) { return U.indexOf(d) >= 0; });
-    if (om.dia && diasOp.indexOf(om.dia) < 0) om.dia = "";
-    var kd = om.dia ? U.indexOf(om.dia) : -1;
+    var U = m.ultDias || [], diasOp = (m.diasIncluidos || []).filter(function (d) { return U.indexOf(d) >= 0; }).sort();
+    var stO = perEstado("motor-ocioso", "todo"), fO = diasOp.length ? perFaixa(stO, diasOp) : { todo: true };
+    var kds = fO.todo ? null : U.map(function (d, i) { return d >= fO.de && d <= fO.ate ? i : -1; }).filter(function (i) { return i >= 0; });
+    var somaD = function (arr) { return sum(kds, function (q) { return (arr || [])[q] || 0; }); };
     var processos = unicos(V.map(function (v) { return v.processo; }));
     if (fil_.processo && processos.indexOf(fil_.processo) < 0) fil_.processo = "";
     var doProc = V.filter(function (v) { return !fil_.processo || v.processo === fil_.processo; });
@@ -336,9 +371,9 @@ window.iniciarPainel = function (D) {
     var vs = doProc.filter(function (v) { return !fil_.responsavel || v.responsavel === fil_.responsavel; });
     var tot = function (a) { return sum(a, function (x) { return x; }); };
     var rows = vs.map(function (v) {
-      var li = kd >= 0 ? (v.dl || [])[kd] || 0 : tot(v.ligado), oc = kd >= 0 ? (v.do || [])[kd] || 0 : tot(v.ocioso);
+      var li = kds ? somaD(v.dl) : tot(v.ligado), oc = kds ? somaD(v.do) : tot(v.ocioso);
       return { v: v, li: li, oc: oc, pct: li ? oc / li * 100 : 0 };
-    }).filter(function (r) { return kd < 0 || r.li > 0; });
+    }).filter(function (r) { return !kds || r.li > 0; });
     var li = sum(rows, function (r) { return r.li; }), oc = sum(rows, function (r) { return r.oc; }), pct = li ? oc / li * 100 : 0;
     var porSem = m.semanas.map(function (_, k) {
       var a = sum(vs, function (v) { return v.ligado[k]; }), b = sum(vs, function (v) { return v.ocioso[k]; });
@@ -348,13 +383,11 @@ window.iniciarPainel = function (D) {
 
     var filtros = '<div class="filtros"><label>Processo<select data-fil="processo" id="o-processo">' + opcoes(processos, fil_.processo, D.escopo && D.escopo !== "todos" ? "Todos os meus processos" : "Todos os processos") + "</select></label>" +
       '<label>Responsável<select data-fil="responsavel" id="o-responsavel">' + opcoes(resps, fil_.responsavel, "Todos os responsáveis") + "</select></label>" +
-      (diasOp.length ? '<label>Dia<select data-om="dia" id="o-dia"><option value="">Todos os dias</option>' + diasOp.slice().reverse().map(function (d, i) {
-        return '<option value="' + d + '"' + (d === om.dia ? " selected" : "") + ">" + dataBR(d) + " (" + diaSem(d) + ")" + (i === 0 ? " · último" : "") + "</option>";
-      }).join("") + "</select></label>" : "") +
-      (fil_.processo || fil_.responsavel || om.dia ? '<button type="button" class="limpar" data-limpar="1">Limpar filtros</button>' : "") +
-      '<p class="ctx">' + rows.length + " " + plural(rows.length, "veículo leve", "veículos leves") + ", " + (om.dia ? "em " + dataBR(om.dia) : esc(m.periodo)) + "</p></div>";
+      (diasOp.length ? perControle("motor-ocioso", stO, diasOp, fO) : "") +
+      (fil_.processo || fil_.responsavel || stO.p !== stO.padrao ? '<button type="button" class="limpar" data-limpar="1">Limpar filtros</button>' : "") +
+      '<p class="ctx">' + rows.length + " " + plural(rows.length, "veículo leve", "veículos leves") + ", " + (kds ? (fO.de === fO.ate ? "em " : "de ") + perTexto(fO) : esc(m.periodo)) + "</p></div>";
 
-    var lead = (om.dia ? "Em " + dataBR(om.dia) + ", os" : "Os") + " veículos ficaram <b>" + num(pct, 1) + "%</b> do tempo de motor ligado parados, <b>" + horas(oc) + "</b> de " + horas(li) + ". " +
+    var lead = (kds ? (fO.de === fO.ate ? "Em " : "De ") + perTexto(fO) + ", os" : "Os") + " veículos ficaram <b>" + num(pct, 1) + "%</b> do tempo de motor ligado parados, <b>" + horas(oc) + "</b> de " + horas(li) + ". " +
       (acima.length ? "<b>" + acima.length + "</b> " + plural(acima.length, "veículo passou", "veículos passaram") + " da meta de " + meta + "%, e o <b>" + esc(acima[0].v.id) + "</b> lidera com " + num(acima[0].pct, 1) + "%."
                     : "Todos os veículos estão dentro da meta de " + meta + "%.");
 
@@ -382,14 +415,15 @@ window.iniciarPainel = function (D) {
       .sort(function (a, b) { return b.pct - a.pct; });
     var limite = fil_.processo || fil_.responsavel ? lv.length : 15;
     secoes += '<section class="sec"><h2>' + (limite < lv.length ? "Os " + limite + " veículos mais ociosos" : "Veículos do mais ocioso ao menos") + "</h2>" +
-      '<p class="sub">Horas de motor ligado parado ' + (om.dia ? "no dia" : "no período") + "." + (limite < lv.length ? " Escolha um processo para ver todos os veículos dele." : "") + "</p>" + quadro(lv.slice(0, limite)) + "</section>";
+      '<p class="sub">Horas de motor ligado parado ' + (kds && fO.de === fO.ate ? "no dia" : "no período") + "." + (limite < lv.length ? " Escolha um processo para ver todos os veículos dele." : "") + "</p>" + quadro(lv.slice(0, limite)) + "</section>";
 
-    // Com um dia escolhido, o gráfico mostra os 7 dias até ele, dia a dia.
+    // Com datas escolhidas (até 31 dias), o gráfico mostra o período dia a dia; com 1 dia, os 7 dias até ele.
     var graf;
-    if (kd >= 0) {
-      var ks = []; for (var q = Math.max(0, kd - 6); q <= kd; q++) ks.push(q);
+    if (kds && kds.length && kds.length <= 31) {
+      var ks = kds.length === 1 ? [] : kds.slice();
+      if (kds.length === 1) for (var q = Math.max(0, kds[0] - 6); q <= kds[0]; q++) ks.push(q);
       graf = dias(ks.map(function (q) { var a = sum(vs, function (v) { return (v.dl || [])[q] || 0; }), b = sum(vs, function (v) { return (v.do || [])[q] || 0; }); return a ? b / a * 100 : 0; }),
-        "%", meta, "Motor ocioso por dia até " + dd(om.dia) + " (linha tracejada: meta de " + meta + "%)", ks.map(function (q) { return dd(U[q]); }));
+        "%", meta, "Motor ocioso por dia" + (kds.length === 1 ? " até " + dd(U[kds[0]]) : "") + " (linha tracejada: meta de " + meta + "%)", ks.map(function (q) { return dd(U[q]); }));
     } else graf = dias(porSem, "%", meta, "Motor ocioso por semana (linha tracejada: meta de " + meta + "%)", m.semanas);
     return filtros + '<div class="head"><p class="lead">' + lead + "</p>" + graf + "</div>" + secoes + (m.diasIncluidos ? secaoEnvio("motorOcioso", m.periodo.replace(" · arquivo carregado", "")) : "");
   }
@@ -404,14 +438,10 @@ window.iniciarPainel = function (D) {
     pm.frotas = pm.frotas.filter(function (f) { return frotasProc.indexOf(f) >= 0; });
     var sel = pm.frotas.length ? pm.frotas : frotasProc, set = {};
     sel.forEach(function (f) { set[f] = 1; });
-    var ultimo = P.eventos.length ? P.eventos[P.eventos.length - 1][5] : "";
-    var diasEv = unicos(P.eventos.map(function (e) { return e[5]; })).reverse();
-    if (pm.dia && diasEv.indexOf(pm.dia) < 0) pm.dia = "";
-    var corte = "";
-    if (pm.dia) { var ev0 = P.eventos.filter(function (e) { return set[e[0]] && e[5] === pm.dia; }); return { P: P, V: V, processos: processos, frotasProc: frotasProc, ev: ev0, diasEv: diasEv }; }
-    if (pm.dias && ultimo) { var d = new Date(ultimo + "T12:00:00"); d.setDate(d.getDate() - pm.dias + 1); corte = d.toISOString().slice(0, 10); }
-    var ev = P.eventos.filter(function (e) { return set[e[0]] && (!corte || e[5] >= corte); });
-    return { P: P, V: V, processos: processos, frotasProc: frotasProc, ev: ev, diasEv: diasEv };
+    var diasEv = unicos(P.eventos.map(function (e) { return e[5]; })).sort();
+    var st = perEstado("permanencia", "todo"), f = perFaixa(st, diasEv);
+    var ev = P.eventos.filter(function (e) { return set[e[0]] && (f.todo || (e[5] >= f.de && e[5] <= f.ate)); });
+    return { P: P, V: V, processos: processos, frotasProc: frotasProc, ev: ev, diasEv: diasEv, st: st, f: f };
   }
   function dataBR(s) { return s.slice(8, 10) + "/" + s.slice(5, 7) + "/" + s.slice(0, 4); }
   function hmin(m) { return m >= 6000 ? num(m / 60, 0) + " h" : m >= 60 ? dur(Math.round(m)) : num(m, 0) + " min"; }
@@ -435,15 +465,14 @@ window.iniciarPainel = function (D) {
     var rotFrotas = pm.frotas.length ? pm.frotas.length + " de " + F.frotasProc.length + " selecionadas" : "Todas (" + F.frotasProc.length + ")";
     var filtros = '<div class="filtros"><label>Processo<select data-fil="processo" id="p-processo">' + opcoes(F.processos, fil_.processo, D.escopo && D.escopo !== "todos" ? "Todos os meus processos" : "Todos os processos") + "</select></label>" +
       '<div class="campo"><span class="rot">Frotas</span><details class="frotas" id="p-frotas"' + (pm.abertoFrotas ? " open" : "") + '><summary>' + rotFrotas + '</summary><div class="fl-acoes"><button type="button" data-frotas="todas">Marcar todas</button><button type="button" data-frotas="limpar">Ver todas sem filtro</button></div><div class="fl-lista">' + listaFrotas + "</div></details></div>" +
-      '<label>Dia<select data-pm="dia" id="p-dia"><option value="">Todos os dias</option>' + F.diasEv.map(function (d, i) { return '<option value="' + d + '"' + (d === pm.dia ? " selected" : "") + ">" + dataBR(d) + " (" + diaSem(d) + ")" + (i === 0 ? " · último" : "") + "</option>"; }).join("") + "</select></label>" +
-      '<label>Período<select data-pm="dias" id="p-dias"' + (pm.dia ? ' disabled title="Escolha &quot;Todos os dias&quot; para usar o período"' : "") + ">" + [[0, "Todo o período"], [30, "Últimos 30 dias"], [7, "Últimos 7 dias"]].map(function (o) { return '<option value="' + o[0] + '"' + (pm.dias === o[0] ? " selected" : "") + ">" + o[1] + "</option>"; }).join("") + "</select></label>" +
+      (F.diasEv.length ? perControle("permanencia", F.st, F.diasEv, F.f) : "") +
       '<div class="campo"><span class="rot">Calor por</span><div class="pills" role="group" aria-label="Medida do mapa de calor"><button type="button" data-medida="tempo" aria-pressed="' + (pm.medida === "tempo") + '">Tempo parado</button><button type="button" data-medida="vezes" aria-pressed="' + (pm.medida === "vezes") + '">Nº de permanências</button></div></div>' +
-      (fil_.processo || pm.frotas.length || pm.dias || pm.dia ? '<button type="button" class="limpar" data-limpar="1">Limpar filtros</button>' : "") + "</div>";
+      (fil_.processo || pm.frotas.length || F.st.p !== F.st.padrao ? '<button type="button" class="limpar" data-limpar="1">Limpar filtros</button>' : "") + "</div>";
 
     // Nas observações, só estabelecimentos (posto, padaria, restaurante...), nunca cercas com nome de colaborador.
     var topoX = locais.filter(function (x) { return P.locais[x.i].tipo === "estabelecimento"; })[0];
     var topo = topoX ? P.locais[topoX.i] : null;
-    var lead = ev.length ? (pm.dia ? "Em " + dataBR(pm.dia) + ": " : "") + "<b>" + num(ev.length, 0) + "</b> " + plural(ev.length, "permanência", "permanências") + " de " + nFrotas + " " + plural(nFrotas, "frota", "frotas") + ", somando <b>" + hmin(totMin) + "</b> parados em " + locais.length + " " + plural(locais.length, "local", "locais") + "." +
+    var lead = ev.length ? (!F.f.todo ? (F.f.de === F.f.ate ? "Em " : "De ") + perTexto(F.f) + ": " : "") + "<b>" + num(ev.length, 0) + "</b> " + plural(ev.length, "permanência", "permanências") + " de " + nFrotas + " " + plural(nFrotas, "frota", "frotas") + ", somando <b>" + hmin(totMin) + "</b> parados em " + locais.length + " " + plural(locais.length, "local", "locais") + "." +
       (topo ? " O estabelecimento com " + (pm.medida === "tempo" ? "mais tempo parado" : "mais permanências") + " é <b>" + esc(topo.nome) + "</b>, com " + (pm.medida === "tempo" ? hmin(topoX.min) : topoX.n + " " + plural(topoX.n, "vez", "vezes")) + "." : "")
       : "Nenhuma permanência para esse filtro.";
 
@@ -780,7 +809,9 @@ window.iniciarPainel = function (D) {
     var grupos = unicos(ids.map(function (f) { return F[f].grupo; }).filter(Boolean));
     if (fco.grupo && grupos.indexOf(fco.grupo) < 0) fco.grupo = "";
     ids = ids.filter(function (f) { return !fco.grupo || F[f].grupo === fco.grupo; });
-    var di = fco.dia >= 0 && fco.dia < nd ? fco.dia : nd - 1, ehHoje = di === nd - 1;
+    // Período: o gráfico mostra os dias do período; a situação é a do último dia dele (ou do ponto clicado).
+    var stK = perEstado("conectividade", "todo"), fK = perFaixa(stK, K.dias), k0 = K.dias.indexOf(fK.de), k1 = K.dias.indexOf(fK.ate);
+    var di = fco.dia >= k0 && fco.dia <= k1 ? fco.dia : k1, ehHoje = di === nd - 1;
     function dbr(s) { return s.slice(8, 10) + "/" + s.slice(5, 7) + "/" + s.slice(0, 4); }
 
     // Situação no dia escolhido.
@@ -796,10 +827,8 @@ window.iniciarPainel = function (D) {
 
     var filtros = '<div class="filtros"><label>Processo<select data-fil="processo" id="k-processo">' + opcoes(processos, fil_.processo, D.escopo && D.escopo !== "todos" ? "Todos os meus processos" : "Todos os processos") + "</select></label>" +
       '<label>Grupo<select data-kon="grupo" id="k-grupo">' + opcoes(grupos, fco.grupo, "Todos os grupos") + "</select></label>" +
-      '<label>Dia<select data-kon="dia" id="k-dia">' + K.dias.map(function (d, i) { return { d: d, i: i }; }).reverse().map(function (x) {
-        return '<option value="' + x.i + '"' + (x.i === di ? " selected" : "") + ">" + dbr(x.d) + (x.i === nd - 1 ? " (último)" : "") + "</option>";
-      }).join("") + "</select></label>" +
-      (fil_.processo || fco.grupo || !ehHoje ? '<button type="button" class="limpar" data-limpar="1">Limpar filtros</button>' : "") +
+      perControle("conectividade", stK, K.dias, fK) +
+      (fil_.processo || fco.grupo || !ehHoje || stK.p !== stK.padrao ? '<button type="button" class="limpar" data-limpar="1">Limpar filtros</button>' : "") +
       '<p class="ctx">' + total + " " + plural(total, "veículo", "veículos") + " em " + dbr(K.dias[di]) + (manuais ? ". " + manuais + " " + plural(manuais, "informado", "informados") + " na planilha de parados e manutenção" : "") + "</p></div>";
 
     var kpis = '<div class="kpis kpis5 kpis-st">' + ST.map(function (s) {
@@ -827,7 +856,7 @@ window.iniciarPainel = function (D) {
       ids.forEach(function (f) { var c = letraSt((K.hist[f] || "")[i] || "."); if (o[c] !== undefined) o[c]++; });
       return o;
     });
-    var evol = '<section class="card"><h3>Conexão por dia</h3><p class="cs">Veículos conectados e offline em cada dia. Clique num ponto para ver o dia.</p>' + linhaDias(serie, K.dias, di) + "</section>";
+    var evol = '<section class="card"><h3>Conexão por dia</h3><p class="cs">Veículos conectados e offline em cada dia do período. Clique num ponto para ver o dia.</p>' + linhaDias(serie.slice(k0, k1 + 1), K.dias.slice(k0, k1 + 1), di - k0, k0) + "</section>";
 
     // Equipamentos offline no dia, do que tem menos dias para o que tem mais.
     var sem = linhasDia.filter(function (x) { return x.s === "O"; }).map(function (x) {
@@ -924,7 +953,8 @@ window.iniciarPainel = function (D) {
     return sv + "</svg></div>";
   }
 
-  function linhaDias(serie, dias, sel) {
+  function linhaDias(serie, dias, sel, off) {
+    off = off || 0;
     var W = 440, H = 260, pl = 34, pr = 12, pt = 20, pb = 26, iw = W - pl - pr, ih = H - pt - pb, n = serie.length;
     var mx = Math.max.apply(null, [1].concat(serie.map(function (o) { return o.C; })));
     var topo = Math.ceil(mx * 1.1 / 10) * 10;
@@ -937,7 +967,7 @@ window.iniciarPainel = function (D) {
     var passo = Math.max(1, Math.ceil(n / 7));
     serie.forEach(function (o, i) {
       if ((i % passo === 0 && n - 1 - i >= passo / 2) || i === n - 1) sv += '<text class="tl" x="' + x(i).toFixed(1) + '" y="' + (H - 7) + '" text-anchor="middle">' + dias[i].slice(8, 10) + "/" + dias[i].slice(5, 7) + "</text>";
-      sv += '<circle class="pt' + (i === sel ? " on" : "") + '" cx="' + x(i).toFixed(1) + '" cy="' + y(o.C).toFixed(1) + '" r="' + (i === sel ? 5 : 3) + '" data-kdia="' + i + '"><title>' + dias[i].slice(8, 10) + "/" + dias[i].slice(5, 7) + ": " + o.C + " conectados, " + o.O + " offline</title></circle>";
+      sv += '<circle class="pt' + (i === sel ? " on" : "") + '" cx="' + x(i).toFixed(1) + '" cy="' + y(o.C).toFixed(1) + '" r="' + (i === sel ? 5 : 3) + '" data-kdia="' + (i + off) + '"><title>' + dias[i].slice(8, 10) + "/" + dias[i].slice(5, 7) + ": " + o.C + " conectados, " + o.O + " offline</title></circle>";
     });
     var s = serie[sel];
     sv += '<text class="tv" x="' + x(sel).toFixed(1) + '" y="' + (y(s.C) - 9).toFixed(1) + '" text-anchor="middle">' + s.C + "</text>";
@@ -1530,6 +1560,20 @@ window.iniciarPainel = function (D) {
       var n2 = document.querySelector('input[data-frota="' + fr.dataset.frota + '"]'); if (n2) n2.focus();
       return;
     }
+    var pr = e.target.closest("select[data-per], input[data-perde], input[data-perate]");
+    if (pr) {
+      var aba = pr.dataset.per || pr.dataset.perde || pr.dataset.perate, st = PER[aba]; if (!st) return;
+      var vx = document.getElementById("perde-" + aba), vy = document.getElementById("perate-" + aba);
+      if (pr.dataset.per) {
+        if (pr.value === "custom") { st.de = vx ? vx.value : ""; st.ate = vy ? vy.value : ""; }
+        st.p = pr.value;
+      } else if (pr.value) {
+        st.de = vx ? vx.value : ""; st.ate = vy ? vy.value : ""; st.p = "custom";
+      }
+      fco.dia = -1; pm.refit = true; render();
+      var nf = document.getElementById(pr.id); if (nf) nf.focus();
+      return;
+    }
     var sel = e.target.closest("select[data-fil], select[data-pm], select[data-comp], select[data-kon], select[data-om]"); if (!sel) return;
     if (sel.dataset.om) { om[sel.dataset.om] = sel.value; render(); var n5 = document.getElementById(sel.id); if (n5) n5.focus(); return; }
     if (sel.dataset.kon) { fco[sel.dataset.kon] = sel.dataset.kon === "dia" ? +sel.value : sel.value; render(); var n4 = document.getElementById(sel.id); if (n4) n4.focus(); return; }
@@ -1542,7 +1586,7 @@ window.iniciarPainel = function (D) {
   });
   painel.addEventListener("click", function (e) {
     var l = e.target.closest("[data-limpar]");
-    if (l) { fil_.processo = ""; fil_.responsavel = ""; if (fil_.comp) { fil_.comp.frota = ""; fil_.comp.gerencia = ""; } fco.grupo = ""; fco.dia = -1; fcm.tipo = ""; pm.frotas = []; pm.dias = 0; pm.dia = ""; om.dia = ""; pm.refit = true; render(); return; }
+    if (l) { fil_.processo = ""; fil_.responsavel = ""; if (fil_.comp) { fil_.comp.frota = ""; fil_.comp.gerencia = ""; } fco.grupo = ""; fco.dia = -1; fcm.tipo = ""; pm.frotas = []; Object.keys(PER).forEach(function (a) { PER[a].p = PER[a].padrao; PER[a].de = PER[a].ate = ""; }); pm.refit = true; render(); return; }
     var kt = e.target.closest("[data-ktodos]");
     if (kt) { fco.todos = !fco.todos; render(); return; }
     var kd = e.target.closest("[data-kdia]");
