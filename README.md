@@ -64,7 +64,8 @@ geral só quando o usuário pedir.
 - Conectividade: base diária por veículo (`ferramentas/conectividade.py`), iniciada pelo Power BI "Conectividade"
   e atualizada com o arquivo "Localização da Frota" exportado do vFleets. Regras do BI: inativos fora, apelido
   MANUTENÇÃO/PARADO, OFFLINE com 2 dias ou mais sem conexão, processo pela tabela Frotas. O último dia é a
-  referência para manutenção/parado; a planilha local `status_frotas.xlsx` informa quem entrou (PARADO/MANUTENÇÃO)
+  referência para manutenção/parado; a planilha `status_frotas.xlsx` (desde 11/11/2026 na pasta
+  `...\DP-AGR-COA - COA\Monitoramento\Safra 2026\SAFRA 2026 MONIT COMPORTAMENTAL`) informa quem entrou (PARADO/MANUTENÇÃO)
   ou saiu (OPERANDO). A base em texto puro fica só na pasta local do usuário (painel-dados).
   A cada atualização, `conectividade.py planilha` refaz a `status_frotas.xlsx` com as colunas FROTA, STATUS,
   DIAS OFFLINE, RESPONSÁVEL e OBSERVAÇÃO: os equipamentos em manutenção, parados ou offline 2+ dias, com o
