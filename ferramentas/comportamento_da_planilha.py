@@ -15,6 +15,7 @@ A planilha tem o ano todo, então ela substitui o que estava salvo do primeiro d
 Ultrapassagem em faixa contínua não tem tipo próprio: vale o ULTIMO_COMENTARIO
 "ALARME VERDADEIRO - ULTRAPASSAGEM EM FAIXA CONTÍNUA", seja qual for o TIPO da linha (pedido do usuário
 em 10/11/2026). A ocorrência passa a contar só como ultrapassagem, não pelo tipo original.
+Linhas repetidas (mesma frota, data, hora e tipo) contam uma vez só (pedido do usuário em 11/11/2026).
 Cada ocorrência leva o turno pela HORA (A 07:00–15:10, B 15:10–23:10, C 23:10–07:00), usado no
 balanço por turno da aba Resumo, e a hora cheia (0–23), usada nos picos por hora (pedido do usuário em 10/11/2026).
 """
@@ -107,7 +108,7 @@ def aba(wb, nome, leve, corr=None):
             tipo = corr[k]
         out.append({
             "f": f, "placa": txt(col(r, "PLACA")), "grupo": txt(col(r, "GRUPO")), "tipo": tipo,
-            "lim": txt(col(r, "LIMIAR")), "exc": txt(col(r, "EXCESSO")), "d": d.strftime("%Y-%m-%d"), "turno": turno(k[2]), "hora": int(k[2][:2]) if turno(k[2]) is not None else None,
+            "lim": txt(col(r, "LIMIAR")), "exc": txt(col(r, "EXCESSO")), "d": d.strftime("%Y-%m-%d"), "hs": k[2], "turno": turno(k[2]), "hora": int(k[2][:2]) if turno(k[2]) is not None else None,
             "proc": txt(col(r, "PROCESSO")) if leve else None, "ger": txt(col(r, "GERENCIA", "GERÊNCIA")),
             "rot": txt(col(r, "RÓTULO")) or None, "desc": txt(col(r, "ALERTA DESCONSIDERADO")) or None,
             "lat": coord(col(r, "LATITUDE")), "lon": coord(col(r, "LONGITUDE")), "loc": local(r, col),
@@ -122,6 +123,15 @@ def main(planilha, destino):
     base = {txt(x[0]): nome_proc(x[3]) for x in base_ws.iter_rows(min_row=2, values_only=True) if x[0]}
     corr = correcoes()
     leves, pesadas = aba(wb, "Frota Leve", True, corr), aba(wb, "Frota Pesada", False, corr)
+    # Linha repetida (mesma frota, data, hora e tipo) conta uma vez só (pedido do usuário em 11/11/2026)
+    vistos, rep = set(), []
+    def unico(r):
+        k = (r["f"], r["d"], r["hs"], r["tipo"])
+        if k in vistos:
+            rep.append(k); return False
+        vistos.add(k); return True
+    leves, pesadas = [r for r in leves if unico(r)], [r for r in pesadas if unico(r)]
+    print("%d linha(s) repetida(s) tirada(s)" % len(rep))
     print("planilha: %d linhas de frota leve, %d de frota pesada" % (len(leves), len(pesadas)))
     montar(leves, pesadas, base, destino, manter_faixa=False)
 

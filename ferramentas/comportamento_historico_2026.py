@@ -31,6 +31,16 @@ for x in ws.iter_rows(min_row=2, values_only=True):
 for r in al + ap:
     if not r["ger"]: r["ger"] = gmap.get(r["f"], "")
 al = [r for r in al if r["d"] < ini]; ap = [r for r in ap if r["d"] < ini]
+# Linhas repetidas na planilha antiga (mesma frota, data, hora e tipo) contam uma vez só
+vistos, rep = set(), 0
+def unico(r):
+    global rep
+    k = (r["f"], r["d"], r["hs"], r["tipo"].upper().replace(" ", "_"))
+    if k in vistos:
+        rep += 1; return False
+    vistos.add(k); return True
+al = [r for r in al if unico(r)]; ap = [r for r in ap if unico(r)]
+print("linhas repetidas tiradas:", rep)
 print("Nova começa em", ini, "| antiga antes disso:", len(al), "leves", len(ap), "pesadas",
       min(r["d"] for r in al + ap), max(r["d"] for r in al + ap))
 print("meses:", sorted(Counter(r["d"][:7] for r in al + ap).items()))
