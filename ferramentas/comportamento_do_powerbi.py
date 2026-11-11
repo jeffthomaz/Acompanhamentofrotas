@@ -171,6 +171,12 @@ def montar(rows_leves, rows_pesadas, base, destino, manter_faixa=True):
                     frotas[f] = velho["frotas"][f]
             else:
                 antes[(d, ids_v[ti], f)] += n
+        # Pontos do mapa de calor dos dias mantidos (antes do corte) também ficam
+        lv = velho.get("locais") or []
+        for p in velho.get("pts") or []:
+            d = (ini_v + timedelta(days=p[0])).isoformat()
+            if d < corte and ids_v[p[1]] in validos:
+                pts[(d, ids_v[p[1]], p[2], p[3] / 1000, p[4] / 1000, lv[p[6]] if p[6] < len(lv) else "Sem local")] += p[5]
         novo3 = Counter()
         for (d, t, f, _, _), n in novo.items():
             novo3[(d, t, f)] += n

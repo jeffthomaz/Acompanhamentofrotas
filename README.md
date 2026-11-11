@@ -76,6 +76,10 @@ geral só quando o usuário pedir.
 
       python ferramentas/comportamento_da_planilha.py "Ocorrências monitoramento comportamental Nova..xlsx" dados-fonte.json
 
+  02/01 a 31/07/2026 (teste de 11/11/2026): vêm da planilha antiga "Ocorrências monitoramento 2026.xlsx", juntadas
+  uma vez com `ferramentas/comportamento_historico_2026.py`. A planilha Nova começa em 01/08, então as atualizações
+  normais mantêm esses dias (contagens e pontos do mapa de calor) e usam o processo atual de cada frota.
+
   Mapa de calor (aba Comportamental, no fim): latitude/longitude e local (cerca, ou via + cidade) de cada
   ocorrência, sem bocejo; o gerar_acesso.py compacta em células de ~500 m, faixas de período e grupos
   (tipo de frota, processo, gerência) em comportamento.mapa.
