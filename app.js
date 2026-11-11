@@ -796,7 +796,7 @@ window.iniciarPainel = function (D) {
     { id: "man", l: "M", nome: "Manutenção", um: "Manutenção", icone: "M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.4-.6-.6-2.4z" },
     { id: "par", l: "P", nome: "Parados", um: "Parado", icone: "M12 3a9 9 0 1 1 0 18 9 9 0 0 1 0-18zM10 9v6M14 9v6" }
   ];
-  var fco = { grupo: "", dia: -1, mes: "", todos: false };
+  var fco = { dia: -1, mes: "", todos: false };
   // Planilha de parados e manutenção no OneDrive (link só para pessoas da Bioenergética Aroeira).
   var LINK_STATUS = "https://bioaroeira0500-my.sharepoint.com/:x:/g/personal/jeffersonmelo_bioaroeira_com_br/IQCBOXgux4WkRLqhbxJaqrmVAbGk8PWZR-k1z45-LiRN5w4?e=cqk76A";
   function letraSt(c) { return c === "m" ? "M" : c === "p" ? "P" : c; }
@@ -806,9 +806,6 @@ window.iniciarPainel = function (D) {
     var processos = unicos(ids.map(function (f) { return F[f].processo; }));
     if (fil_.processo && processos.indexOf(fil_.processo) < 0) fil_.processo = "";
     ids = ids.filter(function (f) { return !fil_.processo || F[f].processo === fil_.processo; });
-    var grupos = unicos(ids.map(function (f) { return F[f].grupo; }).filter(Boolean));
-    if (fco.grupo && grupos.indexOf(fco.grupo) < 0) fco.grupo = "";
-    ids = ids.filter(function (f) { return !fco.grupo || F[f].grupo === fco.grupo; });
     // Período: o gráfico mostra os dias do período; a situação é a do último dia dele (ou do ponto clicado).
     var stK = perEstado("conectividade", "todo"), fK = perFaixa(stK, K.dias), k0 = K.dias.indexOf(fK.de), k1 = K.dias.indexOf(fK.ate);
     var di = fco.dia >= k0 && fco.dia <= k1 ? fco.dia : k1, ehHoje = di === nd - 1;
@@ -823,12 +820,11 @@ window.iniciarPainel = function (D) {
       linhasDia.push({ f: f, c: c, s: s });
     });
     var total = cont.C + cont.O + cont.M + cont.P;
-    var pend = (K.pendencias || []).filter(function (p) { return ids.indexOf(p.f) >= 0 || (!fil_.processo && !fco.grupo); });
+    var pend = (K.pendencias || []).filter(function (p) { return ids.indexOf(p.f) >= 0 || !fil_.processo; });
 
     var filtros = '<div class="filtros"><label>Processo<select data-fil="processo" id="k-processo">' + opcoes(processos, fil_.processo, D.escopo && D.escopo !== "todos" ? "Todos os meus processos" : "Todos os processos") + "</select></label>" +
-      '<label>Grupo<select data-kon="grupo" id="k-grupo">' + opcoes(grupos, fco.grupo, "Todos os grupos") + "</select></label>" +
       perControle("conectividade", stK, K.dias, fK) +
-      (fil_.processo || fco.grupo || !ehHoje || stK.p !== stK.padrao ? '<button type="button" class="limpar" data-limpar="1">Limpar filtros</button>' : "") +
+      (fil_.processo || !ehHoje || stK.p !== stK.padrao ? '<button type="button" class="limpar" data-limpar="1">Limpar filtros</button>' : "") +
       '<p class="ctx">' + total + " " + plural(total, "veículo", "veículos") + " em " + dbr(K.dias[di]) + (manuais ? ". " + manuais + " " + plural(manuais, "informado", "informados") + " na planilha de parados e manutenção" : "") + "</p></div>";
 
     var kpis = '<div class="kpis kpis5 kpis-st">' + ST.map(function (s) {
@@ -1586,7 +1582,7 @@ window.iniciarPainel = function (D) {
   });
   painel.addEventListener("click", function (e) {
     var l = e.target.closest("[data-limpar]");
-    if (l) { fil_.processo = ""; fil_.responsavel = ""; if (fil_.comp) { fil_.comp.frota = ""; fil_.comp.gerencia = ""; } fco.grupo = ""; fco.dia = -1; fcm.tipo = ""; pm.frotas = []; Object.keys(PER).forEach(function (a) { PER[a].p = PER[a].padrao; PER[a].de = PER[a].ate = ""; }); pm.refit = true; render(); return; }
+    if (l) { fil_.processo = ""; fil_.responsavel = ""; if (fil_.comp) { fil_.comp.frota = ""; fil_.comp.gerencia = ""; } fco.dia = -1; fcm.tipo = ""; pm.frotas = []; Object.keys(PER).forEach(function (a) { PER[a].p = PER[a].padrao; PER[a].de = PER[a].ate = ""; }); pm.refit = true; render(); return; }
     var kt = e.target.closest("[data-ktodos]");
     if (kt) { fco.todos = !fco.todos; render(); return; }
     var kd = e.target.closest("[data-kdia]");
