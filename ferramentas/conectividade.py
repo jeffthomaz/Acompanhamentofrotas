@@ -24,6 +24,7 @@ Regras do painel:
 - planilha status_frotas.xlsx: PARADO ou MANUTENÇÃO valem a partir de DESDE (até ATÉ, se houver);
   OPERANDO a partir de DESDE encerra a manutenção/parada e faz um equipamento offline contar como conectado.
 """
+from gerar_acesso import processos_informados, responsavel_do_processo
 import csv, json, re, sys
 from datetime import date, datetime
 
@@ -291,6 +292,8 @@ def planilha(destino, caminho):
             status = "OPERANDO"
         v = K["frotas"].get(f, {})
         resp = str(v.get("responsavel") or "").strip()
+        proc = processos_informados().get(f) or v.get("processo")
+        resp = responsavel_do_processo(proc, resp)  # responsável fixo do processo, quando o usuário informou
         lst.append([f, status, dias, resp.title() if resp and resp != "0" else "", antes.get(f, {}).get("obs")])
     ordem = {"MANUTENÇÃO": 0, "PARADO": 1, "OFFLINE": 2, "OPERANDO": 3}
     lst.sort(key=lambda x: (ordem[x[1]], -x[2], x[0]))

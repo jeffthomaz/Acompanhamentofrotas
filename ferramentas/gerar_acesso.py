@@ -151,6 +151,31 @@ def aplicar_processos_informados(D):
         if x["f"] in pi: x["processo"] = pi[x["f"]]
 
 
+def responsaveis_por_processo():
+    caminho = os.path.join(os.path.dirname(os.path.abspath(__file__)), "responsaveis_processo.json")
+    if not os.path.exists(caminho):
+        return {}
+    return {chave_proc(k): norm(v) for k, v in json.load(open(caminho, encoding="utf-8")).items() if not k.startswith("_")}
+
+
+def responsavel_do_processo(processo, padrao=""):
+    """Responsável fixo do processo (ferramentas/responsaveis_processo.json); sem regra, fica o do cadastro."""
+    return responsaveis_por_processo().get(chave_proc(processo), padrao)
+
+
+def aplicar_responsaveis(D):
+    """Responsável por processo informado pelo usuário vale em todas as abas que mostram responsável."""
+    rp = responsaveis_por_processo()
+    if not rp:
+        return
+    regs = list(D.get("conectividade", {}).get("frotas", {}).values()) + list(D.get("permanencia", {}).get("veiculos", {}).values()) \
+        + list(D.get("motorOcioso", {}).get("veiculos", []))
+    for v in regs:
+        r = rp.get(chave_proc(v.get("processo")))
+        if r and "responsavel" in v:
+            v["responsavel"] = r
+
+
 def completar_processos(D):
     """Frota sem processo numa aba e com processo em outra: usa o processo da outra aba.
     Com mais de um processo nas outras abas, vale o que aparece em mais abas; empate segue a ordem
@@ -346,6 +371,7 @@ def main(cad, fonte, saida):
     aplicar_de_para(D)
     aplicar_processos_informados(D)
     feitos = completar_processos(D)
+    aplicar_responsaveis(D)
     if feitos:
         print("%d frota(s) sem processo completadas pelo processo de outra aba" % len(feitos))
     remover_excluidas(D)

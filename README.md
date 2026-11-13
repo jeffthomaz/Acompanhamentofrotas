@@ -21,6 +21,8 @@ USUARIO, PROCESSO e SENHA. PROCESSO = `todos` vê tudo; vários processos são s
 Ao gerar, frota sem processo numa aba e com processo em outra recebe o processo da outra aba
 (o que aparece em mais abas; empate: Conectividade, Comportamental, Motor ocioso, Permanência, Câmeras).
 Para corrigir um processo errado, use `ferramentas/processos_frotas.json`, que tem prioridade.
+Responsável fixo por processo (Transporte = Ednaldo, Tratos Culturais = Ghetter, Facilities = Fernando Azevedo,
+desde 13/11/2026) fica em `ferramentas/responsaveis_processo.json` e vale sobre o cadastro em todas as abas e na status_frotas.
 Ocorrências do Comportamental resolvidas de forma errada saem por `ferramentas/ocorrencias_excluidas.json`.
 Senhas precisam de pelo menos 10 caracteres.
 
