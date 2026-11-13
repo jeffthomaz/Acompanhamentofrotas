@@ -208,16 +208,22 @@ rect.seg.c-vel{fill:var(--c-vel)}rect.seg.c-celular{fill:var(--c-celular)}rect.s
 .cm-x circle{fill:var(--critico-bg);stroke:var(--critico)}.cm-x path{stroke:var(--critico)}
 .cm-v-ok circle{fill:var(--bom-bg);stroke:var(--bom)}.cm-v-ok path{stroke:var(--bom)}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
-.tb-q tbody.cm-ok th{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--line)}
+.tb-q tbody>tr>:first-child{padding-left:.55rem}.tb-q tbody>tr>:last-child{padding-right:.45rem}
+.tb-q tbody.cm-ok>tr>*{background:var(--bom-bg)}.tb-q tbody.cm-def>tr>*{background:var(--critico-bg)}
+.tb-q tbody.cm-ok>tr>:first-child{box-shadow:inset 5px 0 0 var(--bom)}.tb-q tbody.cm-def>tr>:first-child{box-shadow:inset 5px 0 0 var(--critico)}
+.tb-q tbody.cm-pen>tr>:first-child{box-shadow:inset 5px 0 0 var(--atencao)}
+.tb-q tbody.cm-ok,.tb-q tbody.cm-def{border-top:.35rem solid var(--card)}
 .tb-q tbody tr:first-child th,.tb-q tbody tr:first-child td{border-bottom:0;padding-bottom:.15rem}
-.tb-q tr.cm-st td{padding:0 0 .6rem}.tb-q .cm-tk{display:block;font-size:.7rem;color:var(--muted);margin-bottom:.3rem}.tb-q .cm-tk a{color:var(--ink);font-weight:600}
+.tb-q tbody>tr.cm-st>td{padding:0 .45rem .6rem .55rem}.tb-q .cm-tk{display:block;font-size:.7rem;color:var(--muted);margin-bottom:.3rem}.tb-q .cm-tk a{color:var(--ink);font-weight:600}
 .tb-q .obs{width:100%;min-width:0;font-size:.8rem;padding:.3rem .4rem}
 .g2.g2-eq{grid-template-columns:repeat(2,minmax(0,1fr))}@media (max-width:760px){.g2.g2-eq{grid-template-columns:minmax(0,1fr)}}
 .rosca-l{grid-template-columns:minmax(0,13rem) minmax(0,1fr);align-items:center}@media (max-width:520px){.rosca-l{grid-template-columns:minmax(0,1fr)}}
 .cm-vazio{margin:.6rem .8rem .9rem;font-size:.86rem;color:var(--bom);font-weight:600}
 .obs{font:inherit;font-size:.85rem;font-weight:600;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:.35rem .5rem;min-width:11rem}
-.obs.obs-pen{border-color:var(--critico);background:var(--critico-bg)}.obs.obs-def{border-color:var(--critico);color:var(--critico)}
-.obs.obs-ok,.obs.obs-int,.obs.obs-rel{border-color:var(--bom);background:var(--bom-bg);color:var(--bom)}
+.obs.obs-pen{border-color:var(--atencao);background:var(--atencao-bg);color:var(--ink)}
+.obs.obs-def{border-color:var(--critico);background:var(--critico);color:var(--card);font-weight:700}
+.obs.obs-ok,.obs.obs-int,.obs.obs-rel{border-color:var(--bom);background:var(--bom);color:var(--card);font-weight:700}
+.obs.obs-def option,.obs.obs-ok option,.obs.obs-int option,.obs.obs-rel option{background:var(--card);color:var(--ink)}
 .obs:focus-visible{outline:3px solid var(--maq);outline-offset:2px}
 
 .c-con{--cc:var(--folha)}.c-off{--cc:var(--critico)}.c-man{--cc:var(--s3)}.c-par{--cc:var(--maq)}.c-pen{--cc:var(--c-outros)}
@@ -471,7 +477,7 @@ rect.seg.c-vel{fill:var(--c-vel)}rect.seg.c-celular{fill:var(--c-celular)}rect.s
 </style>
 </head><body>
 <header class="band"><div class="band-in gut">
-  <img class="logo" src="logo-branco.png?v=202611131415" alt="Bioenergética Aroeira" width="67" height="92">
+  <img class="logo" src="logo-branco.png?v=202611131500" alt="Bioenergética Aroeira" width="67" height="92">
   <div><h1>MONITORAMENTO COMPORTAMENTAL</h1><p class="per" id="periodo"></p></div>
   <div class="quem" id="quem" hidden><span><b id="quem-nome"></b><small id="quem-escopo"></small></span><button type="button" id="sair">Sair</button></div>
 </div></header>
@@ -500,7 +506,7 @@ rect.seg.c-vel{fill:var(--c-vel)}rect.seg.c-celular{fill:var(--c-celular)}rect.s
 </div>
 <footer class="foot gut">Bioenergética Aroeira S/A, Tupaciguara/MG. <a href="https://www.bioaroeira.com.br" target="_blank" rel="noopener">www.bioaroeira.com.br</a></footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" defer></script>
-<script src="acesso.js?v=202611131415"></script>
-<script src="app.js?v=202611131415"></script>
-<script src="login.js?v=202611131415"></script>
+<script src="acesso.js?v=202611131500"></script>
+<script src="app.js?v=202611131500"></script>
+<script src="login.js?v=202611131500"></script>
 </body></html>

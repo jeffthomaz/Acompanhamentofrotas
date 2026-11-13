@@ -1059,7 +1059,7 @@ window.iniciarPainel = function (D) {
         (ls.length ? '<table class="tb tb-q"><thead><tr><th scope="col">Frota</th>' + (q.rot || q.cols).map(function (c, j) { return '<th scope="col" class="c" title="' + esc(q.cols[j]) + '">' + esc(c) + "</th>"; }).join("") + "</tr></thead>" + ls.map(function (l) {
           var v = l.v, o = obs[l.k] || "", res = !!OBS_RESOLVE[o], id = "cm-obs-" + qi + "-" + v.f;
           var tk = v.ticket ? '<a href="' + esc(v.ticket) + '" target="_blank" rel="noopener">' + esc(v.ticket.split("/").pop()) + "</a>" + (v.tst ? " · " + esc(v.tst) : "") : "";
-          return '<tbody class="' + (res ? "cm-ok" : "") + '"><tr><th scope="row">' + esc(v.f) + "<small>" + esc(v.processo) + "</small></th>" + q.cols.map(function (c) {
+          return '<tbody class="' + (res ? "cm-ok" : o === "def" ? "cm-def" : "cm-pen") + '"><tr><th scope="row">' + esc(v.f) + "<small>" + esc(v.processo) + "</small></th>" + q.cols.map(function (c) {
             var d = l.ds.filter(function (x) { return x[1] === c; })[0];
             if (!d) return '<td class="c"></td>';
             return '<td class="c">' + (res ? V_ICO : X_ICO) + (q.qtd && d[2] > 1 ? "<b>" + d[2] + "</b>" : "") + '<span class="sr">' + (res ? "revisado" : "com defeito") + "</span></td>";
