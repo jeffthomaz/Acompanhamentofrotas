@@ -361,7 +361,9 @@
       headers: Object.assign({ Authorization: "Bearer " + token, Accept: accept || "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" },
         corpo ? { "Content-Type": "application/json" } : {})
     }).then(function (r) {
-      if (r.status === 401 || r.status === 403) throw new Error("O token do botão venceu ou não tem permissão no repositório de dados. Avise o responsável pelo painel.");
+      var oque = /\/git\//.test(cam) ? "Contents (gravar)" : /\/actions\//.test(cam) ? "Actions" : "Contents (ler)";
+      if (r.status === 401) throw new Error("O token do botão venceu ou foi apagado (401). Avise o responsável pelo painel.");
+      if (r.status === 403) throw new Error("O token do botão não tem a permissão " + oque + " no painel-frotas-dados (403 em " + metodo + " " + cam.split("?")[0] + "). No GitHub, edite o token: Actions e Contents em Read and write.");
       return r;
     });
   }
