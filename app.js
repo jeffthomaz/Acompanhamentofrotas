@@ -1510,6 +1510,8 @@ window.iniciarPainel = function (D) {
     return '<div class="rz-dash">' + filtros + kpis + linhas.join("") + "</div>";
   }
 
+  // Ícone de cada aba (as mesmas figuras dos cards do Resumo; o Resumo usa um painel de blocos).
+  var ABA_ICO = { "resumo": "M4 4h7v8H4zM13 4h7v5h-7zM13 11h7v9h-7zM4 14h7v6H4z" };
   var VIEWS = { "resumo": abaResumo, "comportamento": abaComportamento, "motor-ocioso": abaOcioso, "permanencia": abaPermanencia, "conectividade": abaConectividade, "cameras": abaCameras };
   var tabs = document.getElementById("tabs"), painel = document.getElementById("painel"), fil = document.getElementById("filtro");
 
@@ -1517,7 +1519,7 @@ window.iniciarPainel = function (D) {
   function render() {
     var id = atual();
     tabs.innerHTML = ABAS.map(function (a) {
-      return '<button role="tab" id="tab-' + a.id + '" aria-selected="' + (a.id === id) + '" aria-controls="painel" tabindex="' + (a.id === id ? 0 : -1) + '" data-tab="' + a.id + '">' + a.nome + "</button>";
+      return '<button role="tab" id="tab-' + a.id + '" aria-selected="' + (a.id === id) + '" aria-controls="painel" tabindex="' + (a.id === id ? 0 : -1) + '" data-tab="' + a.id + '">' + ico(ABA_ICO[a.id] || RZ_ICO[a.id] || "", "ic-aba") + a.nome + "</button>";
     }).join("");
     painel.setAttribute("aria-labelledby", "tab-" + id);
     if (pm.mapa && id !== "permanencia") { pm.mapa.remove(); pm.mapa = null; }
