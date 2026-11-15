@@ -118,7 +118,11 @@ def aba(wb, nome, leve, corr=None):
 
 
 def main(planilha, destino):
-    wb = openpyxl.load_workbook(planilha, read_only=True, data_only=True)
+    processar(openpyxl.load_workbook(planilha, read_only=True, data_only=True), destino)
+
+
+def processar(wb, destino):
+    """wb: a planilha aberta (ou montada em memória a partir dos dados limpos que o navegador envia)."""
     base_ws = next(ws for ws in wb.worksheets if ws.title.strip().upper().startswith("BASE DE INFORMA"))
     base = {txt(x[0]): nome_proc(x[3]) for x in base_ws.iter_rows(min_row=2, values_only=True) if x[0]}
     corr = correcoes()

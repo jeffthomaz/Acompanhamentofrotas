@@ -22,31 +22,36 @@ from collections import Counter
 from datetime import date
 
 
-import re
+import os, re
 
+# Regras de local (estabelecimentos, áreas, cercas excluídas) ficam em regras_locais.json,
+# o mesmo arquivo que o navegador usa ao limpar os dados antes de enviar (botão Atualizar dados).
+_R = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "regras_locais.json"), encoding="utf-8"))
 # Locais comerciais (aparecem nas observações do painel).
-ESTABELECIMENTO = re.compile(r"\b(POSTO|PADARIA|RESTAURANTE|SUPERMERCADO|MERCADO|LANCHONETE|BAR|HOTEL|FARM[AÁ]CIA|LOJA|CONVENI[EÊ]NCIA|A[CÇ]OUGUE)\b")
+ESTABELECIMENTO = re.compile(_R["estabelecimento"])
 # Áreas operacionais e referências de estrada.
-AREA = re.compile(r"\b(PER[IÍ]METRO|TREVO|XAPETUBA|MOITINHA|CARREGAMENTO|ENTRADA|FAZENDA|USINA|BR|MG)\b|^Sem cerca")
-
-
+AREA = re.compile(_R["area"])
+CONECTORES = set(_R["conectores"])
 # Cercas removidas a pedido (guardadas como hash para o nome não ficar no repositório público).
-# Para incluir outra: hashlib.sha256("NOME DA CERCA".encode()).hexdigest()[:16]
-CERCAS_EXCLUIDAS = {"84e44df87bc067d7"}
+CERCAS_EXCLUIDAS = set(_R["cercas_excluidas"])
+# Nome já trocado pelas iniciais (feito aqui ou no navegador): fica como está.
+JA_COLABORADOR = re.compile(r"^Colaborador(\s\S+\.)*(\s\S+)?$")  # o último ponto pode ter saído no limpo()
 
 
 def excluida(cerca):
     import hashlib
-    return hashlib.sha256(cerca.upper().encode()).hexdigest()[:16] in CERCAS_EXCLUIDAS
+    return cerca == "#excluida" or hashlib.sha256(cerca.upper().encode()).hexdigest()[:16] in CERCAS_EXCLUIDAS
 
 
 def classifica(nome):
     """Cerca com nome de pessoa vira "Colaborador F. M. L." para não expor o nome completo."""
+    if JA_COLABORADOR.match(nome):
+        return (nome if nome.endswith(".") or nome == "Colaborador" else nome + "."), "colaborador"
     if ESTABELECIMENTO.search(nome.upper()):
         return nome, "estabelecimento"
     if AREA.search(nome.upper()) or AREA.search(nome):
         return re.sub(r"\s*\([^)]*\)\s*$", "", nome), "area"  # tira nome de pessoa entre parênteses
-    ini = [p[0] + "." for p in re.split(r"\s+", nome) if p and p.upper() not in ("DA", "DE", "DO", "DAS", "DOS", "E")]
+    ini = [p[0] + "." for p in re.split(r"\s+", nome) if p and p.upper() not in CONECTORES]
     return "Colaborador " + " ".join(ini), "colaborador"
 
 

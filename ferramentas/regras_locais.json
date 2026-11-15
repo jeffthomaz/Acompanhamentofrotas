@@ -1,0 +1,7 @@
+{
+  "_obs": "Regras de nomes de local usadas pelo Python (permanencia_do_powerbi.py) e pelo navegador (painel-atualizar.js). Mude só aqui. Cercas excluídas: hashlib.sha256(NOME.upper().encode()).hexdigest()[:16].",
+  "estabelecimento": "\\b(POSTO|PADARIA|RESTAURANTE|SUPERMERCADO|MERCADO|LANCHONETE|BAR|HOTEL|FARM[AÁ]CIA|LOJA|CONVENI[EÊ]NCIA|A[CÇ]OUGUE)\\b",
+  "area": "\\b(PER[IÍ]METRO|TREVO|XAPETUBA|MOITINHA|CARREGAMENTO|ENTRADA|FAZENDA|USINA|BR|MG)\\b|^Sem cerca",
+  "conectores": ["DA", "DE", "DO", "DAS", "DOS", "E"],
+  "cercas_excluidas": ["84e44df87bc067d7"]
+}

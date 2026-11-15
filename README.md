@@ -121,14 +121,22 @@ Uma tarefa agendada confere a pasta de exportação (EXPORTAR PASTAS, no OneDriv
 (controle em `painel-dados/entrada_processados.json`) roda `conectividade.py vfleets` + `montar` ou
 `cameras.py`, depois `gerar_acesso.py`, e publica o `acesso.js`. Depende do computador ligado.
 
-## Botão "Atualizar dados" (em montagem desde 15/11/2026)
+## Botão "Atualizar dados" (desde 15/11/2026)
 
 - Aparece só para usuários com `ATUALIZA = SIM` na planilha de cadastros (coluna opcional).
-- Usa um token do GitHub *fine-grained*, só deste repositório e só com permissão **Actions: Read and write**.
-  O token fica em `token_atualizar.txt` na pasta painel-dados (nunca no repositório) e vai para
-  `acesso.js` trancado com a senha de cada usuário autorizado. Quem não tem permissão não consegue abri-lo.
-- O botão dispara `.github/workflows/atualizar.yml` e mostra no topo do painel se está na fila,
-  em andamento, concluído ou se falhou.
-- O workflow ainda para no passo "Verificar autorização": falta a autorização do Microsoft 365
-  (registro de aplicativo com Sites.Selected no site DP-AGR-COA, pedido ao TI) para ler as planilhas
-  do SharePoint, e definir onde fica a base do painel.
+- O usuário escolhe uma vez a pasta **OneDrive - Bioenergética Aroeira** do computador dele (Chrome ou Edge).
+  Ao clicar, `painel-atualizar.js` lê dali só o que mudou (planilha Nova do Comportamental, alertas de
+  permanência novos, Boletins do Veículo novos), **tira os dados pessoais no próprio navegador**
+  (motorista, CPF, documento, comentários; cercas com nome de pessoa viram iniciais, com as regras de
+  `ferramentas/regras_locais.json`, as mesmas do Python) e grava `entrada/pedido.json.gz` no repositório
+  **privado** `jeffthomaz/painel-frotas-dados`.
+- Lá, o workflow `atualizar.yml` roda `ferramentas/atualizar_da_entrada.py` (os mesmos scripts de sempre),
+  regera `acesso.js` com `gerar_acesso.py --dados` (chaves dos grupos em `base/chaves_grupos.json`, sem
+  senhas) e publica aqui. Testado em 15/11/2026: o resultado é idêntico ao de rodar os scripts direto nas planilhas.
+- Token do botão: *fine-grained*, só do repositório `painel-frotas-dados`, com **Contents** e **Actions**
+  em Read and write. Fica em `token_atualizar.txt` (pasta painel-dados do computador; nunca em repositório)
+  e vai para `acesso.js` trancado com a senha de cada usuário autorizado.
+- O workflow publica com o segredo `PUBLICAR_TOKEN` do repositório privado (token só deste repositório,
+  Contents: Read and write).
+- **A base oficial passou a ser o repositório privado** (`base/`). As atualizações feitas na conversa e a
+  atualização automática das 12h e 13h leem e gravam lá; a pasta painel-dados do computador vira cópia.

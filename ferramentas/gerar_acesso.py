@@ -2,6 +2,11 @@
 
 Uso:
     python gerar_acesso.py <cadastros.xlsx> <dados-fonte.json> <saida/acesso.js>
+    python gerar_acesso.py --dados <chaves_grupos.json> <dados-fonte.json> <saida/acesso.js>
+
+O primeiro modo (com a planilha de cadastros) também grava chaves_grupos.json ao lado do
+dados-fonte.json. O modo --dados usa esse arquivo para regerar só os dados, sem precisar das
+senhas (é o que roda na atualização pelo botão, no repositório privado painel-frotas-dados).
 
 cadastros.xlsx: colunas USUARIO, PROCESSO, SENHA (primeira aba) e, opcional, ATUALIZA.
   PROCESSO = "todos" vê tudo. Vários processos: separe com ";".
@@ -382,7 +387,7 @@ def remover_locais(D):
     P["eventos"] = [e for e in P["eventos"] if e[4] not in ix]
 
 
-def main(cad, fonte, saida):
+def preparar(fonte):
     D = json.load(open(fonte, encoding="utf-8"))
     unificar_processos(D)
     aplicar_de_para(D)
@@ -397,6 +402,38 @@ def main(cad, fonte, saida):
     if tiradas:
         print("%d ocorrência(s) do Comportamental desconsiderada(s)" % tiradas)
     compactar_mapa(D)
+    return D
+
+
+def escrever(saida, pacote):
+    with open(saida, "w", encoding="utf-8") as f:
+        f.write("// Gerado por ferramentas/gerar_acesso.py. Não edite à mão.\n")
+        f.write("window.ACESSO = " + json.dumps(pacote, separators=(",", ":")) + ";\n")
+    # Muda a versão dos scripts no index.html para o navegador baixar os dados novos.
+    idx = os.path.join(os.path.dirname(os.path.abspath(saida)), "index.html")
+    if os.path.exists(idx):
+        import re
+        h = open(idx, encoding="utf-8").read()
+        open(idx, "w", encoding="utf-8").write(re.sub(r"\?v=\d{12}", "?v=" + datetime.now().strftime("%Y%m%d%H%M"), h))
+
+
+def so_dados(chaves_json, fonte, saida):
+    """Modo --dados: regera só os dados dos grupos com as chaves guardadas (usuários e senhas iguais)."""
+    C = json.load(open(chaves_json, encoding="utf-8"))
+    D = preparar(fonte)
+    pacote = {
+        "v": 1, "iter": ITERACOES, "gerado": datetime.now().strftime("%d/%m/%Y %H:%M"),
+        "usuarios": C["usuarios"],
+        "grupos": {gid: cifrar(base64.b64decode(g["chave"]),
+                               json.dumps(recorte(D, None if g["procs"] is None else frozenset(g["procs"])), ensure_ascii=False).encode(), "dados:" + gid)
+                   for gid, g in C["chaves"].items()},
+    }
+    escrever(saida, pacote)
+    print("só dados: %d usuário(s), %d grupo(s) -> %s" % (len(C["usuarios"]), len(C["chaves"]), saida))
+
+
+def main(cad, fonte, saida):
+    D = preparar(fonte)
     conhecidos = {chave_proc(v["processo"]): v["processo"] for v in D.get("comportamento", {}).get("frotas", {}).values()}
     conhecidos.update({chave_proc(v["processo"]): v["processo"] for v in D.get("motorOcioso", {}).get("veiculos", [])})
     conhecidos.update({chave_proc(v["processo"]): v["processo"] for v in D.get("permanencia", {}).get("veiculos", {}).values()})
@@ -446,21 +483,20 @@ def main(cad, fonte, saida):
         "grupos": {gid: cifrar(g["chave"], json.dumps(recorte(D, g["procs"]), ensure_ascii=False).encode(), "dados:" + gid)
                    for gid, g in grupos.items()},
     }
-    with open(saida, "w", encoding="utf-8") as f:
-        f.write("// Gerado por ferramentas/gerar_acesso.py. Não edite à mão.\n")
-        f.write("window.ACESSO = " + json.dumps(pacote, separators=(",", ":")) + ";\n")
-    # Muda a versão dos scripts no index.html para o navegador baixar os dados novos.
-    idx = os.path.join(os.path.dirname(os.path.abspath(saida)), "index.html")
-    if os.path.exists(idx):
-        import re
-        h = open(idx, encoding="utf-8").read()
-        open(idx, "w", encoding="utf-8").write(re.sub(r"\?v=\d{12}", "?v=" + datetime.now().strftime("%Y%m%d%H%M"), h))
+    # Chaves dos grupos para o modo --dados (atualização pelo botão, sem as senhas).
+    # Ficam ao lado do dados-fonte.json e no repositório PRIVADO painel-frotas-dados; nunca no público.
+    chaves = {gid: {"chave": b64(g["chave"]), "procs": None if g["procs"] is None else sorted(g["procs"])} for gid, g in grupos.items()}
+    json.dump({"usuarios": usuarios, "chaves": chaves}, open(os.path.join(os.path.dirname(os.path.abspath(fonte)), "chaves_grupos.json"), "w", encoding="utf-8"))
+    escrever(saida, pacote)
     print("%d usuário(s), %d grupo(s), %d com botão Atualizar -> %s" % (len(usuarios), len(grupos), autorizados, saida))
     for a in avisos:
         print("AVISO:", a)
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 4:
+    if len(sys.argv) == 5 and sys.argv[1] == "--dados":
+        so_dados(*sys.argv[2:])
+    elif len(sys.argv) == 4:
+        main(*sys.argv[1:])
+    else:
         sys.exit(__doc__)
-    main(*sys.argv[1:])

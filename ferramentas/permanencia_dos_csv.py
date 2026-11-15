@@ -48,7 +48,8 @@ def num(s):
         return None
 
 
-def main(pasta, destino, geral=False):
+def main(pasta, destino, geral=False, assinaturas=None):
+    """assinaturas: {nome do arquivo: tamanho original} quando os CSVs chegam já limpos pelo navegador."""
     D = json.load(open(destino, encoding="utf-8"))
     cache_c = os.path.join(os.path.dirname(os.path.abspath(destino)), "permanencia_base.json")
     cache = {"arquivos": {}, "dias": {}} if geral or not os.path.exists(cache_c) else json.load(open(cache_c, encoding="utf-8"))
@@ -61,7 +62,7 @@ def main(pasta, destino, geral=False):
     novos_rows, vistos, arquivos, desc, dias_lidos = [], set(), 0, 0, set()
     for cam in sorted(glob.glob(os.path.join(pasta, "Historico_Alertas_*.csv"))):
         nome, st = os.path.basename(cam), os.stat(cam)
-        assin = str(st.st_size)  # o tamanho; a data muda ao copiar o arquivo para outra máquina
+        assin = str((assinaturas or {}).get(nome, st.st_size))  # o tamanho; a data muda ao copiar o arquivo para outra máquina
         if cache["arquivos"].get(nome) == assin:
             continue
         cache["arquivos"][nome] = assin

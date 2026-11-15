@@ -50,50 +50,8 @@
   }
 
 
-  // Botão "Atualizar dados": só para quem tem ATUALIZA=SIM na planilha de cadastros.
-  // Pede ao GitHub para rodar .github/workflows/atualizar.yml e acompanha até terminar.
-  var REPO = "jeffthomaz/Acompanhamentofrotas", WF = "atualizar.yml";
-  function botaoAtualizar(token) {
-    var bt = document.getElementById("atualizar"), st = document.getElementById("atualizar-st");
-    if (!bt || !token) return;
-    bt.hidden = false;
-    function gh(metodo, caminho, corpo) {
-      return fetch("https://api.github.com/repos/" + REPO + caminho, {
-        method: metodo, body: corpo ? JSON.stringify(corpo) : undefined,
-        headers: { Authorization: "Bearer " + token, Accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" }
-      });
-    }
-    function msg(t, cls) { st.hidden = !t; st.textContent = t || ""; st.className = "atu-st" + (cls ? " " + cls : ""); }
-    function ultimo() {
-      return gh("GET", "/actions/workflows/" + WF + "/runs?event=workflow_dispatch&per_page=1").then(function (r) { return r.ok ? r.json() : null; })
-        .then(function (j) { return j && j.workflow_runs && j.workflow_runs[0]; });
-    }
-    function acompanhar(desde, voltas) {
-      ultimo().then(function (run) {
-        if (!run || new Date(run.created_at).getTime() < desde - 60000) {
-          if (voltas > 30) { msg("Não consegui acompanhar a atualização. Veja de novo em alguns minutos.", "erro"); bt.disabled = false; return; }
-          return setTimeout(function () { acompanhar(desde, voltas + 1); }, 5000);
-        }
-        if (run.status !== "completed") {
-          msg("Atualizando os dados… (" + (run.status === "queued" ? "na fila" : "em andamento") + ")");
-          return setTimeout(function () { acompanhar(desde, voltas + 1); }, 10000);
-        }
-        bt.disabled = false;
-        if (run.conclusion === "success") msg("Atualização concluída. O site publica em 1 a 2 minutos; depois recarregue a página.", "ok");
-        else msg("A atualização não terminou (" + ({ failure: "falhou", cancelled: "cancelada", timed_out: "demorou demais" }[run.conclusion] || run.conclusion) + "). Avise o responsável pelo painel.", "erro");
-      }).catch(function () { bt.disabled = false; msg("Sem conexão com o GitHub agora. Tente de novo.", "erro"); });
-    }
-    bt.addEventListener("click", function () {
-      if (!confirm("Atualizar os dados do painel agora? Leva alguns minutos.")) return;
-      bt.disabled = true; msg("Pedindo a atualização…");
-      var desde = Date.now();
-      gh("POST", "/actions/workflows/" + WF + "/dispatches", { ref: "main" }).then(function (r) {
-        if (r.status === 204) return acompanhar(desde, 0);
-        bt.disabled = false;
-        msg(r.status === 401 || r.status === 403 ? "O token do botão venceu ou não tem permissão. Avise o responsável pelo painel." : "O GitHub recusou o pedido (" + r.status + ").", "erro");
-      }).catch(function () { bt.disabled = false; msg("Sem conexão com o GitHub agora. Tente de novo.", "erro"); });
-    });
-  }
+  // Botão "Atualizar dados" (painel-atualizar.js): só para quem tem ATUALIZA=SIM na planilha de cadastros.
+  function botaoAtualizar(token) { if (token && window.painelAtualizar) window.painelAtualizar(token); }
 
   function sessao(v) {
     try { if (v === undefined) return JSON.parse(sessionStorage.getItem(CHAVE_SESSAO)); if (v) sessionStorage.setItem(CHAVE_SESSAO, JSON.stringify(v)); else sessionStorage.removeItem(CHAVE_SESSAO); } catch (e) { return null; }
