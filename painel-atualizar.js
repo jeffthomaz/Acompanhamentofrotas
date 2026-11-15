@@ -19,9 +19,26 @@
   var NOVA = "Ocorrências monitoramento comportamental Nova..xlsx", EXPORT = "EXPORTAR PASTAS";
   var PASTAS = {
     comp: { rotulo: "Comportamental", nome: "SAFRA 2026 MONIT COMPORTAMENTAL",
+      usa: "Comportamental, Conectividade, Câmeras e Motor ocioso",
+      itens: async function (h) {
+        var exp = await filho(h, EXPORT, true), n = { loc: 0, sau: 0, bol: 0 };
+        if (exp) for await (var e of exp.values()) {
+          if (/^Localizacao_da_Frota_/i.test(e.name)) n.loc++;
+          else if (/^Sa(ú|u)de(_| )do(_| )Ve(í|i)culo/i.test(nfc(e.name))) n.sau++;
+          else if (/^Boletim_do_Veiculo_/i.test(e.name)) n.bol++;
+        }
+        return [["Planilha Nova", !!(await filho(h, NOVA, false))], ["status_frotas.xlsx", !!(await filho(h, "status_frotas.xlsx", false))],
+          ["EXPORTAR PASTAS", !!exp, exp ? n.loc + " Localização · " + n.sau + " Saúde · " + n.bol + " Boletim" : ""]];
+      },
       confere: function (h) { return filho(h, NOVA, false); },
       erro: 'Essa pasta não tem a planilha "' + NOVA + '". Escolha a pasta "SAFRA 2026 MONIT COMPORTAMENTAL".' },
     alertas: { rotulo: "Alertas", nome: "COA - BASE DE DADOS MONITORAMENTO COMPORTAMENTAL",
+      usa: "Permanência",
+      itens: async function (h) {
+        var n = 0, ult = "";
+        for await (var e of h.values()) { var m = /^Historico_Alertas_(\d{4}-\d{2}-\d{2})/i.exec(e.name); if (m) { n++; if (m[1] > ult) ult = m[1]; } }
+        return [["Alertas (Historico_Alertas)", n > 0, n ? n + " arquivos, o mais recente de " + ult.split("-").reverse().join("/") : ""]];
+      },
       confere: async function (h) { for await (var e of h.values()) if (/^Historico_Alertas_.*\.csv$/i.test(e.name)) return true; return false; },
       erro: 'Essa pasta não tem os arquivos Historico_Alertas. Escolha a pasta "COA - BASE DE DADOS MONITORAMENTO COMPORTAMENTAL".' }
   };
@@ -48,6 +65,7 @@
     });
   }
   function cfg(k, v) {
+    if (window.__painelMem) { if (v !== undefined) window.__painelMem[k] = v; return Promise.resolve(window.__painelMem[k]); }  // só nos testes
     return db().then(function (d) {
       return new Promise(function (ok, erro) {
         var tx = d.transaction("cfg", v === undefined ? "readonly" : "readwrite"), s = tx.objectStore("cfg");
@@ -69,29 +87,86 @@
     if (h) {
       if ((await h.queryPermission({ mode: "read" })) === "granted") return h;
       try { if ((await h.requestPermission({ mode: "read" })) === "granted") return h; } catch (e) { /* precisa de outro clique */ }
-      throw new Error('O navegador pediu de novo permissão para ler a pasta do ' + P.rotulo + '. Clique em "Atualizar dados" outra vez e permita.');
+      abrirPopup();
+      throw new Error('O navegador precisa de permissão de novo para ler a pasta do ' + P.rotulo + '. Clique em "Permitir acesso" na janela "Pastas do painel".');
     }
-    if (!escolher) throw new Error('Antes de atualizar, escolha a pasta do ' + P.rotulo + ' ("' + P.nome + '") no link "escolher" abaixo do botão.');
+    if (!escolher) { abrirPopup(); throw new Error('Antes de atualizar, vincule a pasta do ' + P.rotulo + ' ("' + P.nome + '") na janela "Pastas do painel".'); }
     h = await window.showDirectoryPicker({ id: "painel-" + tipo, mode: "read" });
     if (!(await P.confere(h))) throw new Error(P.erro);
     await cfg("pasta-" + tipo, h);
     mostrarPastas();
     return h;
   }
+  // Estado de cada pasta: "ok" (vinculada), "permissao" (escolhida, falta permitir) ou "nao" (não escolhida).
+  async function estado(t) {
+    var h = await cfg("pasta-" + t).catch(function () { return null; });
+    if (!h) return { st: "nao" };
+    var p = await h.queryPermission({ mode: "read" }).catch(function () { return "prompt"; });
+    return { st: p === "granted" ? "ok" : "permissao", h: h };
+  }
   function mostrarPastas() {
-    Promise.all(Object.keys(PASTAS).map(function (t) { return cfg("pasta-" + t).catch(function () { return null; }); })).then(function (hs) {
+    Promise.all(Object.keys(PASTAS).map(estado)).then(function (es) {
+      var ok = es.filter(function (e) { return e.st === "ok"; }).length;
       pastaEl.hidden = false; pastaEl.innerHTML = "";
-      Object.keys(PASTAS).forEach(function (t, k) {
-        var span = document.createElement("span"), b = document.createElement("button");
-        span.appendChild(document.createTextNode((k ? " · " : "") + PASTAS[t].rotulo + ": "));
-        if (hs[k]) { var nb = document.createElement("b"); nb.textContent = hs[k].name; span.appendChild(nb); span.appendChild(document.createTextNode(" ")); }
-        else span.appendChild(document.createTextNode("não escolhida "));
-        b.type = "button"; b.textContent = hs[k] ? "trocar" : "escolher";
-        b.onclick = function () {
-          pasta(t, true).then(function () { msg(""); })
-            .catch(function (e) { msg(e.name === "AbortError" ? "" : e.message, "erro"); });
+      var b = document.createElement("button"); b.type = "button";
+      b.textContent = "Pastas: " + ok + " de " + es.length + " vinculadas";
+      b.className = ok === es.length ? "ok" : "pend";
+      b.onclick = abrirPopup;
+      pastaEl.appendChild(b);
+      var d = document.getElementById("pastas-pop");
+      if (d && d.open) desenharPopup();
+    });
+  }
+  function abrirPopup() {
+    var d = document.getElementById("pastas-pop");
+    if (!d) {
+      d = document.createElement("dialog"); d.id = "pastas-pop"; d.className = "pastas-pop";
+      d.addEventListener("click", function (e) { if (e.target === d) d.close(); });
+      document.body.appendChild(d);
+    }
+    desenharPopup();
+    if (!d.open) d.showModal();
+  }
+  function desenharPopup() {
+    var d = document.getElementById("pastas-pop");
+    d.innerHTML = '<div class="pp-cab"><h2>Pastas do painel</h2><button type="button" class="pp-x" aria-label="Fechar">×</button></div>' +
+      '<p class="pp-txt">Aponte uma vez para cada pasta no OneDrive deste computador. O navegador guarda a escolha. Funciona no Chrome e no Edge.</p>';
+    d.querySelector(".pp-x").onclick = function () { d.close(); };
+    if (!window.showDirectoryPicker) {
+      d.insertAdjacentHTML("beforeend", '<p class="pp-aviso">Este navegador não permite escolher pastas. Abra o painel no Chrome ou no Edge do computador.</p>');
+    }
+    Object.keys(PASTAS).forEach(function (t) {
+      var P = PASTAS[t], card = document.createElement("div");
+      card.className = "pp-card"; d.appendChild(card);
+      estado(t).then(async function (e) {
+        var chip = { ok: ["Vinculado", "ok"], permissao: ["Permissão pendente", "pend"], nao: ["Não vinculado", "nao"] }[e.st];
+        card.innerHTML = '<div class="pp-lin"><div><b class="pp-rot"></b><small class="pp-usa"></small></div><span class="pp-chip ' + chip[1] + '">' + chip[0] + "</span></div>" +
+          '<div class="pp-cam"><span>Pasta:</span> <code></code></div><ul class="pp-itens"></ul><div class="pp-acoes"></div>';
+        card.querySelector(".pp-rot").textContent = P.rotulo;
+        card.querySelector(".pp-usa").textContent = "Usada em: " + P.usa;
+        if (e.h) card.querySelector("code").textContent = e.h.name;
+        else card.querySelector(".pp-cam").innerHTML = '<span>Selecione a pasta:</span> <b class="pp-dica"></b>', card.querySelector(".pp-dica").textContent = P.nome;
+        if (e.st === "ok") {
+          var ul = card.querySelector(".pp-itens");
+          (await P.itens(e.h)).forEach(function (it) {
+            var li = document.createElement("li"); li.className = it[1] ? "sim" : "nao";
+            li.textContent = (it[1] ? "✓ " : "✗ ") + it[0] + (it[2] ? " — " + it[2] : it[1] ? "" : " (não encontrado)");
+            ul.appendChild(li);
+          });
+        }
+        var ac = card.querySelector(".pp-acoes");
+        if (e.st === "permissao") {
+          var bp = document.createElement("button"); bp.type = "button"; bp.className = "pp-pri"; bp.textContent = "Permitir acesso";
+          bp.onclick = function () { e.h.requestPermission({ mode: "read" }).then(mostrarPastas, mostrarPastas); };
+          ac.appendChild(bp);
+        }
+        var bs = document.createElement("button"); bs.type = "button"; bs.className = e.st === "nao" ? "pp-pri" : "";
+        bs.textContent = e.st === "nao" ? "Selecionar pasta" : "Trocar pasta"; bs.disabled = !window.showDirectoryPicker;
+        bs.onclick = function () {
+          pasta(t, true).then(function () { msg(""); mostrarPastas(); })
+            .catch(function (er) { if (er.name !== "AbortError") { var x = document.createElement("p"); x.className = "pp-aviso"; x.textContent = er.message; ac.appendChild(x); } });
         };
-        span.appendChild(b); pastaEl.appendChild(span);
+        ac.appendChild(bs);
       });
     });
   }
