@@ -366,7 +366,8 @@
   }
 
   // Usado só nos testes automáticos (ferramentas não chamam a rede).
-  window.__painelTeste = { comportamental: comportamental, alertas: alertas, boletim: boletim, carregarRegras: carregarRegras };
+  window.__painelTeste = { comportamental: comportamental, alertas: alertas, boletim: boletim, carregarRegras: carregarRegras,
+    enviar: enviar, indice: indice, acompanhar: acompanhar, token: function (t) { token = t; st = document.createElement("p"); } };
 
   window.painelAtualizar = function (tok) {
     bt = document.getElementById("atualizar"); st = document.getElementById("atualizar-st"); pastaEl = document.getElementById("atualizar-pasta");
