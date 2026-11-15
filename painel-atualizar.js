@@ -367,6 +367,7 @@
   }
   function ghJson(metodo, cam, corpo) {
     return gh(metodo, cam, corpo).then(function (r) {
+      if (r.status === 404) throw new Error("O token do botão não tem acesso ao repositório painel-frotas-dados. No GitHub, edite o token e inclua esse repositório (Contents e Actions: Read and write).");
       if (!r.ok) throw new Error("O GitHub recusou (" + r.status + " em " + cam.split("?")[0] + ").");
       return r.status === 204 ? null : r.json();
     });
