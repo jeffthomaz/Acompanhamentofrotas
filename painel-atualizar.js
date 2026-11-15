@@ -358,7 +358,8 @@
   function gh(metodo, cam, corpo, accept) {
     return fetch("https://api.github.com/repos/" + REPO + cam, {
       method: metodo, body: corpo ? JSON.stringify(corpo) : undefined, cache: "no-store",
-      headers: { Authorization: "Bearer " + token, Accept: accept || "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" }
+      headers: Object.assign({ Authorization: "Bearer " + token, Accept: accept || "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" },
+        corpo ? { "Content-Type": "application/json" } : {})
     }).then(function (r) {
       if (r.status === 401 || r.status === 403) throw new Error("O token do botão venceu ou não tem permissão no repositório de dados. Avise o responsável pelo painel.");
       return r;
