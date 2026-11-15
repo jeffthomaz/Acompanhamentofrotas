@@ -303,7 +303,8 @@ rect.seg.c-vel{fill:var(--c-vel)}rect.seg.c-celular{fill:var(--c-celular)}rect.s
 .quem button{font:inherit;font-size:.85rem;font-weight:600;color:#fff;background:transparent;border:1px solid rgba(255,255,255,.55);border-radius:6px;padding:.3rem .9rem;cursor:pointer}
 .quem button:hover{background:rgba(255,255,255,.12)}
 .quem #atualizar{background:#fff;color:#0A2A19;border-color:#fff;margin-right:.5rem}.quem #atualizar:hover{background:#E8F1EA}.quem #atualizar:disabled{opacity:.6;cursor:wait}
-.atu-pasta{flex:1 0 100%;margin:-.5rem 0 0;text-align:right;font-size:.78rem;color:#BFD3C6}.atu-pasta b{color:#fff;font-weight:600}
+.atu-ult{flex:1 0 100%;margin:-.6rem 0 0;text-align:right;font-size:.78rem;color:#BFD3C6}
+.atu-pasta{flex:1 0 100%;margin:-.7rem 0 0;text-align:right;font-size:.78rem;color:#BFD3C6}.atu-pasta b{color:#fff;font-weight:600}
 .atu-pasta button{font:inherit;font-size:.78rem;color:#fff;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.35);border-radius:999px;padding:.15rem .7rem;cursor:pointer}
 .atu-pasta button::before{content:"";display:inline-block;width:.5rem;height:.5rem;border-radius:50%;margin-right:.4rem;background:#E5B94E}
 .atu-pasta button.ok::before{background:#6FCF8E}.atu-pasta button:hover{background:rgba(255,255,255,.16)}
@@ -505,9 +506,10 @@ rect.seg.c-vel{fill:var(--c-vel)}rect.seg.c-celular{fill:var(--c-celular)}rect.s
 </style>
 </head><body>
 <header class="band"><div class="band-in gut">
-  <img class="logo" src="logo-branco.png?v=202611151019" alt="Bioenergética Aroeira" width="67" height="92">
+  <img class="logo" src="logo-branco.png?v=202611151031" alt="Bioenergética Aroeira" width="67" height="92">
   <div><h1>MONITORAMENTO COMPORTAMENTAL</h1><p class="per" id="periodo"></p></div>
   <div class="quem" id="quem" hidden><span><b id="quem-nome"></b><small id="quem-escopo"></small></span><button type="button" id="atualizar" hidden>Atualizar dados</button><button type="button" id="sair">Sair</button></div>
+  <p class="atu-ult" id="atualizado" hidden></p>
   <p class="atu-pasta" id="atualizar-pasta" hidden></p>
   <p class="atu-st" id="atualizar-st" role="status" hidden></p>
 </div></header>
@@ -536,9 +538,9 @@ rect.seg.c-vel{fill:var(--c-vel)}rect.seg.c-celular{fill:var(--c-celular)}rect.s
 </div>
 <footer class="foot gut">Bioenergética Aroeira S/A, Tupaciguara/MG. <a href="https://www.bioaroeira.com.br" target="_blank" rel="noopener">www.bioaroeira.com.br</a></footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" defer></script>
-<script src="acesso.js?v=202611151019"></script>
-<script src="app.js?v=202611151019"></script>
-<script src="jszip.min.js?v=202611151019"></script>
-<script src="painel-atualizar.js?v=202611151019"></script>
-<script src="login.js?v=202611151019"></script>
+<script src="acesso.js?v=202611151031"></script>
+<script src="app.js?v=202611151031"></script>
+<script src="jszip.min.js?v=202611151031"></script>
+<script src="painel-atualizar.js?v=202611151031"></script>
+<script src="login.js?v=202611151031"></script>
 </body></html>

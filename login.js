@@ -22,6 +22,12 @@
       document.getElementById("quem-nome").textContent = nome;
       document.getElementById("quem-escopo").textContent = D.escopo === "todos" ? "Todos os processos" : D.escopo.length === 1 ? "Processo: " + nomeProc(D, D.escopo[0]) : D.escopo.length + " processos";
       saudar(nome, D);
+      var at = document.getElementById("atualizado"), u = D.atualizacao;
+      if (at && (u || A.gerado)) {
+        at.hidden = false;
+        at.textContent = "Última atualização: " + (u ? u.quando + (u.quem ? " por " + u.quem : "") : A.gerado);
+        if (u && u.feito && u.feito.length) at.title = "Atualizado: " + u.feito.join(", ");
+      }
       window.iniciarPainel(D);
     });
   }

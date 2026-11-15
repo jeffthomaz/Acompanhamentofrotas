@@ -434,6 +434,9 @@ def so_dados(chaves_json, fonte, saida):
 
 def main(cad, fonte, saida):
     D = preparar(fonte)
+    # Atualização feita fora do botão (na conversa ou na automática das 12h/13h): registra no topo do painel.
+    D["atualizacao"] = {"quando": datetime.now().strftime("%d/%m/%Y %H:%M"),
+                        "quem": os.environ.get("PAINEL_QUEM", "atualização pelo Claude"), "feito": []}
     conhecidos = {chave_proc(v["processo"]): v["processo"] for v in D.get("comportamento", {}).get("frotas", {}).values()}
     conhecidos.update({chave_proc(v["processo"]): v["processo"] for v in D.get("motorOcioso", {}).get("veiculos", [])})
     conhecidos.update({chave_proc(v["processo"]): v["processo"] for v in D.get("permanencia", {}).get("veiculos", {}).values()})

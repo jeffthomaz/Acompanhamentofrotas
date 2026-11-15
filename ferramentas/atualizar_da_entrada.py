@@ -135,6 +135,10 @@ def main(pedido, base):
         ind["boletins"] = sorted({l["d"] for l in json.load(open(oc, encoding="utf-8"))["linhas"]})
     ind["processados"] = proc.get("processados", [])
     ind["status_frotas"] = proc.get("status_frotas")
+    # Mostrado no topo do painel para todos ("Última atualização: … por …"), dentro dos dados criptografados.
+    D = json.load(open(dados, encoding="utf-8"))
+    D["atualizacao"] = {"quando": datetime.now().strftime("%d/%m/%Y %H:%M"), "quem": P.get("quem", ""), "feito": feito}
+    json.dump(D, open(dados, "w", encoding="utf-8"), ensure_ascii=False)
     ind["atualizado"] = datetime.now().strftime("%Y-%m-%d %H:%M")
     ind["ultimo_pedido"] = {"quando": P.get("quando"), "quem": P.get("quem", ""), "feito": feito}
     # Resumo para o aviso no Teams (workflow) e para o histórico
