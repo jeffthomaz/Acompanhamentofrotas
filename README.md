@@ -124,8 +124,10 @@ Uma tarefa agendada confere a pasta de exportação (EXPORTAR PASTAS, no OneDriv
 ## Botão "Atualizar dados" (desde 15/11/2026)
 
 - Aparece só para usuários com `ATUALIZA = SIM` na planilha de cadastros (coluna opcional).
-- O usuário escolhe uma vez a pasta **OneDrive - Bioenergética Aroeira** do computador dele (Chrome ou Edge).
-  Ao clicar, `painel-atualizar.js` lê dali só o que mudou (planilha Nova do Comportamental, alertas de
+- O usuário escolhe uma vez, no computador dele (Chrome ou Edge), as **duas pastas** de onde vêm os dados:
+  a do Comportamental (**SAFRA 2026 MONIT COMPORTAMENTAL**, com a planilha Nova e a EXPORTAR PASTAS) e a dos
+  alertas (**COA - BASE DE DADOS MONITORAMENTO COMPORTAMENTAL**). Cada uma pelo link "escolher" abaixo do botão;
+  o navegador guarda as duas. Ao clicar, `painel-atualizar.js` lê dali só o que mudou (planilha Nova do Comportamental, alertas de
   permanência novos, Boletins do Veículo novos), **tira os dados pessoais no próprio navegador**
   (motorista, CPF, documento, comentários; cercas com nome de pessoa viram iniciais, com as regras de
   `ferramentas/regras_locais.json`, as mesmas do Python) e grava `entrada/pedido.json.gz` no repositório

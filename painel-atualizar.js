@@ -1,7 +1,8 @@
 // Botão "Atualizar dados" (só para usuários com ATUALIZA = SIM no cadastro).
 //
-// 1. O usuário escolhe uma vez a pasta "OneDrive - Bioenergética Aroeira" do computador dele
-//    (o navegador guarda a escolha). Funciona no Chrome e no Edge do computador.
+// 1. O usuário escolhe uma vez, no computador dele, a pasta do Comportamental
+//    ("SAFRA 2026 MONIT COMPORTAMENTAL") e a dos alertas ("COA - BASE DE DADOS MONITORAMENTO
+//    COMPORTAMENTAL"); o navegador guarda as escolhas. Funciona no Chrome e no Edge do computador.
 // 2. Ao clicar, o navegador lê dessa pasta só o que mudou: a planilha Nova do Comportamental,
 //    os alertas de permanência novos e os Boletins do Veículo novos.
 // 3. Antes de enviar, tira tudo que é pessoal: motorista, CPF, documento, comentários (vira só
@@ -11,9 +12,18 @@
 (function () {
   "use strict";
   var REPO = "jeffthomaz/painel-frotas-dados", WF = "atualizar.yml";
-  var CAM_NOVA = ["DP-AGR-COA - COA", "Monitoramento", "Safra 2026", "SAFRA 2026 MONIT COMPORTAMENTAL", "Ocorrências monitoramento comportamental Nova..xlsx"];
-  var CAM_EXPORT = ["DP-AGR-COA - COA", "Monitoramento", "Safra 2026", "SAFRA 2026 MONIT COMPORTAMENTAL", "EXPORTAR PASTAS"];
-  var CAM_ALERTAS = ["COA - BASE DE DADOS MONITORAMENTO COMPORTAMENTAL"];
+  // Duas pastas, escolhidas uma vez cada (podem estar em lugares diferentes do OneDrive):
+  //   comp:    "SAFRA 2026 MONIT COMPORTAMENTAL" (planilha Nova e a subpasta EXPORTAR PASTAS)
+  //   alertas: "COA - BASE DE DADOS MONITORAMENTO COMPORTAMENTAL" (CSVs Historico_Alertas)
+  var NOVA = "Ocorrências monitoramento comportamental Nova..xlsx", EXPORT = "EXPORTAR PASTAS";
+  var PASTAS = {
+    comp: { rotulo: "Comportamental", nome: "SAFRA 2026 MONIT COMPORTAMENTAL",
+      confere: function (h) { return filho(h, NOVA, false); },
+      erro: 'Essa pasta não tem a planilha "' + NOVA + '". Escolha a pasta "SAFRA 2026 MONIT COMPORTAMENTAL".' },
+    alertas: { rotulo: "Alertas", nome: "COA - BASE DE DADOS MONITORAMENTO COMPORTAMENTAL",
+      confere: async function (h) { for await (var e of h.values()) if (/^Historico_Alertas_.*\.csv$/i.test(e.name)) return true; return false; },
+      erro: 'Essa pasta não tem os arquivos Historico_Alertas. Escolha a pasta "COA - BASE DE DADOS MONITORAMENTO COMPORTAMENTAL".' }
+  };
   var COLS_COMP = ["PLACA", "PREFIXO", "GRUPO", "TIPO", "LIMIAR", "EXCESSO", "DATA", "HORA", "RÓTULO", "ALERTA DESCONSIDERADO",
     "LATITUDE", "LONGITUDE", "CERCA ELETRÔNICA", "LOGRADOURO", "CIDADE", "PROCESSO", "GERENCIA", "GERÊNCIA", "ULTIMO_COMENTARIO"];
   var COLS_PERM = ["PLACA", "PREFIXO", "TIPO", "ALERTA DESCONSIDERADO", "DATA", "HORA", "PONTO_REFERENCIA", "CERCA ELETRÔNICA",
@@ -51,33 +61,37 @@
       return null;
     })();
   }
-  async function caminho(raiz, partes, ultimaEhPasta) {
-    var d = raiz;
-    for (var i = 0; i < partes.length; i++) {
-      d = await filho(d, partes[i], i < partes.length - 1 || ultimaEhPasta);
-      if (!d) return null;
+  // escolher = true só no clique de "escolher"/"trocar" (cada janela de pasta precisa do próprio clique).
+  async function pasta(tipo, escolher) {
+    var P = PASTAS[tipo], h = escolher ? null : await cfg("pasta-" + tipo).catch(function () { return null; });
+    if (h) {
+      if ((await h.queryPermission({ mode: "read" })) === "granted") return h;
+      try { if ((await h.requestPermission({ mode: "read" })) === "granted") return h; } catch (e) { /* precisa de outro clique */ }
+      throw new Error('O navegador pediu de novo permissão para ler a pasta do ' + P.rotulo + '. Clique em "Atualizar dados" outra vez e permita.');
     }
-    return d;
-  }
-  async function pasta(pedir) {
-    var h = await cfg("pasta").catch(function () { return null; });
-    if (h && (await h.queryPermission({ mode: "read" })) === "granted") return h;
-    if (h && pedir && (await h.requestPermission({ mode: "read" })) === "granted") return h;
-    if (!pedir) return null;
-    h = await window.showDirectoryPicker({ id: "painel-onedrive", mode: "read" });
-    if (!(await caminho(h, CAM_NOVA.slice(0, -1), true)))
-      throw new Error('Essa pasta não é a "OneDrive - Bioenergética Aroeira". Escolha a pasta do OneDrive da empresa (a que tem "DP-AGR-COA - COA" dentro).');
-    await cfg("pasta", h);
-    mostrarPasta(h);
+    if (!escolher) throw new Error('Antes de atualizar, escolha a pasta do ' + P.rotulo + ' ("' + P.nome + '") no link "escolher" abaixo do botão.');
+    h = await window.showDirectoryPicker({ id: "painel-" + tipo, mode: "read" });
+    if (!(await P.confere(h))) throw new Error(P.erro);
+    await cfg("pasta-" + tipo, h);
+    mostrarPastas();
     return h;
   }
-  function mostrarPasta(h) {
-    pastaEl.hidden = false;
-    pastaEl.innerHTML = h ? 'Pasta: <b></b> · <button type="button">trocar</button>' : 'Pasta do OneDrive ainda não escolhida · <button type="button">escolher</button>';
-    if (h) pastaEl.querySelector("b").textContent = h.name;
-    pastaEl.querySelector("button").onclick = function () {
-      cfg("pasta", null).then(function () { return pasta(true); }).catch(function (e) { if (e.name !== "AbortError") msg(e.message, "erro"); });
-    };
+  function mostrarPastas() {
+    Promise.all(Object.keys(PASTAS).map(function (t) { return cfg("pasta-" + t).catch(function () { return null; }); })).then(function (hs) {
+      pastaEl.hidden = false; pastaEl.innerHTML = "";
+      Object.keys(PASTAS).forEach(function (t, k) {
+        var span = document.createElement("span"), b = document.createElement("button");
+        span.appendChild(document.createTextNode((k ? " · " : "") + PASTAS[t].rotulo + ": "));
+        if (hs[k]) { var nb = document.createElement("b"); nb.textContent = hs[k].name; span.appendChild(nb); span.appendChild(document.createTextNode(" ")); }
+        else span.appendChild(document.createTextNode("não escolhida "));
+        b.type = "button"; b.textContent = hs[k] ? "trocar" : "escolher";
+        b.onclick = function () {
+          pasta(t, true).then(function () { msg(""); })
+            .catch(function (e) { msg(e.name === "AbortError" ? "" : e.message, "erro"); });
+        };
+        span.appendChild(b); pastaEl.appendChild(span);
+      });
+    });
   }
 
   // ---------- regras de local (as mesmas do Python: ferramentas/regras_locais.json) ----------
@@ -317,13 +331,14 @@
   // ---------- fluxo do botão ----------
   async function atualizar() {
     if (!window.showDirectoryPicker) throw new Error("Para atualizar, use o Chrome ou o Edge no computador.");
-    var raiz = await pasta(true);
+    var comp = await pasta("comp", false);
+    var alert = await pasta("alertas", false);
     await carregarRegras();
     msg("Conferindo o que mudou…");
     var ind = await indice(), pedido = { v: 1, quando: new Date().toISOString() }, feito = [];
 
-    var nova = await caminho(raiz, CAM_NOVA, false);
-    if (!nova) throw new Error('Não achei a planilha "' + CAM_NOVA[CAM_NOVA.length - 1] + '" na pasta escolhida.');
+    var nova = await filho(comp, NOVA, false);
+    if (!nova) throw new Error('Não achei a planilha "' + NOVA + '" na pasta do Comportamental.');
     var fn = await nova.getFile(), ic = ind.comportamento || {};
     if (fn.size !== ic.tam || fn.lastModified !== ic.mod) {
       msg("Lendo a planilha do Comportamental (pode levar 1 minuto)…");
@@ -332,7 +347,7 @@
       pedido.comportamento = C; feito.push("Comportamental");
     }
 
-    var dirA = await caminho(raiz, CAM_ALERTAS, true);
+    var dirA = alert;
     if (dirA) {
       var ip = ind.permanencia || {}, perm = {};
       for await (var e of dirA.values()) {
@@ -345,7 +360,7 @@
       if (Object.keys(perm).length) { pedido.permanencia = { arquivos: perm }; feito.push("Permanência (" + Object.keys(perm).length + " arquivo(s))"); }
     }
 
-    var dirE = await caminho(raiz, CAM_EXPORT, true);
+    var dirE = await filho(comp, EXPORT, true);
     if (dirE) {
       var dias = ind.boletins || [], ult = dias[dias.length - 1] || "", bols = {};
       for await (var b of dirE.values()) {
@@ -373,7 +388,7 @@
     bt = document.getElementById("atualizar"); st = document.getElementById("atualizar-st"); pastaEl = document.getElementById("atualizar-pasta");
     if (!bt || !tok) return;
     token = tok; bt.hidden = false;
-    cfg("pasta").then(function (h) { mostrarPasta(h || null); }).catch(function () { mostrarPasta(null); });
+    mostrarPastas();
     bt.addEventListener("click", function () {
       bt.disabled = true;
       atualizar().catch(function (e) {
