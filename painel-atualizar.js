@@ -421,10 +421,22 @@
     token = tok; bt.hidden = false;
     mostrarPastas();
     bt.addEventListener("click", function () {
+      // Aviso antes de atualizar (o clique em "Sim" também libera a leitura das pastas no navegador).
+      st.hidden = false; st.className = "atu-st atu-conf"; st.innerHTML =
+        "<b>Antes de atualizar, confirme que os arquivos novos já foram exportados para as pastas:</b>" +
+        "<ul><li>Planilha <i>Ocorrências monitoramento comportamental Nova</i> preenchida e salva;</li>" +
+        "<li>Na <i>EXPORTAR PASTAS</i>: Localização da Frota, Saúde do Veículo e Boletim do Veículo do dia;</li>" +
+        "<li>Na <i>COA - BASE DE DADOS MONITORAMENTO COMPORTAMENTAL</i>: os alertas (Historico_Alertas) do dia;</li>" +
+        "<li><i>status_frotas</i> revisada e fechada no Excel.</li></ul>" +
+        '<span class="atu-bts"><button type="button" data-r="sim">Sim, está tudo exportado. Atualizar</button><button type="button" data-r="nao">Cancelar</button></span>';
+      st.querySelector('[data-r="nao"]').onclick = function () { msg(""); };
+      st.querySelector('[data-r="sim"]').onclick = iniciar;
+    });
+    function iniciar() {
       bt.disabled = true;
       atualizar().catch(function (e) {
         msg(e.name === "AbortError" ? "" : (e.name === "TypeError" && /fetch/i.test(e.message) ? "Sem conexão com o GitHub agora. Tente de novo." : e.message), "erro");
       }).then(function () { bt.disabled = false; });
-    });
+    }
   };
 })();
