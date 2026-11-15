@@ -51,7 +51,7 @@
 
 
   // Botão "Atualizar dados" (painel-atualizar.js): só para quem tem ATUALIZA=SIM na planilha de cadastros.
-  function botaoAtualizar(token) { if (token && window.painelAtualizar) window.painelAtualizar(token); }
+  function botaoAtualizar(token, nome) { if (token && window.painelAtualizar) window.painelAtualizar(token, nome); }
 
   function sessao(v) {
     try { if (v === undefined) return JSON.parse(sessionStorage.getItem(CHAVE_SESSAO)); if (v) sessionStorage.setItem(CHAVE_SESSAO, JSON.stringify(v)); else sessionStorage.removeItem(CHAVE_SESSAO); } catch (e) { return null; }
@@ -65,7 +65,7 @@
 
   // Continua logado ao atualizar a página (só nesta aba; some ao fechar o navegador).
   var s = sessao();
-  if (s && A.grupos[s.g]) entrarComChave(s.g, bin(s.k), s.n).then(function () { botaoAtualizar(s.t); }).catch(function () { sessao(null); });
+  if (s && A.grupos[s.g]) entrarComChave(s.g, bin(s.k), s.n).then(function () { botaoAtualizar(s.t, s.n); }).catch(function () { sessao(null); });
 
   form.addEventListener("submit", function (e) {
     e.preventDefault();
@@ -88,7 +88,7 @@
       return entrarComChave(u.g, raw, usuario.trim());
     }).then(function () {
       sessao({ g: u.g, k: b64(raw), n: usuario.trim(), t: token || undefined });
-      botaoAtualizar(token);
+      botaoAtualizar(token, usuario.trim());
       form.reset();
     }).catch(function () {
       erro.textContent = "Usuário ou senha incorretos.";

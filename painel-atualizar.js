@@ -50,7 +50,7 @@
   var COLS_BOL = ["PLACA", "PREFIXO", "DIA", "TEMPO IGNIÇÃO LIGADA", "PARADO LIGADO"];
   var TIPOS_PERM = { PERMANENCIA_CERCA: 1, PERMANENCIA_PONTO: 1 };
 
-  var bt, st, pastaEl, token, regras;
+  var bt, st, pastaEl, token, regras, quem = "";
 
   function msg(t, cls) { st.hidden = !t; st.textContent = t || ""; st.className = "atu-st" + (cls ? " " + cls : ""); }
   function nfc(s) { return String(s == null ? "" : s).normalize("NFC"); }
@@ -413,7 +413,7 @@
     var alert = await pasta("alertas", false);
     await carregarRegras();
     msg("Conferindo o que mudou…");
-    var ind = await indice(), pedido = { v: 1, quando: new Date().toISOString() }, feito = [];
+    var ind = await indice(), pedido = { v: 1, quando: new Date().toISOString(), quem: quem }, feito = [];
 
     var nova = await filho(comp, NOVA, false);
     if (!nova) throw new Error('Não achei a planilha "' + NOVA + '" na pasta do Comportamental.');
@@ -492,7 +492,8 @@
     csv: async function (f) { var L = await lerCsv(f), x = /^Localizacao/i.test(f.name) ? selecionar(L, COLS_LOC) : null;
       return x ? { h: x.h, r: L.slice(1).map(function (y) { return x.ix.map(function (i) { return y[i] == null ? "" : y[i]; }); }) } : { h: L[0], r: L.slice(1) }; }, acompanhar: acompanhar, token: function (t) { token = t; st = document.createElement("p"); } };
 
-  window.painelAtualizar = function (tok) {
+  window.painelAtualizar = function (tok, nome) {
+    quem = nome || "";
     bt = document.getElementById("atualizar"); st = document.getElementById("atualizar-st"); pastaEl = document.getElementById("atualizar-pasta");
     if (!bt || !tok) return;
     token = tok; bt.hidden = false;

@@ -136,7 +136,11 @@ def main(pedido, base):
     ind["processados"] = proc.get("processados", [])
     ind["status_frotas"] = proc.get("status_frotas")
     ind["atualizado"] = datetime.now().strftime("%Y-%m-%d %H:%M")
-    ind["ultimo_pedido"] = {"quando": P.get("quando"), "feito": feito}
+    ind["ultimo_pedido"] = {"quando": P.get("quando"), "quem": P.get("quem", ""), "feito": feito}
+    # Resumo para o aviso no Teams (workflow) e para o histórico
+    hist = ind.setdefault("historico", [])
+    hist.insert(0, {"quando": datetime.now().strftime("%d/%m/%Y %H:%M"), "quem": P.get("quem", ""), "feito": feito})
+    del hist[50:]
     json.dump(ind, open(ind_c, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
     print("feito: " + (", ".join(feito) or "nada novo"))
 
