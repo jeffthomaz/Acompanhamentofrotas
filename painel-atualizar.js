@@ -366,8 +366,9 @@
     if (dirE) {
       var dias = ind.boletins || [], ult = dias[dias.length - 1] || "", bols = {};
       for await (var b of dirE.values()) {
-        var m = /^Boletim_do_Veiculo_(\d{4}-\d{2}-\d{2})_\d{4}-\d{2}-\d{2}( \(\d+\))?\.csv$/i.exec(b.name);
-        if (b.kind !== "file" || !m || (dias.indexOf(m[1]) >= 0 && m[1] < ult)) continue;
+        var m = /^Boletim_do_Veiculo_(\d{4}-\d{2}-\d{2})_(\d{4}-\d{2}-\d{2})( \(\d+\))?\.csv$/i.exec(b.name);
+        // só boletim de um dia (início = fim); o de período não serve para a base diária
+        if (b.kind !== "file" || !m || m[1] !== m[2] || (dias.indexOf(m[1]) >= 0 && m[1] < ult)) continue;
         bols[b.name] = await boletim(await b.getFile());
       }
       if (Object.keys(bols).length) { pedido.boletins = bols; feito.push("Motor ocioso"); }
