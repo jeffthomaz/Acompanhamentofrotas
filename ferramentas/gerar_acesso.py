@@ -65,9 +65,11 @@ def ler_cadastros(caminho):
 def token_atualizar(fonte):
     """Token do GitHub do botão Atualizar (só para disparar o workflow). Nunca vai para o repositório."""
     t = os.environ.get("PAINEL_GH_TOKEN", "").strip()
-    arq = os.path.join(os.path.dirname(os.path.abspath(fonte)), "token_atualizar.txt")
-    if not t and os.path.exists(arq):
-        t = open(arq, encoding="utf-8").read().strip()
+    pasta = os.path.dirname(os.path.abspath(fonte))
+    for nome in ("token_atualizar.txt", "token_atualizar.txt.txt"):  # o Bloco de Notas às vezes dobra a extensão
+        arq = os.path.join(pasta, nome)
+        if not t and os.path.exists(arq):
+            t = open(arq, encoding="utf-8-sig").read().strip()
     return t
 
 
