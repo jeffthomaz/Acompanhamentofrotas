@@ -1,0 +1,55 @@
+# Atualização do painel pedida pelo botão "Atualizar dados" (só usuários com ATUALIZA=SIM no cadastro).
+# Roda os mesmos scripts de ferramentas/ e publica acesso.js.
+#
+# Segredos necessários (Settings > Secrets and variables > Actions), nenhum aparece nos logs:
+#   MS_TENANT_ID, MS_CLIENT_ID, MS_CLIENT_SECRET  autorização do Microsoft 365 criada pelo TI (Sites.Selected no site DP-AGR-COA)
+#   PAINEL_GH_TOKEN                                token do botão (para trancar de novo em acesso.js)
+# Enquanto a autorização do TI não existir, o workflow para no passo "Verificar autorização" com aviso.
+# ATENÇÃO: o repositório é público e os logs também. Nunca imprima dados, nomes ou senhas.
+name: Atualizar dados do painel
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: atualizar-painel
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  atualizar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verificar autorização do Microsoft 365
+        env:
+          MS_TENANT_ID: ${{ secrets.MS_TENANT_ID }}
+          MS_CLIENT_ID: ${{ secrets.MS_CLIENT_ID }}
+          MS_CLIENT_SECRET: ${{ secrets.MS_CLIENT_SECRET }}
+        run: |
+          if [ -z "$MS_TENANT_ID" ] || [ -z "$MS_CLIENT_ID" ] || [ -z "$MS_CLIENT_SECRET" ]; then
+            echo "::warning::O botão funcionou e o pedido chegou ao GitHub."
+            echo "::error::Falta a autorização do Microsoft 365 (pedida ao TI) para ler as planilhas do SharePoint. Nada foi alterado."
+            exit 1
+          fi
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Instalar dependências
+        run: pip install openpyxl cryptography requests
+
+      # Próximos passos (montados quando a autorização do TI existir):
+      #  1. baixar do SharePoint: planilha Nova, alertas de permanência novos, Boletim, Localização, Saúde do Veículo,
+      #     status_frotas, cadastros e a base do painel (dados-fonte.json e bases);
+      #  2. rodar comportamento_da_planilha.py, permanencia_dos_csv.py, ociosidade.py, conectividade.py, cameras.py;
+      #  3. gerar_acesso.py com PAINEL_GH_TOKEN; commit de acesso.js e index.html; gravar a base de volta.
+      - name: Atualizar
+        run: |
+          echo "::error::Passo de atualização ainda não montado (aguarda a autorização do Microsoft 365)."
+          exit 1

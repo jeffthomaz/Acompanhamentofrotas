@@ -3,3 +3,5 @@ dados-fonte*.json
 cadastros*.xlsx
 *.xlsx
 __pycache__/
+
+token_atualizar.txt

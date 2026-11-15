@@ -3,8 +3,12 @@
 Uso:
     python gerar_acesso.py <cadastros.xlsx> <dados-fonte.json> <saida/acesso.js>
 
-cadastros.xlsx: colunas USUARIO, PROCESSO, SENHA (primeira aba).
+cadastros.xlsx: colunas USUARIO, PROCESSO, SENHA (primeira aba) e, opcional, ATUALIZA.
   PROCESSO = "todos" vê tudo. Vários processos: separe com ";".
+  ATUALIZA = SIM: o usuário vê o botão "Atualizar dados", que pede ao GitHub para rodar a
+  atualização (workflow .github/workflows/atualizar.yml). O token do GitHub que o botão usa
+  vem da variável PAINEL_GH_TOKEN ou do arquivo token_atualizar.txt ao lado do dados-fonte.json
+  (nunca no repositório) e vai trancado com a senha de cada usuário autorizado.
 dados-fonte.json: os dados em texto puro (mesma estrutura do antigo dados.js).
   Esse arquivo NUNCA deve ir para o repositório.
 
@@ -52,8 +56,19 @@ def ler_cadastros(caminho):
         iu, ip, isn = cab.index("USUARIO"), cab.index("PROCESSO"), cab.index("SENHA")
     except ValueError:
         sys.exit("A planilha precisa das colunas USUARIO, PROCESSO e SENHA. Encontrei: %s" % cab)
+    ia = cab.index("ATUALIZA") if "ATUALIZA" in cab else None
     for n, r in enumerate(linhas[1:], start=2):
-        yield n, norm(r[iu]), norm(r[ip]), norm(r[isn])
+        atu = ia is not None and ia < len(r) and norm(r[ia]).upper() in ("SIM", "S", "X", "1")
+        yield n, norm(r[iu]), norm(r[ip]), norm(r[isn]), atu
+
+
+def token_atualizar(fonte):
+    """Token do GitHub do botão Atualizar (só para disparar o workflow). Nunca vai para o repositório."""
+    t = os.environ.get("PAINEL_GH_TOKEN", "").strip()
+    arq = os.path.join(os.path.dirname(os.path.abspath(fonte)), "token_atualizar.txt")
+    if not t and os.path.exists(arq):
+        t = open(arq, encoding="utf-8").read().strip()
+    return t
 
 
 def recorte(D, procs):
@@ -387,7 +402,9 @@ def main(cad, fonte, saida):
     conhecidos.update({chave_proc(p): p for p in D.get("cameras", {}).get("proc", {})})
     grupos, usuarios, avisos = {}, {}, []
 
-    for n, u, p, s in ler_cadastros(cad):
+    token = token_atualizar(fonte)
+    autorizados = 0
+    for n, u, p, s, atu in ler_cadastros(cad):
         if not u:
             continue
         if not s:
@@ -415,6 +432,11 @@ def main(cad, fonte, saida):
         sal = os.urandom(16)
         kek = hashlib.pbkdf2_hmac("sha256", s.encode(), sal, ITERACOES, 32)
         usuarios[uid] = {"g": gid, "sal": b64(sal), **cifrar(kek, grupos[gid]["chave"], "chave:" + uid)}
+        if atu and token:
+            usuarios[uid]["t"] = cifrar(kek, token.encode(), "token:" + uid)
+            autorizados += 1
+        elif atu:
+            avisos.append("linha %d (%s): ATUALIZA=SIM, mas não há token do GitHub (token_atualizar.txt); botão não aparece" % (n, u))
 
     pacote = {
         "v": 1, "iter": ITERACOES, "gerado": datetime.now().strftime("%d/%m/%Y %H:%M"),
@@ -431,7 +453,7 @@ def main(cad, fonte, saida):
         import re
         h = open(idx, encoding="utf-8").read()
         open(idx, "w", encoding="utf-8").write(re.sub(r"\?v=\d{12}", "?v=" + datetime.now().strftime("%Y%m%d%H%M"), h))
-    print("%d usuário(s), %d grupo(s) -> %s" % (len(usuarios), len(grupos), saida))
+    print("%d usuário(s), %d grupo(s), %d com botão Atualizar -> %s" % (len(usuarios), len(grupos), autorizados, saida))
     for a in avisos:
         print("AVISO:", a)
 
