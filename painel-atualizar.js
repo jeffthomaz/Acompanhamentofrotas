@@ -3,8 +3,9 @@
 // 1. O usuário escolhe uma vez, no computador dele, a pasta do Comportamental
 //    ("SAFRA 2026 MONIT COMPORTAMENTAL") e a dos alertas ("COA - BASE DE DADOS MONITORAMENTO
 //    COMPORTAMENTAL"); o navegador guarda as escolhas. Funciona no Chrome e no Edge do computador.
-// 2. Ao clicar, o navegador lê dessa pasta só o que mudou: a planilha Nova do Comportamental,
-//    os alertas de permanência novos e os Boletins do Veículo novos.
+// 2. Ao clicar, o navegador lê dessas pastas só o que mudou: a planilha Nova do Comportamental,
+//    os alertas de permanência novos, os Boletins do Veículo novos, a Localização da Frota e o
+//    Saúde do Veículo mais recentes e a status_frotas.xlsx (Conectividade e Câmeras).
 // 3. Antes de enviar, tira tudo que é pessoal: motorista, CPF, documento, comentários (vira só
 //    "prestadores"/"ultrapassagem") e nomes de pessoas nas cercas (viram iniciais, como no painel).
 // 4. Envia o resultado para o repositório PRIVADO painel-frotas-dados e dispara o workflow de lá,
@@ -28,6 +29,7 @@
     "LATITUDE", "LONGITUDE", "CERCA ELETRÔNICA", "LOGRADOURO", "CIDADE", "PROCESSO", "GERENCIA", "GERÊNCIA", "ULTIMO_COMENTARIO"];
   var COLS_PERM = ["PLACA", "PREFIXO", "TIPO", "ALERTA DESCONSIDERADO", "DATA", "HORA", "PONTO_REFERENCIA", "CERCA ELETRÔNICA",
     "CATEGORIA", "CIDADE", "RÓTULO", "LATITUDE", "LONGITUDE", "DURACAO"];
+  var COLS_LOC = ["VEÍCULO", "GRUPO DE VEÍCULO", "APELIDO", "ÚLTIMA CONEXÃO", "STATUS CONEXÃO", "STATUS"];
   var COLS_BOL = ["PLACA", "PREFIXO", "DIA", "TEMPO IGNIÇÃO LIGADA", "PARADO LIGADO"];
   var TIPOS_PERM = { PERMANENCIA_CERCA: 1, PERMANENCIA_PONTO: 1 };
 
@@ -371,6 +373,33 @@
       if (Object.keys(bols).length) { pedido.boletins = bols; feito.push("Motor ocioso"); }
     }
 
+    // Conectividade (Localização da Frota + status_frotas) e Câmeras (Saúde do Veículo): o arquivo mais recente de cada.
+    var proc = ind.processados || [], loc = null, sau = null;
+    if (dirE) for await (var x of dirE.values()) {
+      if (x.kind !== "file" || !/\.csv$/i.test(x.name)) continue;
+      if (/^Localizacao_da_Frota_/i.test(x.name) && (!loc || x.name > loc.name)) loc = x;
+      if (/^Sa(ú|u)de(_| )do(_| )Ve(í|i)culo/i.test(nfc(x.name)) && (!sau || x.name > sau.name)) sau = x;
+    }
+    function novo(f) { return proc.indexOf(f.name) < 0 && proc.indexOf(f.name + "|" + f.lastModified) < 0; }
+    if (loc && novo(loc = await loc.getFile())) {
+      var Ll = await lerCsv(loc), sl = selecionar(Ll, COLS_LOC);
+      pedido.conectividade = { nome: loc.name, mod: loc.lastModified, h: sl.h, r: Ll.slice(1).map(function (y) { return sl.ix.map(function (i) { return y[i] == null ? "" : y[i]; }); }) };
+    } else loc = null;
+    var stf = await filho(comp, "status_frotas.xlsx", false);
+    if (stf) {
+      stf = await stf.getFile();
+      if (pedido.conectividade || stf.lastModified !== ind.status_frotas) {
+        msg("Lendo a status_frotas…");
+        pedido.status_frotas = { mod: stf.lastModified, b64: await b64(stf) };
+        feito.push("Conectividade");
+      }
+    } else if (pedido.conectividade) throw new Error("Não achei a status_frotas.xlsx na pasta do Comportamental.");
+    if (sau && novo(sau = await sau.getFile())) {
+      var Ls = await lerCsv(sau);
+      pedido.cameras = { nome: sau.name, mod: sau.lastModified, h: Ls[0], r: Ls.slice(1) };
+      feito.push("Câmeras");
+    }
+
     if (!feito.length) { msg("Nada novo nas pastas desde a última atualização (" + (ind.atualizado || "—") + ").", "ok"); return; }
     msg("Enviando (" + feito.join(", ") + ")…");
     var desde = Date.now();
@@ -382,7 +411,9 @@
 
   // Usado só nos testes automáticos (ferramentas não chamam a rede).
   window.__painelTeste = { comportamental: comportamental, alertas: alertas, boletim: boletim, carregarRegras: carregarRegras,
-    enviar: enviar, indice: indice, acompanhar: acompanhar, token: function (t) { token = t; st = document.createElement("p"); } };
+    enviar: enviar, indice: indice,
+    csv: async function (f) { var L = await lerCsv(f), x = /^Localizacao/i.test(f.name) ? selecionar(L, COLS_LOC) : null;
+      return x ? { h: x.h, r: L.slice(1).map(function (y) { return x.ix.map(function (i) { return y[i] == null ? "" : y[i]; }); }) } : { h: L[0], r: L.slice(1) }; }, acompanhar: acompanhar, token: function (t) { token = t; st = document.createElement("p"); } };
 
   window.painelAtualizar = function (tok) {
     bt = document.getElementById("atualizar"); st = document.getElementById("atualizar-st"); pastaEl = document.getElementById("atualizar-pasta");

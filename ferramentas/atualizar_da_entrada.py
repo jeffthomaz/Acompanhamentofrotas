@@ -3,7 +3,9 @@
 Roda no GitHub Actions do repositório PRIVADO painel-frotas-dados (workflow atualizar.yml).
 O navegador de quem clicou lê as planilhas na pasta do OneDrive dele, tira os dados pessoais
 (motorista, CPF, comentários, nomes de pessoas nas cercas) e manda só o necessário em
-entrada/pedido.json.gz. Este script refaz o dados-fonte.json com os mesmos scripts de sempre.
+entrada/pedido.json.gz. Este script refaz o dados-fonte.json com os mesmos scripts de sempre:
+Conectividade (Localização da Frota + status_frotas.xlsx), Câmeras (Saúde do Veículo), Comportamental
+(planilha Nova), Permanência (alertas) e Motor ocioso (Boletim do Veículo).
 
 Uso:
     python atualizar_da_entrada.py <pedido.json.gz> <pasta-base>
@@ -11,7 +13,7 @@ Uso:
 <pasta-base> tem dados-fonte.json, permanencia_base.json e ociosidade_base.json; ao fim grava
 também indice.json, que o navegador lê para mandar só o que mudou.
 """
-import csv, gzip, json, os, sys, tempfile
+import base64, csv, gzip, json, os, sys, tempfile
 from datetime import datetime
 
 import openpyxl
@@ -19,7 +21,9 @@ import openpyxl
 AQUI = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, AQUI)
 
+import cameras
 import comportamento_da_planilha
+import conectividade
 import ociosidade
 import permanencia_dos_csv
 
@@ -71,12 +75,45 @@ def boletins(P, base, dados):
     ociosidade.montar(os.path.join(base, "ociosidade_base.json"), dados)
 
 
+def conectividade_e_cameras(P, base, dados, proc):
+    """Localização da Frota (vFleets), status_frotas.xlsx e Saúde do Veículo, como na atualização das 12h/13h."""
+    feito = []
+    with tempfile.TemporaryDirectory() as tmp:
+        cb = os.path.join(base, "conectividade_base.json")
+        if P.get("conectividade"):
+            a = P["conectividade"]
+            c = os.path.join(tmp, os.path.basename(a["nome"]))
+            escrever_csv(c, a["h"], a["r"])
+            conectividade.vfleets(c, cb)
+            proc["processados"].append("%s|%s" % (a["nome"], a["mod"]))
+        if P.get("status_frotas"):
+            st = os.path.join(tmp, "status_frotas.xlsx")
+            open(st, "wb").write(base64.b64decode(P["status_frotas"]["b64"]))
+            conectividade.montar(cb, st, dados)
+            proc["status_frotas"] = P["status_frotas"]["mod"]
+            feito.append("Conectividade")
+        if P.get("cameras"):
+            a = P["cameras"]
+            c = os.path.join(tmp, os.path.basename(a["nome"]))
+            escrever_csv(c, a["h"], a["r"])
+            cameras.main(c, dados)
+            proc["processados"].append("%s|%s" % (a["nome"], a["mod"]))
+            feito.append("Câmeras")
+    return feito
+
+
 def main(pedido, base):
     P = json.loads(gzip.open(pedido).read().decode("utf-8"))
     dados = os.path.join(base, "dados-fonte.json")
     ind_c = os.path.join(base, "indice.json")
     ind = json.load(open(ind_c, encoding="utf-8")) if os.path.exists(ind_c) else {}
+    proc_c = os.path.join(base, "entrada_processados.json")
+    proc = json.load(open(proc_c, encoding="utf-8")) if os.path.exists(proc_c) else {"processados": []}
     feito = []
+    if P.get("conectividade") or P.get("status_frotas") or P.get("cameras"):
+        print("== Conectividade e Câmeras")
+        feito += conectividade_e_cameras(P, base, dados, proc)
+        json.dump(proc, open(proc_c, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
     if P.get("comportamento"):
         print("== Comportamental")
         comportamento(P["comportamento"], dados)
@@ -96,6 +133,8 @@ def main(pedido, base):
     oc = os.path.join(base, "ociosidade_base.json")
     if os.path.exists(oc):
         ind["boletins"] = sorted({l["d"] for l in json.load(open(oc, encoding="utf-8"))["linhas"]})
+    ind["processados"] = proc.get("processados", [])
+    ind["status_frotas"] = proc.get("status_frotas")
     ind["atualizado"] = datetime.now().strftime("%Y-%m-%d %H:%M")
     ind["ultimo_pedido"] = {"quando": P.get("quando"), "feito": feito}
     json.dump(ind, open(ind_c, "w", encoding="utf-8"), ensure_ascii=False, indent=1)

@@ -128,10 +128,12 @@ Uma tarefa agendada confere a pasta de exportação (EXPORTAR PASTAS, no OneDriv
   a do Comportamental (**SAFRA 2026 MONIT COMPORTAMENTAL**, com a planilha Nova e a EXPORTAR PASTAS) e a dos
   alertas (**COA - BASE DE DADOS MONITORAMENTO COMPORTAMENTAL**). Cada uma pelo link "escolher" abaixo do botão;
   o navegador guarda as duas. Ao clicar, `painel-atualizar.js` lê dali só o que mudou (planilha Nova do Comportamental, alertas de
-  permanência novos, Boletins do Veículo novos), **tira os dados pessoais no próprio navegador**
+  permanência novos, Boletins do Veículo novos, Localização da Frota e Saúde do Veículo mais recentes e a status_frotas.xlsx), **tira os dados pessoais no próprio navegador**
   (motorista, CPF, documento, comentários; cercas com nome de pessoa viram iniciais, com as regras de
   `ferramentas/regras_locais.json`, as mesmas do Python) e grava `entrada/pedido.json.gz` no repositório
   **privado** `jeffthomaz/painel-frotas-dados`.
+- O botão **lê** a status_frotas.xlsx (vale o que o usuário marcou), mas não a regrava: a lista de equipamentos
+  continua sendo refeita pela atualização automática das 12h e 13h.
 - Lá, o workflow `atualizar.yml` roda `ferramentas/atualizar_da_entrada.py` (os mesmos scripts de sempre),
   regera `acesso.js` com `gerar_acesso.py --dados` (chaves dos grupos em `base/chaves_grupos.json`, sem
   senhas) e publica aqui. Testado em 15/11/2026: o resultado é idêntico ao de rodar os scripts direto nas planilhas.
