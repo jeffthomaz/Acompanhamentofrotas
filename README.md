@@ -120,3 +120,15 @@ e o "Saúde do Veículo - Análise" (Platform Science).
 Uma tarefa agendada confere a pasta de exportação (EXPORTAR PASTAS, no OneDrive do COA) às 11h, 13h e 14h, em dias úteis. Para cada arquivo novo
 (controle em `painel-dados/entrada_processados.json`) roda `conectividade.py vfleets` + `montar` ou
 `cameras.py`, depois `gerar_acesso.py`, e publica o `acesso.js`. Depende do computador ligado.
+
+## Botão "Atualizar dados" (em montagem desde 15/11/2026)
+
+- Aparece só para usuários com `ATUALIZA = SIM` na planilha de cadastros (coluna opcional).
+- Usa um token do GitHub *fine-grained*, só deste repositório e só com permissão **Actions: Read and write**.
+  O token fica em `token_atualizar.txt` na pasta painel-dados (nunca no repositório) e vai para
+  `acesso.js` trancado com a senha de cada usuário autorizado. Quem não tem permissão não consegue abri-lo.
+- O botão dispara `.github/workflows/atualizar.yml` e mostra no topo do painel se está na fila,
+  em andamento, concluído ou se falhou.
+- O workflow ainda para no passo "Verificar autorização": falta a autorização do Microsoft 365
+  (registro de aplicativo com Sites.Selected no site DP-AGR-COA, pedido ao TI) para ler as planilhas
+  do SharePoint, e definir onde fica a base do painel.
