@@ -835,6 +835,8 @@ window.iniciarPainel = function (D) {
     });
     var total = cont.C + cont.O + cont.M + cont.P;
     var pend = (K.pendencias || []).filter(function (p) { return ids.indexOf(p.f) >= 0 || !fil_.processo; });
+    // Pendências em campo: número informado manualmente (K.pendCampo) até a fonte própria chegar; sem ele, a lista antiga.
+    var nPend = typeof K.pendCampo === "number" ? K.pendCampo : pend.length;
 
     var filtros = '<div class="filtros"><label>Processo<select data-fil="processo" id="k-processo">' + opcoes(processos, fil_.processo, D.escopo && D.escopo !== "todos" ? "Todos os meus processos" : "Todos os processos") + "</select></label>" +
       perControle("conectividade", stK, K.dias, fK) +
@@ -845,7 +847,7 @@ window.iniciarPainel = function (D) {
       var n = cont[s.l], pc = total ? n / total * 100 : 0;
       return '<article class="kpi c-' + s.id + '"><div class="kh">' + ico(s.icone) + '<span class="kl">' + s.nome + '</span></div><strong class="kv">' + num(n, 0) + '</strong>' +
         '<span class="kbar" aria-hidden="true"><i style="width:' + pc.toFixed(1) + '%"></i></span><span class="ks">' + (total ? num(pc, 1) + "% da frota" : "&nbsp;") + "</span></article>";
-    }).join("") + '<article class="kpi c-pen"><div class="kh">' + ico("M12 3l9 16H3zM12 10v4M12 17h.01") + '<span class="kl">Pendências</span></div><strong class="kv">' + num(pend.length, 0) + '</strong><span class="kbar vazio" aria-hidden="true"></span><span class="ks">em campo</span></article></div>';
+    }).join("") + '<article class="kpi c-pen"><div class="kh">' + ico("M12 3l9 16H3zM12 10v4M12 17h.01") + '<span class="kl">Pendências</span></div><strong class="kv">' + num(nPend, 0) + '</strong><span class="kbar vazio" aria-hidden="true"></span><span class="ks">em campo</span></article></div>';
 
     // Rosca da situação e do status do sistema (só no último dia, que é o que o rastreador informa).
     var cats = ST.map(function (s) { return { id: s.id, nome: s.nome, n: cont[s.l] }; });

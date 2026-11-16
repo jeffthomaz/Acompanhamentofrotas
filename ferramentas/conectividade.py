@@ -242,6 +242,9 @@ def montar(base, planilha, destino):
         "dias": dias, "frotas": {f: B["frotas"][f] for f in hist}, "hist": hist, "atual": atual,
         "pendencias": B.get("pendencias", []),
     }
+    # Pendências em campo informadas à mão (número), até existir uma fonte própria.
+    if isinstance(B.get("pendencias_campo"), int):
+        D["conectividade"]["pendCampo"] = B["pendencias_campo"]
     gravar_json(D, destino)
     from collections import Counter
     print("montado até %s:" % ultimo, dict(Counter(x["st"] for x in atual.values())), "| planilha: %d frotas" % len(man))
