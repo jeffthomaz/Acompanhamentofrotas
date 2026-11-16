@@ -180,21 +180,39 @@ def responsaveis_por_processo():
     return {chave_proc(k): norm(v) for k, v in json.load(open(caminho, encoding="utf-8")).items() if not k.startswith("_")}
 
 
-def responsavel_do_processo(processo, padrao=""):
-    """Responsável fixo do processo (ferramentas/responsaveis_processo.json); sem regra, fica o do cadastro."""
+def responsaveis_por_frota():
+    caminho = os.path.join(os.path.dirname(os.path.abspath(__file__)), "responsaveis_frotas.json")
+    if not os.path.exists(caminho):
+        return {}
+    return {norm(k): norm(v) for k, v in json.load(open(caminho, encoding="utf-8")).items() if not k.startswith("_")}
+
+
+def responsavel_do_processo(processo, padrao="", frota=None):
+    """Responsável informado para a frota (ferramentas/responsaveis_frotas.json) ou, sem ele, o fixo do processo
+    (ferramentas/responsaveis_processo.json); sem regra, fica o do cadastro."""
+    if frota is not None:
+        rf = responsaveis_por_frota()
+        if norm(frota) in rf:
+            return rf[norm(frota)]
     return responsaveis_por_processo().get(chave_proc(processo), padrao)
 
 
 def aplicar_responsaveis(D):
     """Responsável por processo informado pelo usuário vale em todas as abas que mostram responsável."""
     rp = responsaveis_por_processo()
-    if not rp:
+    rf = responsaveis_por_frota()
+    if not rp and not rf:
         return
-    regs = list(D.get("conectividade", {}).get("frotas", {}).values()) + list(D.get("permanencia", {}).get("veiculos", {}).values()) \
-        + list(D.get("motorOcioso", {}).get("veiculos", []))
-    for v in regs:
+    regs = list(D.get("conectividade", {}).get("frotas", {}).items()) + list(D.get("permanencia", {}).get("veiculos", {}).items()) \
+        + [(v["id"], v) for v in D.get("motorOcioso", {}).get("veiculos", [])]
+    for f, v in regs:
+        if "responsavel" not in v:
+            continue
+        if norm(f) in rf:  # responsável da frota tem prioridade (vazio = sem responsável)
+            v["responsavel"] = rf[norm(f)]
+            continue
         r = rp.get(chave_proc(v.get("processo")))
-        if r and "responsavel" in v:
+        if r:
             v["responsavel"] = r
 
 

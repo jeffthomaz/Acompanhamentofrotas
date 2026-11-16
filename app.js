@@ -137,12 +137,25 @@ window.iniciarPainel = function (D) {
       return { de: de, ate: ate, todo: de === ini && ate === fim };
     }
     if (st.p === "todo") return { de: ini, ate: fim, todo: true };
+    if (st.p === "7" || st.p === "resumo") {
+      // Os dados chegam sempre D-1: "Últimos 7 dias" vai de ontem (D-1) a D-7, pela data de hoje.
+      // "Resumo" é a última semana fechada, de segunda a domingo (o mesmo período da mensagem semanal do WhatsApp).
+      var hoje = hojeISO(), a = isoMais(hoje, -1), b = isoMais(hoje, -7);
+      if (st.p === "resumo") {
+        var dw = new Date(hoje + "T12:00:00").getDay(); // 0 = domingo
+        a = isoMais(hoje, -(dw === 0 ? 7 : dw)); b = isoMais(a, -6);
+      }
+      var noP = dias.filter(function (d) { return d >= b && d <= a; });
+      if (!noP.length) { var ult = dias.filter(function (d) { return d <= a; }).pop() || fim; return { de: ult, ate: ult, todo: false, semDados: true }; }
+      return { de: noP[0], ate: noP[noP.length - 1], todo: noP[0] === ini && noP[noP.length - 1] === fim };
+    }
     var d0 = isoMais(fim, -(+st.p) + 1);
     if (dias.indexOf(d0) < 0) d0 = dias.filter(function (d) { return d >= d0; })[0] || fim;
     return { de: d0 < ini ? ini : d0, ate: fim, todo: d0 <= ini };
   }
+  function hojeISO() { var d = new Date(); return d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2); }
   function perControle(aba, st, dias, f) {
-    var ops = [["7", "Últimos 7 dias"], ["28", "Últimas 4 semanas"], ["todo", "Todo o período"], ["custom", "Escolher datas"]];
+    var ops = [["7", "Últimos 7 dias"], ["resumo", "Resumo (semana do WhatsApp)"], ["28", "Últimas 4 semanas"], ["todo", "Todo o período"], ["custom", "Escolher datas"]];
     return '<label>Período<select data-per="' + aba + '" id="per-' + aba + '">' + ops.map(function (o) { return '<option value="' + o[0] + '"' + (st.p === o[0] ? " selected" : "") + ">" + o[1] + "</option>"; }).join("") + "</select></label>" +
       '<label>De<input type="date" data-perde="' + aba + '" id="perde-' + aba + '" value="' + f.de + '" min="' + dias[0] + '" max="' + dias[dias.length - 1] + '"></label>' +
       '<label>Até<input type="date" data-perate="' + aba + '" id="perate-' + aba + '" value="' + f.ate + '" min="' + dias[0] + '" max="' + dias[dias.length - 1] + '"></label>';
@@ -278,8 +291,9 @@ window.iniciarPainel = function (D) {
     }).join("") + "</ul></section>";
 
     var horario = blocosHorario(hz, rot(a0) + " – " + rot(a1), "do período", temBase ? "variação sobre " + rot(b0) + " – " + rot(a0 - 1) : "");
-    return filtros + kpis + '<div class="g3 g-a">' + evolucao + part + tend + '</div><div class="g3 g-b">' + velCard + conc + alerta + "</div>" +
-      (horario ? '<div class="rz-dash comp-hz">' + horario + "</div>" : "") + mapaComp(C, fc, a0, a1);
+    // Turnos e horas de pico logo abaixo dos cards de ocorrências (pedido em 16/11/2026).
+    return filtros + kpis + (horario ? '<div class="rz-dash comp-hz">' + horario + "</div>" : "") +
+      '<div class="g3 g-a">' + evolucao + part + tend + '</div><div class="g3 g-b">' + velCard + conc + alerta + "</div>" + mapaComp(C, fc, a0, a1);
   }
 
   // ---------- Comportamental: mapa de calor por tipo de ocorrência (sem bocejo) ----------
@@ -1418,7 +1432,9 @@ window.iniciarPainel = function (D) {
         '<span class="rz-kr">' + (a.valor === "—" ? "Ainda sem dados desta semana." : rod[a.aba](a)) + (a.ate ? " · dados até " + dd(a.ate) : "") + "</span></a>";
     }).join("") + "</section>";
 
-    var linhas = [];
+    // Turnos e horas de pico logo abaixo dos cards (pedido em 16/11/2026).
+    var linhas = [blocosHorario(c0(), "semana " + dd(S.ini) + " – " + dd(S.fim), "da semana", "variação sobre a semana anterior")];
+    function c0() { return by.comportamento; }
 
     // 2. Resumo escrito por aba + distribuição das ocorrências por tipo.
     var c = by.comportamento, g2 = "";
@@ -1445,8 +1461,6 @@ window.iniciarPainel = function (D) {
         ' <a class="rz-aba" href="#' + a.aba + '">Abrir ' + esc(a.nome.toLowerCase()) + "</a></p></div></li>";
     }).join("") + "</ul>", "rz-larga");
     linhas.push('<div class="rz-row">' + g1 + (c ? g2 : "") + "</div>");
-
-    linhas.push(blocosHorario(c, "semana " + dd(S.ini) + " – " + dd(S.fim), "da semana", "variação sobre a semana anterior"));
 
     // 3. Por processo (ou por veículo, com processo escolhido), motor ocioso e conectividade.
     var trio = [];

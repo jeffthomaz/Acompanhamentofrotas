@@ -293,7 +293,7 @@ def planilha(destino, caminho):
         v = K["frotas"].get(f, {})
         resp = str(v.get("responsavel") or "").strip()
         proc = processos_informados().get(f) or v.get("processo")
-        resp = responsavel_do_processo(proc, resp)  # responsável fixo do processo, quando o usuário informou
+        resp = responsavel_do_processo(proc, resp, frota=f)  # responsável da frota ou fixo do processo, quando o usuário informou
         lst.append([f, status, dias, resp.title() if resp and resp != "0" else "", antes.get(f, {}).get("obs")])
     ordem = {"MANUTENÇÃO": 0, "PARADO": 1, "OFFLINE": 2, "OPERANDO": 3}
     lst.sort(key=lambda x: (ordem[x[1]], -x[2], x[0]))

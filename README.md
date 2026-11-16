@@ -21,6 +21,8 @@ USUARIO, PROCESSO e SENHA. PROCESSO = `todos` vê tudo; vários processos são s
 Ao gerar, frota sem processo numa aba e com processo em outra recebe o processo da outra aba
 (o que aparece em mais abas; empate: Conectividade, Comportamental, Motor ocioso, Permanência, Câmeras).
 Para corrigir um processo errado, use `ferramentas/processos_frotas.json`, que tem prioridade.
+Responsável informado frota a frota (desde 16/11/2026, ex.: frotas do Cristiano Colucci) fica em
+`ferramentas/responsaveis_frotas.json` e tem prioridade sobre o responsável fixo do processo e o cadastro (vazio = sem responsável).
 Responsável fixo por processo (Transporte = Ednaldo, Tratos Culturais = Ghetter, Facilities = Fernando Azevedo,
 desde 13/11/2026) fica em `ferramentas/responsaveis_processo.json` e vale sobre o cadastro em todas as abas e na status_frotas.
 Ocorrências do Comportamental resolvidas de forma errada saem por `ferramentas/ocorrencias_excluidas.json`.
@@ -90,6 +92,13 @@ geral só quando o usuário pedir.
   Cada ocorrência guarda o turno pela HORA (5º item do `ev`: 0 = A 07:00–15:10, 1 = B 15:10–23:10,
   2 = C 23:10–07:00) e a hora cheia (6º item, 0–23). O Resumo mostra o balanço por turno da semana,
   comparado com a semana anterior, e logo abaixo as horas de pico (gráfico das 24 horas e as 3 maiores).
+  Desde 16/11/2026 os quadros de turno e de horas de pico ficam logo abaixo dos cards, no Resumo e no Comportamental.
+
+## Filtro de período
+
+- **Últimos 7 dias**: de ontem (D-1) até 7 dias atrás (D-7), pela data de hoje (os dados chegam sempre D-1).
+- **Resumo (semana do WhatsApp)**: a última semana fechada, de segunda a domingo, igual à mensagem semanal.
+- Últimas 4 semanas, Todo o período e Escolher datas continuam como antes.
 - Comportamento (até 09/11/2026): dados reais dos Power BI "Dados Monitoramento Comportamental Frotas Leves 2026"
   (tabela OCORRÊNCIAS FROTA LEVA PO.GE.03) e "... Frotas Pesadas 2026" (tabela Frota Pesada POLGE03),
   extraídos com `ferramentas/comportamento_do_powerbi.py`. Excesso de velocidade nas faixas da nova
