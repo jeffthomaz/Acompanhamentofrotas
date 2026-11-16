@@ -25,7 +25,7 @@
       var at = document.getElementById("atualizado"), u = D.atualizacao;
       if (at && (u || A.gerado)) {
         at.hidden = false;
-        at.textContent = "Última atualização: " + (u ? u.quando + (u.quem ? " por " + u.quem : "") : A.gerado);
+        at.textContent = "Última atualização: " + (u ? u.quando + (u.quem ? (/^atualiza/i.test(u.quem) ? " · " + u.quem : " por " + u.quem) : "") : A.gerado);
         if (u && u.feito && u.feito.length) at.title = "Atualizado: " + u.feito.join(", ");
       }
       window.iniciarPainel(D);
