@@ -5,7 +5,8 @@
 //    COMPORTAMENTAL"); o navegador guarda as escolhas. Funciona no Chrome e no Edge do computador.
 // 2. Ao clicar, o navegador lê dessas pastas só o que mudou: a planilha Nova do Comportamental,
 //    os alertas de permanência novos, os Boletins do Veículo novos, a Localização da Frota e o
-//    Saúde do Veículo mais recentes e a status_frotas.xlsx (Conectividade e Câmeras).
+//    Saúde do Veículo mais recentes e a status_frotas.xlsx (Conectividade e Câmeras). Ao fim, grava de volta
+//    a status_frotas refeita pelo servidor (com os novos offline), se ninguém estiver com ela aberta.
 // 3. Antes de enviar, tira tudo que é pessoal: motorista, CPF, documento, comentários (vira só
 //    "prestadores"/"ultrapassagem") e nomes de pessoas nas cercas (viram iniciais, como no painel).
 // 4. Envia o resultado para o repositório PRIVADO painel-frotas-dados e dispara o workflow de lá,
@@ -410,10 +411,33 @@
   }
 
   // ---------- fluxo do botão ----------
+  async function sha256(arq) {
+    var h = await crypto.subtle.digest("SHA-256", await arq.arrayBuffer());
+    return Array.prototype.map.call(new Uint8Array(h), function (b) { return (b < 16 ? "0" : "") + b.toString(16); }).join("");
+  }
+  // Grava na pasta do Comportamental a status_frotas refeita pelo servidor (com os novos offline).
+  // Só grava se a planilha não mudou desde a leitura (ninguém mexeu no meio) e se não está aberta no Excel.
+  async function gravarStatus(comp, modLido) {
+    try {
+      if ((await comp.queryPermission({ mode: "readwrite" })) !== "granted") return " A status_frotas não foi refeita (sem permissão para gravar na pasta).";
+      var fh = await filho(comp, "status_frotas.xlsx", false);
+      if (!fh || (await fh.getFile()).lastModified !== modLido) return " A status_frotas mudou durante a atualização e não foi regravada; ela será refeita na próxima.";
+      var r = await gh("GET", "/contents/base/status_frotas.xlsx?ref=main", null, "application/vnd.github.raw+json");
+      if (!r.ok) return " Não consegui baixar a status_frotas refeita (" + r.status + ").";
+      var dados = await r.arrayBuffer(), w = await fh.createWritable();
+      await w.write(dados); await w.close();
+      return " status_frotas refeita com os novos offline.";
+    } catch (e) {
+      return " A status_frotas não foi regravada (" + (e.name === "NoModificationAllowedError" || e.name === "InvalidStateError" ? "está aberta no Excel" : e.message) + ").";
+    }
+  }
+
   async function atualizar() {
     if (!window.showDirectoryPicker) throw new Error("Para atualizar, use o Chrome ou o Edge no computador.");
     var comp = await pasta("comp", false);
     var alert = await pasta("alertas", false);
+    // Permissão para gravar a status_frotas refeita (pedida no clique de "Sim"; se negar, só não regrava).
+    try { if ((await comp.queryPermission({ mode: "readwrite" })) !== "granted") await comp.requestPermission({ mode: "readwrite" }); } catch (e) { /* segue só com leitura */ }
     await carregarRegras();
     msg("Conferindo o que mudou…");
     var ind = await indice(), pedido = { v: 1, quando: new Date().toISOString(), quem: quem }, feito = [];
@@ -468,7 +492,8 @@
     var stf = await filho(comp, "status_frotas.xlsx", false);
     if (stf) {
       stf = await stf.getFile();
-      if (pedido.conectividade || stf.lastModified !== ind.status_frotas) {
+      var sha = await sha256(stf);
+      if (pedido.conectividade || (stf.lastModified !== ind.status_frotas && (ind.status_frotas_sha || []).indexOf(sha) < 0)) {
         msg("Lendo a status_frotas…");
         pedido.status_frotas = { mod: stf.lastModified, b64: await b64(stf) };
         feito.push("Conectividade");
@@ -486,12 +511,14 @@
     await enviar(pedido);
     await ghJson("POST", "/actions/workflows/" + WF + "/dispatches", { ref: "main" });
     await acompanhar(desde, 0);
-    msg("Atualizado: " + feito.join(", ") + ". O site publica em 1 a 2 minutos; depois recarregue a página.", "ok");
+    var extra = "";
+    if (pedido.status_frotas) extra = await gravarStatus(comp, pedido.status_frotas.mod);
+    msg("Atualizado: " + feito.join(", ") + "." + extra + " O site publica em 1 a 2 minutos; depois recarregue a página.", "ok");
   }
 
   // Usado só nos testes automáticos (ferramentas não chamam a rede).
   window.__painelTeste = { comportamental: comportamental, alertas: alertas, boletim: boletim, carregarRegras: carregarRegras,
-    enviar: enviar, indice: indice,
+    enviar: enviar, indice: indice, gravarStatus: gravarStatus, sha256: sha256,
     csv: async function (f) { var L = await lerCsv(f), x = /^Localizacao/i.test(f.name) ? selecionar(L, COLS_LOC) : null;
       return x ? { h: x.h, r: L.slice(1).map(function (y) { return x.ix.map(function (i) { return y[i] == null ? "" : y[i]; }); }) } : { h: L[0], r: L.slice(1) }; }, acompanhar: acompanhar, token: function (t) { token = t; st = document.createElement("p"); } };
 

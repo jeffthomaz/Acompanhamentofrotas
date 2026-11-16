@@ -13,7 +13,7 @@ Uso:
 <pasta-base> tem dados-fonte.json, permanencia_base.json e ociosidade_base.json; ao fim grava
 também indice.json, que o navegador lê para mandar só o que mudou.
 """
-import base64, csv, gzip, json, os, sys, tempfile
+import base64, csv, gzip, hashlib, json, os, sys, tempfile
 from datetime import datetime
 
 import openpyxl
@@ -92,6 +92,14 @@ def conectividade_e_cameras(P, base, dados, proc):
             conectividade.montar(cb, st, dados)
             proc["status_frotas"] = P["status_frotas"]["mod"]
             feito.append("Conectividade")
+            # Refaz a status_frotas (equipamentos em manutenção, parados e offline há 2 dias ou mais, mantendo o que
+            # a equipe marcou); o navegador de quem clicou grava de volta na pasta dele ao fim da atualização.
+            conectividade.planilha(dados, st)
+            import shutil
+            shutil.copyfile(st, os.path.join(base, "status_frotas.xlsx"))
+            # Assinaturas para o navegador saber que a planilha não mudou (a lida e a refeita).
+            proc["status_frotas_sha"] = [hashlib.sha256(base64.b64decode(P["status_frotas"]["b64"])).hexdigest(),
+                                         hashlib.sha256(open(st, "rb").read()).hexdigest()]
         if P.get("cameras"):
             a = P["cameras"]
             c = os.path.join(tmp, os.path.basename(a["nome"]))
@@ -135,6 +143,7 @@ def main(pedido, base):
         ind["boletins"] = sorted({l["d"] for l in json.load(open(oc, encoding="utf-8"))["linhas"]})
     ind["processados"] = proc.get("processados", [])
     ind["status_frotas"] = proc.get("status_frotas")
+    ind["status_frotas_sha"] = proc.get("status_frotas_sha", [])
     # Mostrado no topo do painel para todos ("Última atualização: … por …"), dentro dos dados criptografados.
     D = json.load(open(dados, encoding="utf-8"))
     D["atualizacao"] = {"quando": datetime.now().strftime("%d/%m/%Y %H:%M"), "quem": P.get("quem", ""), "feito": feito}

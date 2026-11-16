@@ -132,8 +132,11 @@ Uma tarefa agendada confere a pasta de exportação (EXPORTAR PASTAS, no OneDriv
   (motorista, CPF, documento, comentários; cercas com nome de pessoa viram iniciais, com as regras de
   `ferramentas/regras_locais.json`, as mesmas do Python) e grava `entrada/pedido.json.gz` no repositório
   **privado** `jeffthomaz/painel-frotas-dados`.
-- O botão **lê** a status_frotas.xlsx (vale o que o usuário marcou), mas não a regrava: a lista de equipamentos
-  continua sendo refeita pela atualização automática das 12h e 13h.
+- O botão **lê** a status_frotas.xlsx (vale o que o usuário marcou) e, desde 16/11/2026, **grava de volta** a
+  planilha refeita pelo servidor (manutenção, parados e offline há 2 dias ou mais, mantendo STATUS e observações
+  da equipe). Só grava se a planilha não mudou durante a atualização e não está aberta no Excel; o navegador pede
+  permissão para editar a pasta. A refeita fica em `base/status_frotas.xlsx` do repositório privado e as assinaturas
+  (SHA-256) em `base/indice.json`, para o botão não reprocessar a Conectividade à toa.
 - Lá, o workflow `atualizar.yml` roda `ferramentas/atualizar_da_entrada.py` (os mesmos scripts de sempre),
   regera `acesso.js` com `gerar_acesso.py --dados` (chaves dos grupos em `base/chaves_grupos.json`, sem
   senhas) e publica aqui. Testado em 15/11/2026: o resultado é idêntico ao de rodar os scripts direto nas planilhas.
