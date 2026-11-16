@@ -57,10 +57,13 @@ window.iniciarPainel = function (D) {
   function todosTurnos() { return fil_.turnos[0] && fil_.turnos[1] && fil_.turnos[2]; }
   // Ocorrência sem hora só entra com os três turnos marcados.
   function turnoOk(e) { var t = e.length > 4 ? e[4] : 3; return t === 3 ? todosTurnos() : !!fil_.turnos[t]; }
-  function turnoControle() {
-    return '<div class="campo"><span class="rot">Turno</span><div class="pills pills-tu" role="group" aria-label="Turnos (marque um ou mais)">' + TURNO_NOMES.map(function (t, i) {
-      return '<button type="button" data-turno="' + i + '" aria-pressed="' + !!fil_.turnos[i] + '" title="Turno ' + t[0] + ": " + t[1] + '"><i aria-hidden="true"></i>' + t[0] + " <small>" + t[1].replace(/ /g, "") + "</small></button>";
-    }).join("") + "</div></div>";
+  // Clique num quadro de turno: com todos marcados, fica só ele; senão marca/desmarca; sem nenhum, volta a todos.
+  function trocaTurno(ti) {
+    var nv = todosTurnos() ? [0, 0, 0] : fil_.turnos.slice();
+    nv[ti] = todosTurnos() ? 1 : nv[ti] ? 0 : 1;
+    fil_.turnos = nv[0] || nv[1] || nv[2] ? nv : [1, 1, 1];
+    render();
+    var t2 = document.querySelector('[data-turno="' + ti + '"]'); if (t2) t2.focus({ preventScroll: true });
   }
   function turnoTexto() {
     if (todosTurnos()) return "";
@@ -189,7 +192,7 @@ window.iniciarPainel = function (D) {
     if (fc.gerencia && gerencias.indexOf(fc.gerencia) < 0) fc.gerencia = "";
     ids = ids.filter(function (f) { return !fc.gerencia || F[f].gerencia === fc.gerencia; });
     var sel = {}; ids.forEach(function (f) { sel[f] = 1; });
-    var ev = C.ev.filter(function (e) { return sel[e[2]] && turnoOk(e); });
+    var ev = C.ev.filter(function (e) { return sel[e[2]]; });
 
     // Período escolhido [a0, a1] e o anterior de mesmo tamanho [b0, a0 - 1].
     var N = C.ndias, diasC = [];
@@ -209,15 +212,21 @@ window.iniciarPainel = function (D) {
     var ciT = T.map(function (t) { var g = t.grupo || t.id; for (var j = 0; j < CATS.length; j++) if (CATS[j].id === g) return j; return -1; });
     var hz = { cur: 0, tu: [0, 0, 0, 0], tuA: [0, 0, 0, 0], tuC: [0, 1, 2, 3].map(function () { return CATS.map(function () { return 0; }); }), hr: [], hrC: [] };
     for (k = 0; k < 24; k++) { hz.hr.push(0); hz.hrC.push(CATS.map(function () { return 0; })); }
+    // Os quadros de turno contam todos os turnos (para dar para clicar neles); o resto da aba, só os turnos escolhidos.
+    ev.forEach(function (e) {
+      var t0 = e.length > 4 ? e[4] : 3, tOk = turnoOk(e);
+      if (e[0] >= a0 && e[0] <= a1) { hz.tu[t0] += e[3]; if (ciT[e[1]] >= 0) hz.tuC[t0][ciT[e[1]]] += e[3]; }
+      else if (b0 >= 0 && e[0] >= b0 && e[0] < a0) hz.tuA[t0] += e[3];
+    });
+    ev = ev.filter(turnoOk);
     ev.forEach(function (e) {
       porDia[e[0]][e[1]] += e[3];
-      var t0 = e.length > 4 ? e[4] : 3;
       if (e[0] >= a0 && e[0] <= a1) {
         cur[e[1]] += e[3]; porFrota[e[2]] = (porFrota[e[2]] || 0) + e[3];
-        hz.cur += e[3]; hz.tu[t0] += e[3]; if (ciT[e[1]] >= 0) hz.tuC[t0][ciT[e[1]]] += e[3];
+        hz.cur += e[3];
         if (e.length > 5) { hz.hr[e[5]] += e[3]; if (ciT[e[1]] >= 0) hz.hrC[e[5]][ciT[e[1]]] += e[3]; }
       }
-      else if (b0 >= 0 && e[0] >= b0 && e[0] < a0) { ant[e[1]] += e[3]; hz.tuA[t0] += e[3]; }
+      else if (b0 >= 0 && e[0] >= b0 && e[0] < a0) ant[e[1]] += e[3];
     });
     var temBase = b0 >= 0;
     CATS.forEach(function (c) {
@@ -234,9 +243,9 @@ window.iniciarPainel = function (D) {
       }).join("") + "</div></div>" +
       '<label>Processo<select data-fil="processo" id="c-processo">' + opcoes(processos, fil_.processo, D.escopo && D.escopo !== "todos" ? "Todos os meus processos" : "Todos os processos") + "</select></label>" +
       '<label>Gerência<select data-comp="gerencia" id="c-gerencia">' + opcoes(gerencias, fc.gerencia, "Todas as gerências") + "</select></label>" +
-      perControle("comportamento", stC, diasC, fC) + turnoControle() +
+      perControle("comportamento", stC, diasC, fC) +
       (fc.frota || fil_.processo || fc.gerencia || stC.p !== stC.padrao || !todosTurnos() ? '<button type="button" class="limpar" data-limpar="1">Limpar filtros</button>' : "") +
-      '<p class="ctx">' + num(nVeic, 0) + " " + plural(nVeic, "veículo", "veículos") + " com ocorrência, " + rot(a0) + " a " + rot(a1) + (temBase ? " (comparado com " + rot(b0) + " a " + rot(a0 - 1) + ")" : "") + (turnoTexto() ? ", só " + turnoTexto() + " (o mapa mostra todos os turnos)" : "") + "</p></div>";
+      '<p class="ctx">' + num(nVeic, 0) + " " + plural(nVeic, "veículo", "veículos") + " com ocorrência, " + rot(a0) + " a " + rot(a1) + (temBase ? " (comparado com " + rot(b0) + " a " + rot(a0 - 1) + ")" : "") + (turnoTexto() ? ", só " + turnoTexto() + " (clique nos turnos para mudar; o mapa mostra todos)" : "") + "</p></div>";
 
     var kpis = '<div class="kpis">' +
       CATS.map(function (c) {
@@ -1180,15 +1189,17 @@ window.iniciarPainel = function (D) {
     var hr = [], hrC = [];
     for (var h0 = 0; h0 < 24; h0++) { hr.push(0); hrC.push(CATS.map(function () { return 0; })); }
     C.ev.forEach(function (e) {
-      var f = F[e[2]]; if (!f || !noProc(f.processo) || e[0] > fimC || ci[e[1]] < 0 || !turnoOk(e)) return; // só tipos com card e turnos marcados
-      var k = e[0] - i0, q = e[0] - a0;
-      if (k >= 0 && k < 7 && por[k] !== null) {
+      var f = F[e[2]]; if (!f || !noProc(f.processo) || e[0] > fimC || ci[e[1]] < 0) return; // só tipos com card
+      var k = e[0] - i0, q = e[0] - a0, t0 = e.length > 4 ? e[4] : 3, nk = k >= 0 && k < 7 && por[k] !== null;
+      // Quadros de turno: todos os turnos (são eles que filtram); o resto, só os turnos escolhidos.
+      if (nk) { tu[t0] += e[3]; tuC[t0][ci[e[1]]] += e[3]; } else if (q >= 0 && q < 7 && okA[q]) tuA[t0] += e[3];
+      if (!turnoOk(e)) return;
+      if (nk) {
         por[k] += e[3]; cur += e[3]; porT[e[1]] += e[3]; porP[f.processo] = (porP[f.processo] || 0) + e[3]; porF[e[2]] = (porF[e[2]] || 0) + e[3];
         porDC[k][ci[e[1]]] += e[3];
-        var t0 = e.length > 4 ? e[4] : 3; tu[t0] += e[3]; tuC[t0][ci[e[1]]] += e[3];
         if (e.length > 5) { hr[e[5]] += e[3]; hrC[e[5]][ci[e[1]]] += e[3]; }
       }
-      else if (q >= 0 && q < 7 && okA[q]) { ant += e[3]; porTA[e[1]] += e[3]; tuA[e.length > 4 ? e[4] : 3] += e[3]; }
+      else if (q >= 0 && q < 7 && okA[q]) { ant += e[3]; porTA[e[1]] += e[3]; }
     });
     var cats = CATS.map(function (c) {
       var ix = T.map(function (t, i) { return (t.grupo || t.id) === c.id ? i : -1; }).filter(function (i) { return i >= 0; });
@@ -1357,20 +1368,21 @@ window.iniciarPainel = function (D) {
   // daPer = "da semana"; varTxt = de onde vem a variação. Usado no Resumo e na aba Comportamental.
   function blocosHorario(c, per, daPer, varTxt) {
     var linhas = [];
-    if (c && c.cur) {
+    var tuTot = c ? c.tu[0] + c.tu[1] + c.tu[2] + c.tu[3] : 0;
+    if (c && tuTot) {
       var TURNOS = [["A", "07:00 – 15:10"], ["B", "15:10 – 23:10"], ["C", "23:10 – 07:00"]];
       var mxT = Math.max.apply(null, c.tu.slice(0, 3)), iMx = c.tu.indexOf(mxT);
       var tiles = TURNOS.map(function (t, i) {
         var n = c.tu[i], top = c.tuC[i].map(function (v, j) { return { c: CATS[j], n: v }; }).filter(function (x) { return x.n; }).sort(function (x, y) { return y.n - x.n; });
-        if (!fil_.turnos[i]) return '<li class="fora"><p class="rz-tuh"><b>Turno ' + t[0] + "</b><span>" + t[1] + '</span></p><p class="rz-tus">Fora do filtro de turno.</p></li>';
-        return '<li class="' + (i === iMx && n ? "mx" : "") + '"><p class="rz-tuh"><b>Turno ' + t[0] + "</b><span>" + t[1] + "</span></p>" +
+        var esc0 = !todosTurnos(), marc = !!fil_.turnos[i];
+        return '<li class="' + [i === iMx && n ? "mx" : "", esc0 ? (marc ? "sel" : "fora") : ""].join(" ").trim() + '" data-turno="' + i + '" role="button" tabindex="0" aria-pressed="' + (esc0 && marc) + '" title="' + (esc0 && marc ? "Clique para tirar o turno " + t[0] + " do filtro" : esc0 ? "Clique para somar o turno " + t[0] + " ao filtro" : "Clique para ver só o turno " + t[0]) + '"><p class="rz-tuh"><b>Turno ' + t[0] + "</b><span>" + t[1] + "</span></p>" +
           '<p class="rz-tuv"><strong>' + num(n, 0) + "</strong>" + (c.tuA[i] ? delta(n, c.tuA[i]) : '<span class="dl neutro">sem base</span>') + "</p>" +
           '<div class="bb"><div class="ff" style="width:' + (mxT ? n / mxT * 100 : 0).toFixed(1) + '%"></div></div>' +
-          '<p class="rz-tus">' + num(n / c.cur * 100, 0) + "% das ocorrências" + (top.length ? " · mais comum: " + esc(top[0].c.nome.toLowerCase()) + " (" + num(top[0].n, 0) + ")" : "") + "</p></li>";
+          '<p class="rz-tus">' + num(n / tuTot * 100, 0) + "% das ocorrências" + (top.length ? " · mais comum: " + esc(top[0].c.nome.toLowerCase()) + " (" + num(top[0].n, 0) + ")" : "") + "</p></li>";
       }).join("");
       var semH = c.tu[3] ? " " + num(c.tu[3], 0) + " " + plural(c.tu[3], "ocorrência", "ocorrências") + " sem hora ficaram fora dos turnos." : "";
       linhas.push('<div class="rz-row">' + rzCard("Ocorrências por turno", "comportamental · " + per + (varTxt ? " · " + varTxt : ""),
-        '<ul class="rz-tu">' + tiles + '</ul><p class="rz-nota">' + (mxT ? "<b>Turno " + TURNOS[iMx][0] + "</b> concentra " + num(mxT / c.cur * 100, 0) + "% das ocorrências. " : "") +
+        '<ul class="rz-tu">' + tiles + '</ul><p class="rz-nota">' + (mxT ? "<b>Turno " + TURNOS[iMx][0] + "</b> concentra " + num(mxT / tuTot * 100, 0) + "% das ocorrências. " : "") + "Clique num turno para filtrar a aba por ele; clique em outro para somar. " +
         "O turno vale pela hora da ocorrência; no turno C, o que passa da meia-noite conta no dia em que aconteceu." + semH + "</p>", "rz-larga") + "</div>");
 
       // Picos por hora: gráfico das 24 horas e as 3 horas com mais ocorrências.
@@ -1419,9 +1431,9 @@ window.iniciarPainel = function (D) {
     });
     ((D.motorOcioso || {}).veiculos || []).forEach(function (v) { procs[v.processo] = 1; });
     var lista = unicos(Object.keys(procs));
-    var filtros = '<div class="filtros rz-fil"><label>Processo<select data-fil="processo" id="r-processo">' + opcoes(lista, fil_.processo, D.escopo && D.escopo !== "todos" ? "Todos os meus processos" : "Todos os processos") + "</select></label>" + turnoControle() +
+    var filtros = '<div class="filtros rz-fil"><label>Processo<select data-fil="processo" id="r-processo">' + opcoes(lista, fil_.processo, D.escopo && D.escopo !== "todos" ? "Todos os meus processos" : "Todos os processos") + "</select></label>" +
       (fil_.processo || !todosTurnos() ? '<button type="button" class="limpar" data-limpar="1">Limpar filtros</button>' : "") +
-      '<p class="ctx"><span class="rz-sem">Semana <b>' + dd(S.ini) + " – " + dd(S.fim) + "</b></span> comparada com " + dd(S.ant[0]) + " – " + dd(S.ant[6]) + "." + (turnoTexto() ? " Comportamental: só " + turnoTexto() + " (as outras abas não têm turno)." : "") + " Conectividade: situação atual. Câmeras: relatório do dia.</p></div>";
+      '<p class="ctx"><span class="rz-sem">Semana <b>' + dd(S.ini) + " – " + dd(S.fim) + "</b></span> comparada com " + dd(S.ant[0]) + " – " + dd(S.ant[6]) + "." + (turnoTexto() ? " Comportamental: só " + turnoTexto() + " (clique nos turnos para mudar; as outras abas não têm turno)." : "") + " Conectividade: situação atual. Câmeras: relatório do dia.</p></div>";
 
     var by = {}; A.forEach(function (a) { if (a.valor !== "—") by[a.aba] = a; });
     var nivel = { ruim: 3, atencao: 2, bom: 1 };
@@ -1622,7 +1634,7 @@ window.iniciarPainel = function (D) {
     var kd = e.target.closest("[data-kdia]");
     if (kd) { fco.dia = +kd.getAttribute("data-kdia"); render(); return; }
     var tb = e.target.closest("[data-turno]");
-    if (tb) { var ti = +tb.dataset.turno, nv = fil_.turnos.slice(); nv[ti] = nv[ti] ? 0 : 1; if (nv[0] || nv[1] || nv[2]) fil_.turnos = nv; render(); var t2 = document.querySelector('[data-turno="' + ti + '"]'); if (t2) t2.focus(); return; }
+    if (tb) { trocaTurno(+tb.dataset.turno); return; }
     var cf = e.target.closest("[data-cfrota]");
     if (cf) { fil_.comp.frota = cf.dataset.cfrota; render(); return; }
     var mt = e.target.closest("[data-mtipo]");
@@ -1650,6 +1662,8 @@ window.iniciarPainel = function (D) {
     if (d && d.open && !d.contains(e.target)) { d.open = false; pm.abertoFrotas = false; }
   });
   painel.addEventListener("keydown", function (e) {
+    var lt = e.target.closest && e.target.closest("li[data-turno]");
+    if (lt && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); trocaTurno(+lt.dataset.turno); return; }
     var g = e.target.closest && e.target.closest("g[data-set]");
     if (g && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); g.dispatchEvent(new MouseEvent("click", { bubbles: true })); }
   });
