@@ -1370,13 +1370,15 @@ window.iniciarPainel = function (D) {
     var linhas = [];
     var tuTot = c ? c.tu[0] + c.tu[1] + c.tu[2] + c.tu[3] : 0;
     if (c && tuTot) {
+      // Sem período anterior com dados (ex.: "Todo o período"), não mostra a variação nem o "sem base".
+      var temAnt = c.tuA[0] + c.tuA[1] + c.tuA[2] + c.tuA[3] > 0;
       var TURNOS = [["A", "07:00 – 15:10"], ["B", "15:10 – 23:10"], ["C", "23:10 – 07:00"]];
       var mxT = Math.max.apply(null, c.tu.slice(0, 3)), iMx = c.tu.indexOf(mxT);
       var tiles = TURNOS.map(function (t, i) {
         var n = c.tu[i], top = c.tuC[i].map(function (v, j) { return { c: CATS[j], n: v }; }).filter(function (x) { return x.n; }).sort(function (x, y) { return y.n - x.n; });
         var esc0 = !todosTurnos(), marc = !!fil_.turnos[i];
         return '<li class="' + [i === iMx && n ? "mx" : "", esc0 ? (marc ? "sel" : "fora") : ""].join(" ").trim() + '" data-turno="' + i + '" role="button" tabindex="0" aria-pressed="' + (esc0 && marc) + '" title="' + (esc0 && marc ? "Clique para tirar o turno " + t[0] + " do filtro" : esc0 ? "Clique para somar o turno " + t[0] + " ao filtro" : "Clique para ver só o turno " + t[0]) + '"><p class="rz-tuh"><b>Turno ' + t[0] + "</b><span>" + t[1] + "</span></p>" +
-          '<p class="rz-tuv"><strong>' + num(n, 0) + "</strong>" + (c.tuA[i] ? delta(n, c.tuA[i]) : '<span class="dl neutro">sem base</span>') + "</p>" +
+          '<p class="rz-tuv"><strong>' + num(n, 0) + "</strong>" + (c.tuA[i] ? delta(n, c.tuA[i]) : temAnt ? '<span class="dl neutro">sem base</span>' : "") + "</p>" +
           '<div class="bb"><div class="ff" style="width:' + (mxT ? n / mxT * 100 : 0).toFixed(1) + '%"></div></div>' +
           '<p class="rz-tus">' + num(n / tuTot * 100, 0) + "% das ocorrências" + (top.length ? " · mais comum: " + esc(top[0].c.nome.toLowerCase()) + " (" + num(top[0].n, 0) + ")" : "") + "</p></li>";
       }).join("");
