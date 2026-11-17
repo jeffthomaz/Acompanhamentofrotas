@@ -258,7 +258,7 @@ window.iniciarPainel = function (D) {
       var tot = CATS[ci].n, mx = l.length ? l[0].n : 1;
       return '<div class="ktop"><h4>Top 5 veículos</h4>' + (l.length ? "<ol>" + l.map(function (x, i) {
         var v = F[x.f] || {};
-        return '<li title="' + esc([x.f, v.placa, v.processo, v.gerencia].filter(Boolean).join(" · ")) + '"><div class="l1"><span>' + (i + 1) + "º <b>" + esc(x.f) + "</b>" + (v.placa ? " <small>" + esc(v.placa) + "</small>" : "") + "</span><b>" + num(x.n, 0) + (tot ? " <small>" + num(x.n / tot * 100, 0) + "%</small>" : "") + "</b></div>" +
+        return '<li title="' + esc([x.f, v.processo, v.gerencia].filter(Boolean).join(" · ")) + '"><div class="l1"><span>' + (i + 1) + "º <b>" + esc(x.f) + "</b></span><b>" + num(x.n, 0) + (tot ? " <small>" + num(x.n / tot * 100, 0) + "%</small>" : "") + "</b></div>" +
           '<span class="pr">' + esc(v.processo || "") + '</span><div class="bb"><i style="width:' + (x.n / mx * 100).toFixed(1) + '%"></i></div></li>';
       }).join("") + "</ol>" : '<p class="vz">Sem registros no período.</p>') + "</div>";
     }
