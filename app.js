@@ -308,7 +308,7 @@ window.iniciarPainel = function (D) {
     }
     dados.forEach(function (x) { x.total = sum(x.partes, function (v) { return v; }); });
     var leg = CATS.map(function (c) { return '<li><i class="c-' + c.id + '"></i>' + esc(c.nome) + "</li>"; }).join("");
-    var evolucao = '<section class="card"><h3>Evolução das ocorrências</h3><p class="cs">' + (J <= 14 ? "Por dia." : "Por semana, a partir da data indicada.") + '</p><ul class="legend">' + leg + "</ul>" + empilhado(dados) + "</section>";
+    var evolucao = '<section class="card"><h3>Evolução das ocorrências</h3><p class="cs">' + (J <= 14 ? "Por dia." : "Por semana, a partir da data indicada.") + '</p><ul class="legend">' + leg + "</ul>" + empilhado(dados, false, 1300) + "</section>";
 
     var ord = CATS.filter(function (c) { return c.on; }).sort(function (a, b) { return b.n - a.n; });
     var part = '<section class="card"><h3>Participação por tipo</h3><div class="rosca-w">' + rosca(ord, total) + '<ul class="rleg">' + ord.map(function (c) {
@@ -355,8 +355,9 @@ window.iniciarPainel = function (D) {
 
     var horario = blocosHorario(hz, rot(a0) + " – " + rot(a1), "do período", temBase ? "variação sobre " + rot(b0) + " – " + rot(a0 - 1) : "");
     // Turnos e horas de pico logo abaixo dos cards de ocorrências (pedido em 16/11/2026).
+    // Evolução das ocorrências num bloco só, largura toda, logo abaixo de turnos/horas de pico (pedido em 17/11/2026).
     return filtros + kpis + (horario ? '<div class="rz-dash comp-hz">' + horario + "</div>" : "") +
-      '<div class="g3 g-a">' + evolucao + part + tend + '</div><div class="g3 g-b">' + velCard + conc + alerta + "</div>" + mapaComp(C, fc, a0, a1);
+      '<div class="evo-larga">' + evolucao + '</div><div class="g3 g-a2">' + part + tend + '</div><div class="g3 g-b">' + velCard + conc + alerta + "</div>" + mapaComp(C, fc, a0, a1);
   }
 
   // ---------- Comportamental: mapa de calor por tipo de ocorrência (sem bocejo) ----------

@@ -136,8 +136,9 @@ select:focus-visible{outline:3px solid var(--maq);outline-offset:2px}
 .c-total{--cc:var(--c-total)}.c-vel{--cc:var(--c-vel)}.c-celular{--cc:var(--c-celular)}.c-cinto{--cc:var(--c-cinto)}.c-distracao{--cc:var(--c-distracao)}.c-cigarro{--cc:var(--c-outros)}.c-faixa{--cc:var(--c-faixa)}.c-fadiga{--cc:var(--c-cigarro)}.c-camera{--cc:var(--c-faixa)}.c-outros{--cc:var(--c-outros)}
 .g3{display:grid;gap:1rem}
 .g-a{grid-template-columns:minmax(0,1.55fr) minmax(0,1.1fr) minmax(0,1fr)}
+.g-a2{grid-template-columns:minmax(0,1fr) minmax(0,1.4fr)}.evo-larga{margin-bottom:1rem}.evo-larga .chart.big{max-height:340px;width:100%}.g-a2 svg.chart{max-height:300px;width:100%}.g-a2>.card:first-child .rosca-wrap,.g-a2>.card:first-child{align-self:start}
 .g-b{grid-template-columns:repeat(3,minmax(0,1fr))}
-@media (max-width:980px){.g-a,.g-b{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:980px){.g-a,.g-a2,.g-b{grid-template-columns:minmax(0,1fr)}}
 .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:1rem 1.1rem 1.1rem;box-shadow:0 1px 3px rgba(10,42,25,.08);min-width:0}
 .card h3{font-family:var(--display);font-weight:700;font-size:1.02rem;margin:0 0 .6rem}
 .cs{margin:-.35rem 0 .7rem;font-size:.8rem;color:var(--muted)}
@@ -532,7 +533,7 @@ rect.seg.c-vel{fill:var(--c-vel)}rect.seg.c-celular{fill:var(--c-celular)}rect.s
 </style>
 </head><body>
 <header class="band"><div class="band-in gut">
-  <img class="logo" src="logo-branco.png?v=202611171342" alt="Bioenergética Aroeira" width="67" height="92">
+  <img class="logo" src="logo-branco.png?v=202611171500" alt="Bioenergética Aroeira" width="67" height="92">
   <div><h1>MONITORAMENTO COMPORTAMENTAL</h1><p class="per" id="periodo"></p></div>
   <div class="quem" id="quem" hidden><span><b id="quem-nome"></b><small id="quem-escopo"></small></span><button type="button" id="atualizar" hidden>Atualizar dados</button><button type="button" id="sair">Sair</button></div>
   <p class="atu-ult" id="atualizado" hidden></p>
@@ -564,9 +565,9 @@ rect.seg.c-vel{fill:var(--c-vel)}rect.seg.c-celular{fill:var(--c-celular)}rect.s
 </div>
 <footer class="foot gut">Bioenergética Aroeira S/A, Tupaciguara/MG. <a href="https://www.bioaroeira.com.br" target="_blank" rel="noopener">www.bioaroeira.com.br</a></footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" defer></script>
-<script src="acesso.js?v=202611171342"></script>
-<script src="app.js?v=202611171342"></script>
-<script src="jszip.min.js?v=202611171342"></script>
-<script src="painel-atualizar.js?v=202611171342"></script>
-<script src="login.js?v=202611171342"></script>
+<script src="acesso.js?v=202611171500"></script>
+<script src="app.js?v=202611171500"></script>
+<script src="jszip.min.js?v=202611171500"></script>
+<script src="painel-atualizar.js?v=202611171500"></script>
+<script src="login.js?v=202611171500"></script>
 </body></html>
