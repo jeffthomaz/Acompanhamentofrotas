@@ -315,10 +315,18 @@ window.iniciarPainel = function (D) {
       return '<li><i class="c-' + c.id + '"></i><span>' + esc(c.nome) + "</span><b>" + (total ? num(c.n / total * 100, 1) : "0,0") + "%</b></li>";
     }).join("") + "</ul></div></section>";
 
-    // Tendência: totais das 8 semanas completas até o fim do período escolhido.
-    var sem = [];
-    for (k = a1 + 1; k - 7 >= 0 && sem.length < 8; k -= 7) { var t2 = 0; for (var q = k - 7; q < k; q++) t2 += sum(porDia[q], function (v) { return v; }); sem.unshift({ d: rot(k - 7), partes: [], total: t2 }); }
-    var tend = '<section class="card"><h3>Tendência semanal</h3><p class="cs">Total por semana nas últimas ' + sem.length + " semanas. A última termina em " + rot(a1) + ".</p>" + empilhado(sem, true, 360) + "</section>";
+    // Tendência mensal (desde 17/11/2026; antes semanal): total por mês, do início dos dados até o fim do período escolhido (no máximo 12 meses).
+    var MESES = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"], sem = [], mesAtual = null;
+    for (k = 0; k <= a1; k++) {
+      var dk = new Date(dia0); dk.setDate(dk.getDate() + k);
+      var chM = dk.getFullYear() * 12 + dk.getMonth();
+      if (!mesAtual || mesAtual.ch !== chM) { mesAtual = { ch: chM, d: MESES[dk.getMonth()] + "/" + String(dk.getFullYear()).slice(2), partes: [], total: 0 }; sem.push(mesAtual); }
+      mesAtual.total += sum(porDia[k], function (v) { return v; });
+    }
+    sem = sem.slice(-12);
+    var dFim = new Date(dia0); dFim.setDate(dFim.getDate() + a1);
+    var fimMes = new Date(dFim.getFullYear(), dFim.getMonth() + 1, 0).getDate() === dFim.getDate();
+    var tend = '<section class="card"><h3>Tendência mensal</h3><p class="cs">Total por mês' + (sem.length ? ", de " + sem[0].d + " a " + sem[sem.length - 1].d : "") + "." + (fimMes ? "" : " O último mês vai até " + rot(a1) + " (parcial).") + "</p>" + empilhado(sem, true, 520) + "</section>";
 
     var velC = CATS[0], velIx = velC.ix, velN = velC.on ? velC.n : 0, mxV = Math.max.apply(null, [1].concat(velIx.map(function (i) { return curF[i]; })));
     var velCard = '<section class="card"><h3>Excesso de velocidade por faixa</h3><p class="cs">Faixas da nova política de frotas, pelo quanto passou do limite da via. ' + (velC.on ? num(velN, 0) + " " + plural(velN, "ocorrência", "ocorrências") + " no período." : "Fora do filtro de tipo.") + "</p>" + velIx.map(function (i, kk) {
