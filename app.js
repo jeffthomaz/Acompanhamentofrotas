@@ -65,6 +65,8 @@ window.iniciarPainel = function (D) {
     render();
     var t2 = document.querySelector('[data-turno="' + ti + '"]'); if (t2) t2.focus({ preventScroll: true });
   }
+  function top5Aberto() { try { return localStorage.getItem("painel-top5") === "1"; } catch (e) { return !!fil_.top5; } }
+  function trocaTop5() { var v = !top5Aberto(); fil_.top5 = v; try { localStorage.setItem("painel-top5", v ? "1" : "0"); } catch (e) {} render(); var b = document.querySelector("[data-top5]"); if (b) b.focus({ preventScroll: true }); }
   function turnoTexto() {
     if (todosTurnos()) return "";
     var m = TURNO_NOMES.filter(function (_, i) { return fil_.turnos[i]; }).map(function (t) { return t[0]; });
@@ -219,10 +221,12 @@ window.iniciarPainel = function (D) {
       else if (b0 >= 0 && e[0] >= b0 && e[0] < a0) hz.tuA[t0] += e[3];
     });
     ev = ev.filter(turnoOk);
+    var porCatF = CATS.map(function () { return {}; }); // frotas por tipo de card, para o top 5
     ev.forEach(function (e) {
       porDia[e[0]][e[1]] += e[3];
       if (e[0] >= a0 && e[0] <= a1) {
         cur[e[1]] += e[3]; porFrota[e[2]] = (porFrota[e[2]] || 0) + e[3];
+        if (ciT[e[1]] >= 0) { var pcf = porCatF[ciT[e[1]]]; pcf[e[2]] = (pcf[e[2]] || 0) + e[3]; }
         hz.cur += e[3];
         if (e.length > 5) { hz.hr[e[5]] += e[3]; if (ciT[e[1]] >= 0) hz.hrC[e[5]][ciT[e[1]]] += e[3]; }
       }
@@ -247,11 +251,25 @@ window.iniciarPainel = function (D) {
       (fc.frota || fil_.processo || fc.gerencia || stC.p !== stC.padrao || !todosTurnos() ? '<button type="button" class="limpar" data-limpar="1">Limpar filtros</button>' : "") +
       '<p class="ctx">' + num(nVeic, 0) + " " + plural(nVeic, "veículo", "veículos") + " com ocorrência, " + rot(a0) + " a " + rot(a1) + (temBase ? " (comparado com " + rot(b0) + " a " + rot(a0 - 1) + ")" : "") + (turnoTexto() ? ", só " + turnoTexto() + " (clique nos turnos para mudar; o mapa mostra todos)" : "") + "</p></div>";
 
-    var kpis = '<div class="kpis">' +
-      CATS.map(function (c) {
+    // Top 5 veículos de cada tipo, numa gaveta embaixo de cada card (abre e fecha tudo junto; a escolha fica guardada).
+    var abreTop = top5Aberto();
+    function gaveta(ci) {
+      var m = porCatF[ci], l = Object.keys(m).map(function (f) { return { f: f, n: m[f] }; }).sort(function (a, b) { return b.n - a.n || a.f.localeCompare(b.f); }).slice(0, 5);
+      var tot = CATS[ci].n, mx = l.length ? l[0].n : 1;
+      return '<div class="ktop"><h4>Top 5 veículos</h4>' + (l.length ? "<ol>" + l.map(function (x, i) {
+        var v = F[x.f] || {};
+        return '<li title="' + esc([x.f, v.placa, v.processo, v.gerencia].filter(Boolean).join(" · ")) + '"><div class="l1"><span>' + (i + 1) + "º <b>" + esc(x.f) + "</b>" + (v.placa ? " <small>" + esc(v.placa) + "</small>" : "") + "</span><b>" + num(x.n, 0) + (tot ? " <small>" + num(x.n / tot * 100, 0) + "%</small>" : "") + "</b></div>" +
+          '<span class="pr">' + esc(v.processo || "") + '</span><div class="bb"><i style="width:' + (x.n / mx * 100).toFixed(1) + '%"></i></div></li>';
+      }).join("") + "</ol>" : '<p class="vz">Sem registros no período.</p>') + "</div>";
+    }
+    var barTop = '<div class="top5-bar"><button type="button" data-top5="1" aria-expanded="' + abreTop + '">' + (abreTop ? "Minimizar top 5 veículos" : "Maximizar top 5 veículos") + "</button></div>";
+    var kpis = barTop + '<div class="kpis' + (abreTop ? " com-top" : "") + '">' +
+      CATS.map(function (c, ci) {
         // Cards com mais de um tipo (ex.: fadiga e bocejo) mostram a quantidade de cada um.
         var partes = c.ix.length > 1 && c.id !== "vel" ? '<span class="kp">' + c.ix.map(function (i) { return esc(T[i].nome) + " <b>" + num(cur[i], 0) + "</b>"; }).map(function (x) { return "<span>" + x + "</span>"; }).join("") + "</span>" : "";
-        return '<article class="kpi c-' + c.id + '"><div class="kh">' + ico(c.icone) + '<span class="kl">' + esc(c.nome) + '</span></div><strong class="kv">' + num(c.n, 0) + "</strong>" + partes + dl(c.n, c.ant) + '<span class="ks">' + (temBase ? "vs. período anterior" : "&nbsp;") + "</span></article>";
+        var cab = '<div class="kh">' + ico(c.icone) + '<span class="kl">' + esc(c.nome) + '</span></div><strong class="kv">' + num(c.n, 0) + "</strong>" + partes + dl(c.n, c.ant) + '<span class="ks">' + (temBase ? "vs. período anterior" : "&nbsp;") + "</span>";
+        // Com o top 5 aberto, o topo do card vira um bloco só, para as gavetas começarem na mesma altura.
+        return '<article class="kpi c-' + c.id + '">' + (abreTop ? '<div class="khd">' + cab + "</div>" + gaveta(ci) : cab) + "</article>";
       }).join("") + "</div>";
 
     // Evolução: por dia até 14 dias, senão por semana.
@@ -1637,6 +1655,7 @@ window.iniciarPainel = function (D) {
     if (kd) { fco.dia = +kd.getAttribute("data-kdia"); render(); return; }
     var tb = e.target.closest("[data-turno]");
     if (tb) { trocaTurno(+tb.dataset.turno); return; }
+    if (e.target.closest("[data-top5]")) { trocaTop5(); return; }
     var cf = e.target.closest("[data-cfrota]");
     if (cf) { fil_.comp.frota = cf.dataset.cfrota; render(); return; }
     var mt = e.target.closest("[data-mtipo]");

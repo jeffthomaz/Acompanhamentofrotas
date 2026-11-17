@@ -32,17 +32,15 @@
 body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--text);font-size:15px;line-height:1.55;
   padding-bottom:3rem}
 .gut{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+@media (min-width:900px){.gut{padding-left:max(28px,env(safe-area-inset-left,0px));padding-right:max(28px,env(safe-area-inset-right,0px))}}
 .band{background:linear-gradient(90deg,#0A2A19 0%,rgba(10,42,25,.86) 42%,rgba(10,42,25,.5) 100%),url(fundo.jpg) right center/cover #0A2A19;color:#fff;border-bottom:4px solid var(--maq)}
-.band-in{max-width:1104px;margin:0 auto;display:flex;flex-wrap:wrap;align-items:center;gap:1rem 1.75rem;padding-block:1.6rem}
+.band-in{max-width:1400px;margin:0 auto;display:flex;flex-wrap:wrap;align-items:center;gap:1rem 1.75rem;padding-block:1.6rem}
 .logo{display:block;height:92px;width:auto}
 .band h1{color:#fff}
 .band .per{color:#BFD3C6;margin:.5rem 0 0}
-.wrap{max-width:1104px;margin:0 auto;display:grid;gap:1.75rem;padding-top:1.75rem}
-.foot{max-width:1104px;margin:2.5rem auto 0;font-size:.82rem;color:var(--muted)}
+.wrap{max-width:1400px;margin:0 auto;display:grid;gap:1.75rem;padding-top:1.75rem}
+.foot{max-width:1400px;margin:2.5rem auto 0;font-size:.82rem;color:var(--muted)}
 .foot a{color:inherit}
-html.largo .band-in,html.largo .wrap,html.largo .foot{max-width:1400px}
-html.largo .gut{padding-left:max(28px,env(safe-area-inset-left,0px));padding-right:max(28px,env(safe-area-inset-right,0px))}
-.quem #largura{margin-right:.5rem}.quem #largura[aria-pressed=true]{background:rgba(255,255,255,.18);border-color:#fff}
 .wrap>*{min-width:0}
 h1{font-family:var(--display);font-weight:800;font-size:clamp(1.9rem,5vw,3rem);line-height:1;letter-spacing:-.03em;margin:0;text-wrap:balance}
 .per{color:var(--muted);font-size:.9rem;margin:0}
@@ -107,7 +105,22 @@ select:focus-visible{outline:3px solid var(--maq);outline-offset:2px}
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(9.2rem,1fr));gap:.75rem}
 .kpi{position:relative;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:.9rem .8rem 1.15rem;display:grid;gap:.2rem;justify-items:center;text-align:center;box-shadow:0 1px 4px rgba(10,42,25,.1);overflow:hidden}
 .kpi::after{content:"";position:absolute;left:0;right:0;bottom:0;height:6px;background:var(--cc)}
-@media (min-width:1000px){.kpis{grid-template-columns:repeat(7,minmax(0,1fr))}.kpis{gap:.55rem}.kpi{padding-inline:.5rem}.kpi .ic{width:1.45rem;height:1.45rem}.kh{gap:.35rem}.kl{font-size:.74rem;letter-spacing:-.01em}.kv{font-size:clamp(1.5rem,2.1vw,2rem)}}
+.top5-bar{display:flex;justify-content:flex-end;margin:0 0 -.9rem}
+.top5-bar button{font:inherit;font-size:.85rem;font-weight:600;padding:.4rem .9rem;border:1px solid var(--line);border-radius:999px;background:var(--card);color:var(--ink);cursor:pointer;display:inline-flex;gap:.4rem;align-items:center}
+.top5-bar button[aria-expanded=true]{background:var(--maq);border-color:var(--maq);color:var(--maq-ink)}
+.ktop{justify-self:stretch;text-align:left;margin:.55rem -.8rem -1.15rem;padding:.55rem .6rem .7rem;border-top:5px solid var(--cc);background:color-mix(in srgb,var(--cc) 6%,var(--card))}
+.kpis.com-top .kpi::after{display:none}
+.kpis.com-top{grid-template-rows:auto auto;row-gap:.75rem}.kpis.com-top .kpi{grid-row:span 2;grid-template-rows:subgrid;gap:0;align-content:stretch}
+.khd{display:grid;gap:.2rem;justify-items:center;align-content:center}
+.ktop h4{margin:0 0 .3rem;font-size:.72rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;text-align:center}
+.ktop ol{list-style:none;margin:0;padding:0;display:grid;gap:.45rem}
+.ktop li{font-size:.8rem;line-height:1.25;min-width:0}
+.ktop .l1{display:flex;justify-content:space-between;gap:.4rem;align-items:baseline}.ktop .l1 span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ktop .l1 small{color:var(--muted);font-size:.72rem;font-weight:500}.ktop .l1>b{white-space:nowrap}.ktop .l1 b{font-variant-numeric:tabular-nums}
+.ktop .pr{display:block;color:var(--muted);font-size:.72rem;overflow-wrap:anywhere}
+.ktop .bb{height:.3rem;background:color-mix(in srgb,var(--cc) 15%,transparent);border-radius:999px;margin-top:.2rem;overflow:hidden}.ktop .bb i{display:block;height:100%;background:var(--cc);border-radius:999px}
+.ktop .vz{font-size:.78rem;color:var(--muted);text-align:center;margin:.4rem 0}
+@media (min-width:1000px){.kpis{grid-template-columns:repeat(7,minmax(0,1fr))}.kpis{gap:.55rem}.kpi{padding-inline:.5rem}.ktop{margin-inline:-.5rem}.kpi .ic{width:1.45rem;height:1.45rem}.kh{gap:.35rem}.kl{font-size:.74rem;letter-spacing:-.01em}.kv{font-size:clamp(1.5rem,2.1vw,2rem)}}
 .kl{min-width:0}
 .kh{display:flex;align-items:center;gap:.5rem;justify-self:stretch;text-align:left;min-height:2.9rem;margin-bottom:.2rem}
 .kpi .ic{width:2.1rem;height:2.1rem;flex:none;color:var(--cc);stroke-width:1.6}
@@ -515,9 +528,9 @@ rect.seg.c-vel{fill:var(--c-vel)}rect.seg.c-celular{fill:var(--c-celular)}rect.s
 </style>
 </head><body>
 <header class="band"><div class="band-in gut">
-  <img class="logo" src="logo-branco.png?v=202611161451" alt="Bioenergética Aroeira" width="67" height="92">
+  <img class="logo" src="logo-branco.png?v=202611170801" alt="Bioenergética Aroeira" width="67" height="92">
   <div><h1>MONITORAMENTO COMPORTAMENTAL</h1><p class="per" id="periodo"></p></div>
-  <div class="quem" id="quem" hidden><span><b id="quem-nome"></b><small id="quem-escopo"></small></span><button type="button" id="atualizar" hidden>Atualizar dados</button><button type="button" id="largura" aria-pressed="false" title="Usar toda a largura da tela (bom para prints)">Tela larga</button><button type="button" id="sair">Sair</button></div>
+  <div class="quem" id="quem" hidden><span><b id="quem-nome"></b><small id="quem-escopo"></small></span><button type="button" id="atualizar" hidden>Atualizar dados</button><button type="button" id="sair">Sair</button></div>
   <p class="atu-ult" id="atualizado" hidden></p>
   <p class="atu-pasta" id="atualizar-pasta" hidden></p>
   <p class="atu-st" id="atualizar-st" role="status" hidden></p>
@@ -547,24 +560,9 @@ rect.seg.c-vel{fill:var(--c-vel)}rect.seg.c-celular{fill:var(--c-celular)}rect.s
 </div>
 <footer class="foot gut">Bioenergética Aroeira S/A, Tupaciguara/MG. <a href="https://www.bioaroeira.com.br" target="_blank" rel="noopener">www.bioaroeira.com.br</a></footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" defer></script>
-<script src="acesso.js?v=202611161451"></script>
-<script src="app.js?v=202611161451"></script>
-<script src="jszip.min.js?v=202611161451"></script>
-<script src="painel-atualizar.js?v=202611161451"></script>
-<script src="login.js?v=202611161451"></script>
-<script>
-// "Tela larga": usa toda a largura da janela (bom para prints). A escolha fica guardada neste navegador.
-(function () {
-  var b = document.getElementById("largura"), raiz = document.documentElement;
-  function aplicar(on) {
-    raiz.classList.toggle("largo", on); b.setAttribute("aria-pressed", on); b.textContent = on ? "Tela normal" : "Tela larga";
-    window.dispatchEvent(new Event("resize"));
-  }
-  var on = false; try { on = localStorage.getItem("painel-largo") === "1"; } catch (e) {}
-  aplicar(on);
-  b.addEventListener("click", function () {
-    on = !on; aplicar(on); try { localStorage.setItem("painel-largo", on ? "1" : "0"); } catch (e) {}
-  });
-})();
-</script>
+<script src="acesso.js?v=202611170801"></script>
+<script src="app.js?v=202611170801"></script>
+<script src="jszip.min.js?v=202611170801"></script>
+<script src="painel-atualizar.js?v=202611170801"></script>
+<script src="login.js?v=202611170801"></script>
 </body></html>
