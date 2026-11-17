@@ -67,6 +67,15 @@ window.iniciarPainel = function (D) {
   }
   function top5Aberto() { try { return localStorage.getItem("painel-top5") === "1"; } catch (e) { return !!fil_.top5; } }
   function trocaTop5() { var v = !top5Aberto(); fil_.top5 = v; try { localStorage.setItem("painel-top5", v ? "1" : "0"); } catch (e) {} render(); var b = document.querySelector("[data-top5]"); if (b) b.focus({ preventScroll: true }); }
+  // Clique num card de tipo: sem filtro, fica só ele; senão soma/tira; sem nenhum, volta a todos.
+  function trocaTipo(id) {
+    var nv = {};
+    if (fil_.tipos) Object.keys(fil_.tipos).forEach(function (k) { nv[k] = 1; });
+    if (!fil_.tipos) nv[id] = 1; else if (nv[id]) delete nv[id]; else nv[id] = 1;
+    fil_.tipos = Object.keys(nv).length && Object.keys(nv).length < CATS.length ? nv : null;
+    render();
+    var a = document.querySelector('article[data-tipo="' + id + '"]'); if (a) a.focus({ preventScroll: true });
+  }
   function turnoTexto() {
     if (todosTurnos()) return "";
     var m = TURNO_NOMES.filter(function (_, i) { return fil_.turnos[i]; }).map(function (t) { return t[0]; });
@@ -215,8 +224,11 @@ window.iniciarPainel = function (D) {
     var ciT = T.map(function (t) { var g = t.grupo || t.id; for (var j = 0; j < CATS.length; j++) if (CATS[j].id === g) return j; return -1; });
     var hz = { cur: 0, tu: [0, 0, 0, 0], tuA: [0, 0, 0, 0], tuC: [0, 1, 2, 3].map(function () { return CATS.map(function () { return 0; }); }), hr: [], hrC: [] };
     for (k = 0; k < 24; k++) { hz.hr.push(0); hz.hrC.push(CATS.map(function () { return 0; })); }
+    // Filtro de tipo (clicando nos cards, desde 17/11/2026): os cards mostram sempre o próprio número; o resto da aba, só os tipos escolhidos.
+    var tOn = T.map(function (t, i) { return ciT[i] >= 0 && (!fil_.tipos || !!fil_.tipos[CATS[ciT[i]].id]); });
     // Os quadros de turno contam todos os turnos (para dar para clicar neles); o resto da aba, só os turnos escolhidos.
     ev.forEach(function (e) {
+      if (!tOn[e[1]]) return;
       var t0 = e.length > 4 ? e[4] : 3, tOk = turnoOk(e);
       if (e[0] >= a0 && e[0] <= a1) { hz.tu[t0] += e[3]; if (ciT[e[1]] >= 0) hz.tuC[t0][ciT[e[1]]] += e[3]; }
       else if (b0 >= 0 && e[0] >= b0 && e[0] < a0) hz.tuA[t0] += e[3];
@@ -224,10 +236,13 @@ window.iniciarPainel = function (D) {
     ev = ev.filter(turnoOk);
     var porCatF = CATS.map(function () { return {}; }); // frotas por tipo de card, para o top 5
     ev.forEach(function (e) {
-      porDia[e[0]][e[1]] += e[3];
+      var on = tOn[e[1]];
+      if (on) porDia[e[0]][e[1]] += e[3];
       if (e[0] >= a0 && e[0] <= a1) {
-        cur[e[1]] += e[3]; porFrota[e[2]] = (porFrota[e[2]] || 0) + e[3];
+        cur[e[1]] += e[3];
         if (ciT[e[1]] >= 0) { var pcf = porCatF[ciT[e[1]]]; pcf[e[2]] = (pcf[e[2]] || 0) + e[3]; }
+        if (!on) return;
+        porFrota[e[2]] = (porFrota[e[2]] || 0) + e[3];
         hz.cur += e[3];
         if (e.length > 5) { hz.hr[e[5]] += e[3]; if (ciT[e[1]] >= 0) hz.hrC[e[5]][ciT[e[1]]] += e[3]; }
       }
@@ -238,7 +253,9 @@ window.iniciarPainel = function (D) {
       var ix = T.map(function (t, i) { return (t.grupo || t.id) === c.id ? i : -1; }).filter(function (i) { return i >= 0; });
       c.ix = ix; c.n = sum(ix, function (i) { return cur[i]; }); c.ant = temBase ? sum(ix, function (i) { return ant[i]; }) : 0;
     });
-    var total = sum(CATS, function (c) { return c.n; }), totalAnt = sum(CATS, function (c) { return c.ant; });
+    CATS.forEach(function (c) { c.on = !fil_.tipos || !!fil_.tipos[c.id]; });
+    var curF = cur.map(function (v, i) { return tOn[i] ? v : 0; });
+    var total = sum(CATS, function (c) { return c.on ? c.n : 0; }), totalAnt = sum(CATS, function (c) { return c.on ? c.ant : 0; });
     var nVeic = Object.keys(porFrota).length;
     function dl(cur, ant) { return temBase ? delta(cur, ant) : '<span class="dl neutro">período todo</span>'; }
 
@@ -249,8 +266,8 @@ window.iniciarPainel = function (D) {
       '<label>Processo<select data-fil="processo" id="c-processo">' + opcoes(processos, fil_.processo, D.escopo && D.escopo !== "todos" ? "Todos os meus processos" : "Todos os processos") + "</select></label>" +
       '<label>Responsável<select data-comp="resp" id="c-resp">' + opcoes(resps, fc.resp, "Todos os responsáveis") + "</select></label>" +
       perControle("comportamento", stC, diasC, fC) +
-      (fc.frota || fil_.processo || fc.resp || stC.p !== stC.padrao || !todosTurnos() ? '<button type="button" class="limpar" data-limpar="1">Limpar filtros</button>' : "") +
-      '<p class="ctx">' + num(nVeic, 0) + " " + plural(nVeic, "veículo", "veículos") + " com ocorrência, " + rot(a0) + " a " + rot(a1) + (temBase ? " (comparado com " + rot(b0) + " a " + rot(a0 - 1) + ")" : "") + (turnoTexto() ? ", só " + turnoTexto() + " (clique nos turnos para mudar; o mapa mostra todos)" : "") + "</p></div>";
+      (fc.frota || fil_.processo || fc.resp || fil_.tipos || stC.p !== stC.padrao || !todosTurnos() ? '<button type="button" class="limpar" data-limpar="1">Limpar filtros</button>' : "") +
+      '<p class="ctx">' + num(nVeic, 0) + " " + plural(nVeic, "veículo", "veículos") + " com ocorrência, " + rot(a0) + " a " + rot(a1) + (temBase ? " (comparado com " + rot(b0) + " a " + rot(a0 - 1) + ")" : "") + (turnoTexto() ? ", só " + turnoTexto() + " (clique nos turnos para mudar; o mapa mostra todos)" : "") + (fil_.tipos ? ". Tipos: " + CATS.filter(function (c) { return c.on; }).map(function (c) { return c.nome.toLowerCase(); }).join(", ") + " (clique nos cards para mudar)" : "") + "</p></div>";
 
     // Top 5 veículos de cada tipo, numa gaveta embaixo de cada card (abre e fecha tudo junto; a escolha fica guardada).
     var abreTop = top5Aberto();
@@ -271,7 +288,8 @@ window.iniciarPainel = function (D) {
         var partes = '<span class="kp">' + (c.ix.length > 1 && c.id !== "vel" ? c.ix.map(function (i) { return esc(T[i].nome) + " <b>" + num(cur[i], 0) + "</b>"; }).join(" · ") : "&nbsp;") + "</span>";
         var cab = '<div class="kh">' + ico(c.icone) + '<span class="kl">' + esc(c.nome) + '</span></div><strong class="kv">' + num(c.n, 0) + "</strong>" + partes + dl(c.n, c.ant) + '<span class="ks">' + (temBase ? "vs. período anterior" : "&nbsp;") + "</span>";
         // Com o top 5 aberto, o topo do card vira um bloco só, para as gavetas começarem na mesma altura.
-        return '<article class="kpi c-' + c.id + '">' + (abreTop ? '<div class="khd">' + cab + "</div>" + gaveta(ci) : cab) + "</article>";
+        var esc0 = !!fil_.tipos, marc = c.on;
+        return '<article class="kpi c-' + c.id + (esc0 ? (marc ? " sel" : " fora") : "") + '" data-tipo="' + c.id + '" role="button" tabindex="0" aria-pressed="' + (esc0 && marc) + '" title="' + (esc0 && marc ? "Clique para tirar " + esc(c.nome.toLowerCase()) + " do filtro" : esc0 ? "Clique para somar " + esc(c.nome.toLowerCase()) + " ao filtro" : "Clique para ver só " + esc(c.nome.toLowerCase())) + '">' + (abreTop ? '<div class="khd">' + cab + "</div>" + gaveta(ci) : cab) + "</article>";
       }).join("") + "</div>";
 
     // Evolução: por dia até 14 dias, senão por semana.
@@ -291,7 +309,7 @@ window.iniciarPainel = function (D) {
     var leg = CATS.map(function (c) { return '<li><i class="c-' + c.id + '"></i>' + esc(c.nome) + "</li>"; }).join("");
     var evolucao = '<section class="card"><h3>Evolução das ocorrências</h3><p class="cs">' + (J <= 14 ? "Por dia." : "Por semana, a partir da data indicada.") + '</p><ul class="legend">' + leg + "</ul>" + empilhado(dados) + "</section>";
 
-    var ord = CATS.slice().sort(function (a, b) { return b.n - a.n; });
+    var ord = CATS.filter(function (c) { return c.on; }).sort(function (a, b) { return b.n - a.n; });
     var part = '<section class="card"><h3>Participação por tipo</h3><div class="rosca-w">' + rosca(ord, total) + '<ul class="rleg">' + ord.map(function (c) {
       return '<li><i class="c-' + c.id + '"></i><span>' + esc(c.nome) + "</span><b>" + (total ? num(c.n / total * 100, 1) : "0,0") + "%</b></li>";
     }).join("") + "</ul></div></section>";
@@ -301,9 +319,9 @@ window.iniciarPainel = function (D) {
     for (k = a1 + 1; k - 7 >= 0 && sem.length < 8; k -= 7) { var t2 = 0; for (var q = k - 7; q < k; q++) t2 += sum(porDia[q], function (v) { return v; }); sem.unshift({ d: rot(k - 7), partes: [], total: t2 }); }
     var tend = '<section class="card"><h3>Tendência semanal</h3><p class="cs">Total por semana nas últimas ' + sem.length + " semanas. A última termina em " + rot(a1) + ".</p>" + empilhado(sem, true, 360) + "</section>";
 
-    var velC = CATS[0], velIx = velC.ix, mxV = Math.max.apply(null, [1].concat(velIx.map(function (i) { return cur[i]; })));
-    var velCard = '<section class="card"><h3>Excesso de velocidade por faixa</h3><p class="cs">Faixas da nova política de frotas, pelo quanto passou do limite da via. ' + num(velC.n, 0) + " " + plural(velC.n, "ocorrência", "ocorrências") + " no período.</p>" + velIx.map(function (i, kk) {
-      return '<div class="li"><span class="t">' + esc(T[i].nome) + '</span><span class="n">' + num(cur[i], 0) + "<small>" + (velC.n ? num(cur[i] / velC.n * 100, 0) + "%" : "") + '</small></span><div class="bb"><div class="ff v' + (kk + 1) + '" style="width:' + (cur[i] / mxV * 100).toFixed(1) + "%;--i:" + kk + '"></div></div></div>';
+    var velC = CATS[0], velIx = velC.ix, velN = velC.on ? velC.n : 0, mxV = Math.max.apply(null, [1].concat(velIx.map(function (i) { return curF[i]; })));
+    var velCard = '<section class="card"><h3>Excesso de velocidade por faixa</h3><p class="cs">Faixas da nova política de frotas, pelo quanto passou do limite da via. ' + (velC.on ? num(velN, 0) + " " + plural(velN, "ocorrência", "ocorrências") + " no período." : "Fora do filtro de tipo.") + "</p>" + velIx.map(function (i, kk) {
+      return '<div class="li"><span class="t">' + esc(T[i].nome) + '</span><span class="n">' + num(curF[i], 0) + "<small>" + (velN ? num(curF[i] / velN * 100, 0) + "%" : "") + '</small></span><div class="bb"><div class="ff v' + (kk + 1) + '" style="width:' + (curF[i] / mxV * 100).toFixed(1) + "%;--i:" + kk + '"></div></div></div>';
     }).join("") + "</section>";
 
     // Onde se concentram: por processo; com processo escolhido, por veículo.
@@ -320,13 +338,13 @@ window.iniciarPainel = function (D) {
       return porVeic ? '<div class="li">' + corpo + "</div>" : '<button type="button" class="li lib" data-set="processo:' + esc(x.nome) + '">' + corpo + "</button>";
     }).join("") + "</div></section>";
 
-    var com = temBase ? CATS.filter(function (c) { return variacao(c.n, c.ant) !== null && (c.n + c.ant) >= 10; }) : [];
+    var com = temBase ? CATS.filter(function (c) { return c.on && variacao(c.n, c.ant) !== null && (c.n + c.ant) >= 10; }) : [];
     var sobe = com.slice().sort(function (a, b) { return variacao(b.n, b.ant) - variacao(a.n, a.ant); })[0];
     var desce = com.slice().sort(function (a, b) { return variacao(a.n, a.ant) - variacao(b.n, b.ant); })[0];
     var alertas = [];
     if (total) alertas.push(["ruim", "!", "<b>" + esc(ord[0].nome) + "</b> é o tipo mais frequente, com " + num(ord[0].n / total * 100, 0) + "% das ocorrências."]);
     if (lista.length > 1 && total) alertas.push(["atencao", "▲", "<b>" + esc(lista[0].nome) + "</b> concentra " + num(lista[0].n / total * 100, 0) + "% das ocorrências."]);
-    if (velC.n && cur[velIx[2]]) alertas.push(["ruim", "!", "<b>" + num(cur[velIx[2]], 0) + "</b> " + plural(cur[velIx[2]], "excesso", "excessos") + " de velocidade acima de 50% do limite."]);
+    if (velN && curF[velIx[2]]) alertas.push(["ruim", "!", "<b>" + num(curF[velIx[2]], 0) + "</b> " + plural(curF[velIx[2]], "excesso", "excessos") + " de velocidade acima de 50% do limite."]);
     if (sobe && variacao(sobe.n, sobe.ant) > 0) alertas.push(["atencao", "↑", "Aumento de <b>" + esc(sobe.nome.toLowerCase()) + "</b> (+" + num(variacao(sobe.n, sobe.ant), 0) + "%) vs. período anterior."]);
     if (desce && variacao(desce.n, desce.ant) < 0) alertas.push(["bom", "↓", "Redução de <b>" + num(-variacao(desce.n, desce.ant), 0) + "%</b> em " + esc(desce.nome.toLowerCase()) + " vs. período anterior."]);
     if (!alertas.length) alertas.push(["bom", "✓", "Nenhuma ocorrência para esse filtro."]);
@@ -354,7 +372,10 @@ window.iniciarPainel = function (D) {
     var semOk = function (w) { return w * 7 <= a1 && w * 7 + 6 >= a0; }, aprox = a0 % 7 !== 0 || (a1 + 1) % 7 !== 0;
     var gOk = M.grupos.map(function (g) { return (!fc.frota || g[0] === fc.frota) && (!fil_.processo || g[1] === fil_.processo) && (!fc.resp || g[2] === fc.resp); });
     var porTipo = {}, tOk = {};
-    cats.forEach(function (c) { c.n = 0; c.ix.forEach(function (i) { porTipo[i] = c; if (!cm.tipo || cm.tipo === c.id) tOk[i] = 1; }); });
+    // Filtro de tipo dos cards também vale no mapa.
+    var catOn = function (id) { return !fil_.tipos || !!fil_.tipos[id === "fadiga" ? "fadiga" : id]; };
+    if (cm.tipo && !catOn(cm.tipo)) cm.tipo = "";
+    cats.forEach(function (c) { c.n = 0; c.ix.forEach(function (i) { porTipo[i] = c; if (catOn(c.id) && (!cm.tipo || cm.tipo === c.id)) tOk[i] = 1; }); });
     var cel = {}, loc = {}, total = 0;
     M.pts.forEach(function (e) {
       if (!semOk(e[0]) || !gOk[e[2]] || !porTipo[e[1]]) return;
@@ -1650,7 +1671,7 @@ window.iniciarPainel = function (D) {
   });
   painel.addEventListener("click", function (e) {
     var l = e.target.closest("[data-limpar]");
-    if (l) { fil_.processo = ""; fil_.responsavel = ""; fil_.turnos = [1, 1, 1]; if (fil_.comp) { fil_.comp.frota = ""; fil_.comp.resp = ""; } fco.dia = -1; fcm.tipo = ""; pm.frotas = []; Object.keys(PER).forEach(function (a) { PER[a].p = PER[a].padrao; PER[a].de = PER[a].ate = ""; }); pm.refit = true; render(); return; }
+    if (l) { fil_.processo = ""; fil_.responsavel = ""; fil_.turnos = [1, 1, 1]; fil_.tipos = null; if (fil_.comp) { fil_.comp.frota = ""; fil_.comp.resp = ""; } fco.dia = -1; fcm.tipo = ""; pm.frotas = []; Object.keys(PER).forEach(function (a) { PER[a].p = PER[a].padrao; PER[a].de = PER[a].ate = ""; }); pm.refit = true; render(); return; }
     var kt = e.target.closest("[data-ktodos]");
     if (kt) { fco.todos = !fco.todos; render(); return; }
     var kd = e.target.closest("[data-kdia]");
@@ -1658,6 +1679,9 @@ window.iniciarPainel = function (D) {
     var tb = e.target.closest("[data-turno]");
     if (tb) { trocaTurno(+tb.dataset.turno); return; }
     if (e.target.closest("[data-top5]")) { trocaTop5(); return; }
+    if (e.target.closest(".ktop")) return; // clique na gaveta do top 5 não troca o filtro
+    var kt0 = e.target.closest("article[data-tipo]");
+    if (kt0) { trocaTipo(kt0.dataset.tipo); return; }
     var cf = e.target.closest("[data-cfrota]");
     if (cf) { fil_.comp.frota = cf.dataset.cfrota; render(); return; }
     var mt = e.target.closest("[data-mtipo]");
@@ -1685,6 +1709,8 @@ window.iniciarPainel = function (D) {
     if (d && d.open && !d.contains(e.target)) { d.open = false; pm.abertoFrotas = false; }
   });
   painel.addEventListener("keydown", function (e) {
+    var ka = e.target.closest && e.target.closest("article[data-tipo]");
+    if (ka && e.target === ka && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); trocaTipo(ka.dataset.tipo); return; }
     var lt = e.target.closest && e.target.closest("li[data-turno]");
     if (lt && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); trocaTurno(+lt.dataset.turno); return; }
     var g = e.target.closest && e.target.closest("g[data-set]");
