@@ -267,7 +267,8 @@ window.iniciarPainel = function (D) {
     var kpis = barTop + '<div class="kpis' + (abreTop ? " com-top" : "") + '">' +
       CATS.map(function (c, ci) {
         // Cards com mais de um tipo (ex.: fadiga e bocejo) mostram a quantidade de cada um.
-        var partes = c.ix.length > 1 && c.id !== "vel" ? '<span class="kp">' + c.ix.map(function (i) { return esc(T[i].nome) + " <b>" + num(cur[i], 0) + "</b>"; }).map(function (x) { return "<span>" + x + "</span>"; }).join("") + "</span>" : "";
+        // Detalhe (ex.: Bocejo · Fadiga) numa linha só; os outros cards têm a mesma linha vazia, para tudo ficar alinhado.
+        var partes = '<span class="kp">' + (c.ix.length > 1 && c.id !== "vel" ? c.ix.map(function (i) { return esc(T[i].nome) + " <b>" + num(cur[i], 0) + "</b>"; }).join(" · ") : "&nbsp;") + "</span>";
         var cab = '<div class="kh">' + ico(c.icone) + '<span class="kl">' + esc(c.nome) + '</span></div><strong class="kv">' + num(c.n, 0) + "</strong>" + partes + dl(c.n, c.ant) + '<span class="ks">' + (temBase ? "vs. período anterior" : "&nbsp;") + "</span>";
         // Com o top 5 aberto, o topo do card vira um bloco só, para as gavetas começarem na mesma altura.
         return '<article class="kpi c-' + c.id + '">' + (abreTop ? '<div class="khd">' + cab + "</div>" + gaveta(ci) : cab) + "</article>";
