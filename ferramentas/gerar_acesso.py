@@ -201,8 +201,6 @@ def aplicar_responsaveis(D):
     """Responsável por processo informado pelo usuário vale em todas as abas que mostram responsável."""
     rp = responsaveis_por_processo()
     rf = responsaveis_por_frota()
-    if not rp and not rf:
-        return
     regs = list(D.get("conectividade", {}).get("frotas", {}).items()) + list(D.get("permanencia", {}).get("veiculos", {}).items()) \
         + [(v["id"], v) for v in D.get("motorOcioso", {}).get("veiculos", [])]
     for f, v in regs:
@@ -214,6 +212,16 @@ def aplicar_responsaveis(D):
         r = rp.get(chave_proc(v.get("processo")))
         if r:
             v["responsavel"] = r
+    # Comportamental (filtro Responsável, desde 17/11/2026): responsável da frota > do processo > o que a frota tem nas outras abas.
+    outras = {}
+    for f, v in regs:
+        if v.get("responsavel"):
+            outras.setdefault(norm(f), v["responsavel"])
+    for f, v in D.get("comportamento", {}).get("frotas", {}).items():
+        if norm(f) in rf:
+            v["responsavel"] = rf[norm(f)]
+        else:
+            v["responsavel"] = rp.get(chave_proc(v.get("processo"))) or outras.get(norm(f), "")
 
 
 def completar_processos(D):
@@ -347,7 +355,8 @@ def aplicar_de_para(D):
 def compactar_mapa(D):
     """Mapa de calor do Comportamental, compacto para o site: células de ~500 m, semana (dia // 7, a contar
     do início dos dados, para filtrar por período) e grupos [tipo de frota, processo, gerência] no lugar da
-    frota. Fica em comportamento.mapa = {cel, grupos, locais, pts: [semana, tipo, grupo, lat, lon, local, n]}."""
+    frota. Fica em comportamento.mapa = {cel, grupos, locais, pts: [semana, tipo, grupo, lat, lon, local, n]}.
+    Desde 17/11/2026 o 3º item do grupo é o responsável (antes, a gerência)."""
     C = D.get("comportamento")
     if not C or "pts" not in C:
         return
@@ -357,7 +366,7 @@ def compactar_mapa(D):
         v = F.get(f)
         if not v:
             continue
-        g = (v.get("frota"), v.get("processo"), v.get("gerencia"))
+        g = (v.get("frota"), v.get("processo"), v.get("responsavel", ""))
         if g not in gi:
             gi[g] = len(grupos); grupos.append(list(g))
         k = (d // 7, t, gi[g], int(round(la / CEL)), int(round(lo / CEL)), li)

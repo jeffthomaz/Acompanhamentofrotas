@@ -184,15 +184,16 @@ window.iniciarPainel = function (D) {
 
   function abaComportamento() {
     var C = D.comportamento, T = C.tipos, F = C.frotas, NT = T.length;
-    var fc = fil_.comp || (fil_.comp = { frota: "", gerencia: "" });
+    var fc = fil_.comp || (fil_.comp = { frota: "", resp: "" });
     // Filtros: tipo de frota, processo e gerência.
     var ids = Object.keys(F).filter(function (f) { return !fc.frota || F[f].frota === fc.frota; });
     var processos = unicos(ids.map(function (f) { return F[f].processo; }));
     if (fil_.processo && processos.indexOf(fil_.processo) < 0) fil_.processo = "";
     ids = ids.filter(function (f) { return !fil_.processo || F[f].processo === fil_.processo; });
-    var gerencias = unicos(ids.map(function (f) { return F[f].gerencia; }));
-    if (fc.gerencia && gerencias.indexOf(fc.gerencia) < 0) fc.gerencia = "";
-    ids = ids.filter(function (f) { return !fc.gerencia || F[f].gerencia === fc.gerencia; });
+    // Responsável (no lugar da gerência desde 17/11/2026): da frota, do processo ou das outras abas.
+    var resps = unicos(ids.map(function (f) { return F[f].responsavel; }).filter(Boolean));
+    if (fc.resp && resps.indexOf(fc.resp) < 0) fc.resp = "";
+    ids = ids.filter(function (f) { return !fc.resp || F[f].responsavel === fc.resp; });
     var sel = {}; ids.forEach(function (f) { sel[f] = 1; });
     var ev = C.ev.filter(function (e) { return sel[e[2]]; });
 
@@ -246,9 +247,9 @@ window.iniciarPainel = function (D) {
         return '<button type="button" data-cfrota="' + o[0] + '" aria-pressed="' + (fc.frota === o[0]) + '">' + o[1] + "</button>";
       }).join("") + "</div></div>" +
       '<label>Processo<select data-fil="processo" id="c-processo">' + opcoes(processos, fil_.processo, D.escopo && D.escopo !== "todos" ? "Todos os meus processos" : "Todos os processos") + "</select></label>" +
-      '<label>Gerência<select data-comp="gerencia" id="c-gerencia">' + opcoes(gerencias, fc.gerencia, "Todas as gerências") + "</select></label>" +
+      '<label>Responsável<select data-comp="resp" id="c-resp">' + opcoes(resps, fc.resp, "Todos os responsáveis") + "</select></label>" +
       perControle("comportamento", stC, diasC, fC) +
-      (fc.frota || fil_.processo || fc.gerencia || stC.p !== stC.padrao || !todosTurnos() ? '<button type="button" class="limpar" data-limpar="1">Limpar filtros</button>' : "") +
+      (fc.frota || fil_.processo || fc.resp || stC.p !== stC.padrao || !todosTurnos() ? '<button type="button" class="limpar" data-limpar="1">Limpar filtros</button>' : "") +
       '<p class="ctx">' + num(nVeic, 0) + " " + plural(nVeic, "veículo", "veículos") + " com ocorrência, " + rot(a0) + " a " + rot(a1) + (temBase ? " (comparado com " + rot(b0) + " a " + rot(a0 - 1) + ")" : "") + (turnoTexto() ? ", só " + turnoTexto() + " (clique nos turnos para mudar; o mapa mostra todos)" : "") + "</p></div>";
 
     // Top 5 veículos de cada tipo, numa gaveta embaixo de cada card (abre e fecha tudo junto; a escolha fica guardada).
@@ -258,7 +259,7 @@ window.iniciarPainel = function (D) {
       var tot = CATS[ci].n, mx = l.length ? l[0].n : 1;
       return '<div class="ktop"><h4>Top 5 veículos</h4>' + (l.length ? "<ol>" + l.map(function (x, i) {
         var v = F[x.f] || {};
-        return '<li title="' + esc([x.f, v.processo, v.gerencia].filter(Boolean).join(" · ")) + '"><div class="l1"><span>' + (i + 1) + "º <b>" + esc(x.f) + "</b></span><b>" + num(x.n, 0) + (tot ? " <small>" + num(x.n / tot * 100, 0) + "%</small>" : "") + "</b></div>" +
+        return '<li title="' + esc([x.f, v.processo, v.responsavel].filter(Boolean).join(" · ")) + '"><div class="l1"><span>' + (i + 1) + "º <b>" + esc(x.f) + "</b></span><b>" + num(x.n, 0) + (tot ? " <small>" + num(x.n / tot * 100, 0) + "%</small>" : "") + "</b></div>" +
           '<span class="pr">' + esc(v.processo || "") + '</span><div class="bb"><i style="width:' + (x.n / mx * 100).toFixed(1) + '%"></i></div></li>';
       }).join("") + "</ol>" : '<p class="vz">Sem registros no período.</p>') + "</div>";
     }
@@ -350,7 +351,7 @@ window.iniciarPainel = function (D) {
     if (cm.tipo && !cats.some(function (c) { return c.id === cm.tipo; })) cm.tipo = "";
     // Os pontos do mapa vêm por semana (dias 0–6, 7–13...): entra a semana que toca o período.
     var semOk = function (w) { return w * 7 <= a1 && w * 7 + 6 >= a0; }, aprox = a0 % 7 !== 0 || (a1 + 1) % 7 !== 0;
-    var gOk = M.grupos.map(function (g) { return (!fc.frota || g[0] === fc.frota) && (!fil_.processo || g[1] === fil_.processo) && (!fc.gerencia || g[2] === fc.gerencia); });
+    var gOk = M.grupos.map(function (g) { return (!fc.frota || g[0] === fc.frota) && (!fil_.processo || g[1] === fil_.processo) && (!fc.resp || g[2] === fc.resp); });
     var porTipo = {}, tOk = {};
     cats.forEach(function (c) { c.n = 0; c.ix.forEach(function (i) { porTipo[i] = c; if (!cm.tipo || cm.tipo === c.id) tOk[i] = 1; }); });
     var cel = {}, loc = {}, total = 0;
@@ -1648,7 +1649,7 @@ window.iniciarPainel = function (D) {
   });
   painel.addEventListener("click", function (e) {
     var l = e.target.closest("[data-limpar]");
-    if (l) { fil_.processo = ""; fil_.responsavel = ""; fil_.turnos = [1, 1, 1]; if (fil_.comp) { fil_.comp.frota = ""; fil_.comp.gerencia = ""; } fco.dia = -1; fcm.tipo = ""; pm.frotas = []; Object.keys(PER).forEach(function (a) { PER[a].p = PER[a].padrao; PER[a].de = PER[a].ate = ""; }); pm.refit = true; render(); return; }
+    if (l) { fil_.processo = ""; fil_.responsavel = ""; fil_.turnos = [1, 1, 1]; if (fil_.comp) { fil_.comp.frota = ""; fil_.comp.resp = ""; } fco.dia = -1; fcm.tipo = ""; pm.frotas = []; Object.keys(PER).forEach(function (a) { PER[a].p = PER[a].padrao; PER[a].de = PER[a].ate = ""; }); pm.refit = true; render(); return; }
     var kt = e.target.closest("[data-ktodos]");
     if (kt) { fco.todos = !fco.todos; render(); return; }
     var kd = e.target.closest("[data-kdia]");
