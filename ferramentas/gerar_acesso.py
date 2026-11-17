@@ -127,6 +127,32 @@ def unificar_processos(D):
     if not os.path.exists(caminho):
         return
     mapa = {chave_proc(k): v for k, v in json.load(open(caminho, encoding="utf-8")).items() if not k.startswith("_")}
+    # Mesmo processo escrito com e sem acento (ex.: EXPERIMENTACAO e EXPERIMENTAÇÃO, 17/11/2026): vira um só,
+    # a grafia com acento (ou a mais comum).
+    import unicodedata
+    from collections import Counter
+    sem_acento = lambda t: unicodedata.normalize("NFKD", t).encode("ascii", "ignore").decode().upper().strip()
+    vistos = Counter()
+    regs0 = list(D.get("comportamento", {}).get("frotas", {}).values()) + D.get("motorOcioso", {}).get("veiculos", []) \
+        + list(D.get("permanencia", {}).get("veiculos", {}).values()) + list(D.get("conectividade", {}).get("frotas", {}).values()) \
+        + D.get("cameras", {}).get("lista", [])
+    for x in regs0:
+        if x.get("processo"):
+            vistos[mapa.get(chave_proc(x["processo"]), x["processo"])] += 1
+    for p in D.get("cameras", {}).get("proc", {}):
+        vistos[mapa.get(chave_proc(p), p)] += 1
+    grupos = {}
+    for nome, n in vistos.items():
+        grupos.setdefault(sem_acento(nome), []).append((nome != sem_acento(nome), n, nome))
+    for lst in grupos.values():
+        if len(lst) > 1:
+            canon = max(lst)[2]
+            for _, _, nome in lst:
+                if nome != canon:
+                    for k, v in list(mapa.items()):
+                        if v == nome:
+                            mapa[k] = canon
+                    mapa[chave_proc(nome)] = canon
     def troca(x):
         if isinstance(x, dict) and "processo" in x:
             x["processo"] = mapa.get(chave_proc(x["processo"]), x["processo"])
