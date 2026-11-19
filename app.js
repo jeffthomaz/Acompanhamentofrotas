@@ -223,7 +223,11 @@ window.iniciarPainel = function (D) {
     ev = ev.filter(function (e) { return noPainel[e[1]]; }); // tipos sem card (ex.: câmera obstruída) ficam fora
     // Turnos e horas (5º e 6º itens do ev), para os quadros de turno e de horas de pico.
     var ciT = T.map(function (t) { var g = t.grupo || t.id; for (var j = 0; j < CATS.length; j++) if (CATS[j].id === g) return j; return -1; });
-    var hz = { cur: 0, tu: [0, 0, 0, 0], tuA: [0, 0, 0, 0], tuC: [0, 1, 2, 3].map(function () { return CATS.map(function () { return 0; }); }), hr: [], hrC: [] };
+    var hz = { cur: 0, tu: [0, 0, 0, 0], tuA: [0, 0, 0, 0], tuC: [0, 1, 2, 3].map(function () { return CATS.map(function () { return 0; }); }), tuT: [0, 1, 2, 3].map(function () { return T.map(function () { return 0; }); }), hr: [], hrC: [] };
+    // Só um tipo escolhido nos cards e ele tem subtipos (ex.: Fadiga e bocejo, faixas de velocidade): os turnos mostram cada subtipo.
+    var selIds = fil_.tipos ? Object.keys(fil_.tipos) : [], selCat = selIds.length === 1 ? CATS.filter(function (c) { return c.id === selIds[0]; })[0] : null;
+    var subIx = selCat ? T.map(function (t, i) { return CATS[ciT[i]] === selCat ? i : -1; }).filter(function (i) { return i >= 0; }) : [];
+    if (subIx.length > 1) hz.sub = subIx.map(function (i) { return { i: i, nome: T[i].nome }; });
     for (k = 0; k < 24; k++) { hz.hr.push(0); hz.hrC.push(CATS.map(function () { return 0; })); }
     // Filtro de tipo (clicando nos cards, desde 17/11/2026): os cards mostram sempre o próprio número; o resto da aba, só os tipos escolhidos.
     var tOn = T.map(function (t, i) { return ciT[i] >= 0 && (!fil_.tipos || !!fil_.tipos[CATS[ciT[i]].id]); });
@@ -231,7 +235,7 @@ window.iniciarPainel = function (D) {
     ev.forEach(function (e) {
       if (!tOn[e[1]]) return;
       var t0 = e.length > 4 ? e[4] : 3, tOk = turnoOk(e);
-      if (e[0] >= a0 && e[0] <= a1) { hz.tu[t0] += e[3]; if (ciT[e[1]] >= 0) hz.tuC[t0][ciT[e[1]]] += e[3]; }
+      if (e[0] >= a0 && e[0] <= a1) { hz.tu[t0] += e[3]; if (ciT[e[1]] >= 0) hz.tuC[t0][ciT[e[1]]] += e[3]; hz.tuT[t0][e[1]] += e[3]; }
       else if (b0 >= 0 && e[0] >= b0 && e[0] < a0) hz.tuA[t0] += e[3];
     });
     ev = ev.filter(turnoOk);
@@ -1432,7 +1436,7 @@ window.iniciarPainel = function (D) {
         return '<li class="' + [i === iMx && n ? "mx" : "", esc0 ? (marc ? "sel" : "fora") : ""].join(" ").trim() + '" data-turno="' + i + '" role="button" tabindex="0" aria-pressed="' + (esc0 && marc) + '" title="' + (esc0 && marc ? "Clique para tirar o turno " + t[0] + " do filtro" : esc0 ? "Clique para somar o turno " + t[0] + " ao filtro" : "Clique para ver só o turno " + t[0]) + '"><p class="rz-tuh"><b>Turno ' + t[0] + "</b><span>" + t[1] + "</span></p>" +
           '<p class="rz-tuv"><strong>' + num(n, 0) + "</strong>" + (c.tuA[i] ? delta(n, c.tuA[i]) : temAnt ? '<span class="dl neutro">sem base</span>' : "") + "</p>" +
           '<div class="bb"><div class="ff" style="width:' + (mxT ? n / mxT * 100 : 0).toFixed(1) + '%"></div></div>' +
-          '<p class="rz-tus">' + num(n / tuTot * 100, 0) + "% das ocorrências" + (top.length ? " · mais comum: " + esc(top[0].c.nome.toLowerCase()) + " (" + num(top[0].n, 0) + ")" : "") + "</p></li>";
+          '<p class="rz-tus">' + num(n / tuTot * 100, 0) + "% das ocorrências" + (c.sub && c.tuT ? " · " + c.sub.map(function (x) { return esc(x.nome) + " <b>" + num(c.tuT[i][x.i], 0) + "</b>"; }).join(" · ") : top.length ? " · mais comum: " + esc(top[0].c.nome.toLowerCase()) + " (" + num(top[0].n, 0) + ")" : "") + "</p></li>";
       }).join("");
       var semH = c.tu[3] ? " " + num(c.tu[3], 0) + " " + plural(c.tu[3], "ocorrência", "ocorrências") + " sem hora ficaram fora dos turnos." : "";
       linhas.push('<div class="rz-row">' + rzCard("Ocorrências por turno", "comportamental · " + per + (varTxt ? " · " + varTxt : ""),
