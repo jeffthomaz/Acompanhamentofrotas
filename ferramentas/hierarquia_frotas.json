@@ -1,0 +1,899 @@
+{
+ "_obs": "Hierarquia por frota (gerente, gestor, líder) da planilha enviada pelo usuário em 19/11/2026 (frotas ativas). Coordenador = responsável (responsaveis_frotas.json).",
+ "frotas": {
+  "10095": {
+   "gerente": "Marcos Rodrigues",
+   "gestor": "Arthur Borges"
+  },
+  "10132": {
+   "gerente": "Marcos Rodrigues",
+   "gestor": "Arthur Borges"
+  },
+  "10157": {
+   "gerente": "Marcos Rodrigues",
+   "gestor": "Arthur Borges"
+  },
+  "30012": {
+   "gerente": "Keite/Havala"
+  },
+  "30017": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Patrick"
+  },
+  "30026": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Patrick"
+  },
+  "30027": {
+   "gerente": "Otto",
+   "lider": "Edmundo da Silva"
+  },
+  "30036": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Patrick"
+  },
+  "30037": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Carlos Alberto"
+  },
+  "30039": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Carlos Alberto"
+  },
+  "30043": {
+   "gerente": "Marcos Rodrigues"
+  },
+  "30054": {
+   "gerente": "Otto",
+   "gestor": "Cristiano Colucci"
+  },
+  "30055": {
+   "gerente": "Otto",
+   "gestor": "Rafael Cabral"
+  },
+  "30062": {
+   "gerente": "Marcos Rodrigues"
+  },
+  "30067": {
+   "gerente": "Otto"
+  },
+  "30068": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Carlos Alberto"
+  },
+  "30069": {
+   "gerente": "Otto",
+   "gestor": "Rafael Cabral"
+  },
+  "30070": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Patrick"
+  },
+  "30072": {
+   "gerente": "Marcos Rodrigues",
+   "gestor": "Arthur Borges"
+  },
+  "30077": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Carlos Alberto"
+  },
+  "30080": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Carlos Alberto"
+  },
+  "30081": {
+   "gerente": "Otto",
+   "gestor": "Cristiano Colucci"
+  },
+  "30082": {
+   "gerente": "Otto",
+   "gestor": "Cristiano Colucci"
+  },
+  "30083": {
+   "gerente": "Otto",
+   "lider": "Edmundo da Silva"
+  },
+  "30086": {
+   "gerente": "Marcos Rodrigues",
+   "gestor": "André"
+  },
+  "30087": {
+   "gerente": "Marcos Rodrigues",
+   "gestor": "André"
+  },
+  "30088": {
+   "gerente": "Marcos Rodrigues",
+   "gestor": "André"
+  },
+  "30089": {
+   "gerente": "Marcos Rodrigues",
+   "gestor": "Arthur Borges"
+  },
+  "30090": {
+   "gerente": "Marcos Rodrigues"
+  },
+  "30092": {
+   "gerente": "Marcos Rodrigues",
+   "gestor": "Arthur Borges"
+  },
+  "30093": {
+   "gerente": "Marcos Rodrigues",
+   "gestor": "André"
+  },
+  "30094": {
+   "gerente": "Marcos Rodrigues",
+   "gestor": "André"
+  },
+  "30095": {
+   "gerente": "Marcos Rodrigues",
+   "gestor": "André"
+  },
+  "30096": {
+   "gerente": "Marcos Rodrigues",
+   "gestor": "André"
+  },
+  "30097": {
+   "gerente": "Marcos Rodrigues",
+   "gestor": "André"
+  },
+  "30098": {
+   "gerente": "Marcos Rodrigues",
+   "gestor": "André"
+  },
+  "30099": {
+   "gerente": "Marcos Rodrigues"
+  },
+  "30101": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Carlos Alberto"
+  },
+  "30102": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Carlos Alberto"
+  },
+  "30104": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Carlos Alberto"
+  },
+  "30105": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Carlos Alberto"
+  },
+  "30106": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Carlos Alberto"
+  },
+  "30107": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Carlos Alberto"
+  },
+  "30108": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Carlos Alberto"
+  },
+  "30109": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Carlos Alberto"
+  },
+  "30110": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Carlos Alberto"
+  },
+  "30111": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Carlos Alberto"
+  },
+  "30114": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Carlos Alberto"
+  },
+  "30115": {
+   "gerente": "Marcos Rodrigues",
+   "gestor": "André"
+  },
+  "30116": {
+   "gerente": "Marcos Rodrigues",
+   "gestor": "André"
+  },
+  "30117": {
+   "gerente": "Marcos Rodrigues",
+   "gestor": "André"
+  },
+  "30118": {
+   "gerente": "Danilo"
+  },
+  "30119": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Carlos Alberto"
+  },
+  "30120": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Carlos Alberto"
+  },
+  "30121": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Carlos Alberto"
+  },
+  "30124": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Carlos Alberto"
+  },
+  "30125": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Carlos Alberto"
+  },
+  "30126": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Carlos Alberto"
+  },
+  "30127": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Carlos Alberto"
+  },
+  "30128": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Carlos Alberto"
+  },
+  "30129": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Carlos Alberto"
+  },
+  "30130": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Carlos Alberto"
+  },
+  "30131": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Carlos Alberto"
+  },
+  "30132": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Carlos Alberto"
+  },
+  "30133": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Carlos Alberto"
+  },
+  "30134": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Carlos Alberto"
+  },
+  "30135": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Carlos Alberto"
+  },
+  "30136": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Carlos Alberto"
+  },
+  "30137": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Carlos Alberto"
+  },
+  "30145": {
+   "gerente": "Otto",
+   "gestor": "Cristiano Colucci"
+  },
+  "30146": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Carlos Alberto"
+  },
+  "30147": {
+   "gerente": "Otto"
+  },
+  "30148": {
+   "gerente": "Marcos Rodrigues",
+   "gestor": "Arthur Borges"
+  },
+  "30149": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Patrick"
+  },
+  "30150": {
+   "gerente": "Otto",
+   "gestor": "Cristiano Colucci"
+  },
+  "30151": {
+   "gerente": "Marcos Rodrigues"
+  },
+  "30152": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Carlos Alberto"
+  },
+  "30153": {
+   "gerente": "Marcos Rodrigues",
+   "gestor": "Arthur Borges"
+  },
+  "30154": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Carlos Alberto"
+  },
+  "30155": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Carlos Alberto"
+  },
+  "30156": {
+   "gerente": "Marcos Rodrigues",
+   "gestor": "André"
+  },
+  "30157": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Carlos Alberto"
+  },
+  "30158": {
+   "gerente": "Marcos Rodrigues",
+   "gestor": "André"
+  },
+  "30159": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Carlos Alberto"
+  },
+  "30160": {
+   "gerente": "Otto",
+   "gestor": "Cristiano Colucci"
+  },
+  "30161": {
+   "gerente": "Otto",
+   "lider": "Edmundo da Silva"
+  },
+  "30162": {
+   "gerente": "Otto",
+   "gestor": "Cristiano Colucci"
+  },
+  "30163": {
+   "gerente": "Otto",
+   "gestor": "Cristiano Colucci"
+  },
+  "30164": {
+   "gerente": "Otto"
+  },
+  "30165": {
+   "gerente": "Otto"
+  },
+  "30168": {
+   "gerente": "Marcos Rodrigues"
+  },
+  "30169": {
+   "gerente": "Marcos Rodrigues",
+   "gestor": "André"
+  },
+  "30170": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Patrick"
+  },
+  "30171": {
+   "gerente": "Marcos Rodrigues",
+   "gestor": "Arthur Borges"
+  },
+  "30172": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Patrick"
+  },
+  "30173": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Carlos Alberto"
+  },
+  "30174": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Carlos Alberto"
+  },
+  "40670": {
+   "gerente": "Danilo"
+  },
+  "40698": {
+   "gerente": "Danilo"
+  },
+  "40699": {
+   "gerente": "Danilo"
+  },
+  "40700": {
+   "gerente": "Danilo"
+  },
+  "40701": {
+   "gerente": "Danilo"
+  },
+  "40705": {
+   "gerente": "Keite/Havala"
+  },
+  "40707": {
+   "gerente": "Marcos Rodrigues"
+  },
+  "40709": {
+   "gerente": "Marcos Rodrigues",
+   "gestor": "Luiz Paulo",
+   "lider": "Conrado"
+  },
+  "40712": {
+   "gerente": "Marcos Rodrigues",
+   "gestor": "Arthur Borges"
+  },
+  "40715": {
+   "gerente": "Danilo"
+  },
+  "40717": {
+   "gerente": "Otto",
+   "gestor": "Rafael Cabral"
+  },
+  "40720": {
+   "gerente": "Danilo"
+  },
+  "40721": {
+   "gerente": "Danilo"
+  },
+  "40734": {
+   "gerente": "Danilo"
+  },
+  "40748": {
+   "gerente": "Danilo"
+  },
+  "40750": {
+   "gerente": "Marcos Rodrigues",
+   "gestor": "Arthur Borges"
+  },
+  "40753": {
+   "gerente": "Danilo"
+  },
+  "40754": {
+   "gerente": "Danilo"
+  },
+  "40755": {
+   "gerente": "Otto",
+   "gestor": "Rafael Cabral"
+  },
+  "40756": {
+   "gerente": "Otto",
+   "gestor": "Cristiano Colucci"
+  },
+  "40759": {
+   "gerente": "Otto",
+   "gestor": "Rafael Cabral"
+  },
+  "40761": {
+   "gerente": "Danilo"
+  },
+  "40763": {
+   "gerente": "Danilo"
+  },
+  "40764": {
+   "gerente": "Otto",
+   "gestor": "Cristiano Colucci"
+  },
+  "40765": {
+   "gerente": "Keite/Havala"
+  },
+  "40766": {
+   "gerente": "Marcos Rodrigues",
+   "gestor": "Arthur Borges"
+  },
+  "40767": {
+   "gerente": "Keite/Havala"
+  },
+  "40768": {
+   "gerente": "Danilo"
+  },
+  "40770": {
+   "gerente": "Marcos Rodrigues",
+   "gestor": "André"
+  },
+  "40774": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Patrick"
+  },
+  "40775": {
+   "gerente": "Keite/Havala"
+  },
+  "40776": {
+   "gerente": "Marcos Rodrigues",
+   "gestor": "Arthur Borges"
+  },
+  "40778": {
+   "gerente": "Keite/Havala"
+  },
+  "40779": {
+   "gerente": "Marcos Rodrigues",
+   "gestor": "Arthur Borges"
+  },
+  "40780": {
+   "gerente": "Otto",
+   "gestor": "Cristiano Colucci"
+  },
+  "40781": {
+   "gerente": "Otto",
+   "gestor": "Cristiano Colucci"
+  },
+  "40782": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Carlos Alberto"
+  },
+  "40784": {
+   "gerente": "Otto"
+  },
+  "40789": {
+   "gerente": "Otto",
+   "gestor": "Rafael Cabral"
+  },
+  "40792": {
+   "gerente": "Marcos Rodrigues"
+  },
+  "40793": {
+   "gerente": "Danilo"
+  },
+  "40794": {
+   "gerente": "Marcos Rodrigues",
+   "gestor": "Arthur Borges"
+  },
+  "40795": {
+   "gerente": "Marcos Rodrigues",
+   "gestor": "Luiz Paulo",
+   "lider": "Conrado"
+  },
+  "40797": {
+   "gerente": "Otto"
+  },
+  "40799": {
+   "gerente": "Danilo"
+  },
+  "40800": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Patrick"
+  },
+  "40801": {
+   "gerente": "Keite/Havala"
+  },
+  "40802": {
+   "gerente": "Otto",
+   "gestor": "Rafael Cabral"
+  },
+  "40803": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Carlos Alberto"
+  },
+  "40805": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Patrick"
+  },
+  "40806": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Patrick"
+  },
+  "40807": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Patrick"
+  },
+  "40808": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Patrick"
+  },
+  "40809": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Patrick"
+  },
+  "40810": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Patrick"
+  },
+  "40811": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Patrick"
+  },
+  "40812": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Patrick"
+  },
+  "40813": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Patrick"
+  },
+  "40814": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Patrick"
+  },
+  "40816": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Patrick"
+  },
+  "40817": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Patrick"
+  },
+  "40818": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Patrick"
+  },
+  "40820": {
+   "gerente": "Otto",
+   "gestor": "Cristiano Colucci"
+  },
+  "40822": {
+   "gerente": "Marcos Rodrigues",
+   "gestor": "Arthur Borges"
+  },
+  "40823": {
+   "gerente": "Marcos Rodrigues",
+   "gestor": "Luiz Paulo",
+   "lider": "Conrado"
+  },
+  "40824": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Patrick"
+  },
+  "40825": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Patrick"
+  },
+  "40826": {
+   "gerente": "Marcos Rodrigues",
+   "gestor": "André"
+  },
+  "40827": {
+   "gerente": "Marcos Rodrigues"
+  },
+  "40828": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Carlos Alberto"
+  },
+  "40829": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Carlos Alberto"
+  },
+  "40830": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Carlos Alberto"
+  },
+  "40831": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Carlos Alberto"
+  },
+  "40832": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Carlos Alberto"
+  },
+  "40835": {
+   "gerente": "Danilo"
+  },
+  "40839": {
+   "gerente": "Otto",
+   "gestor": "Cristiano Colucci"
+  },
+  "40843": {
+   "gerente": "Otto"
+  },
+  "40844": {
+   "gerente": "Otto",
+   "gestor": "Rafael Cabral"
+  },
+  "40845": {
+   "gerente": "Marcos Rodrigues"
+  },
+  "40846": {
+   "gerente": "Marcos Rodrigues",
+   "gestor": "Luiz Paulo",
+   "lider": "Conrado"
+  },
+  "40847": {
+   "gerente": "Marcos Rodrigues"
+  },
+  "40848": {
+   "gerente": "Marcos Rodrigues"
+  },
+  "40850": {
+   "gerente": "Marcos Rodrigues",
+   "gestor": "André"
+  },
+  "40851": {
+   "gerente": "Danilo"
+  },
+  "40852": {
+   "gerente": "Danilo"
+  },
+  "40853": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Patrick"
+  },
+  "40854": {
+   "gerente": "Marcos Rodrigues",
+   "gestor": "André"
+  },
+  "40855": {
+   "gerente": "Marcos Rodrigues",
+   "gestor": "Arthur Borges"
+  },
+  "40856": {
+   "gerente": "Otto",
+   "gestor": "Cristiano Colucci"
+  },
+  "40857": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Carlos Alberto"
+  },
+  "40858": {
+   "gerente": "Marcos Rodrigues",
+   "gestor": "André"
+  },
+  "40859": {
+   "gerente": "Keite/Havala"
+  },
+  "40860": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Patrick"
+  },
+  "40861": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Carlos Alberto"
+  },
+  "40862": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Carlos Alberto"
+  },
+  "40863": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Carlos Alberto"
+  },
+  "40864": {
+   "gerente": "Otto",
+   "gestor": "Rafael Cabral"
+  },
+  "40865": {
+   "gerente": "Danilo"
+  },
+  "40866": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Carlos Alberto"
+  },
+  "40867": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Carlos Alberto"
+  },
+  "40868": {
+   "gerente": "Otto",
+   "gestor": "Cristiano Colucci"
+  },
+  "40869": {
+   "gerente": "Marcos Rodrigues",
+   "gestor": "Luiz Paulo",
+   "lider": "Conrado"
+  },
+  "40870": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Carlos Alberto"
+  },
+  "40871": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Valmir Monteiro"
+  },
+  "40872": {
+   "gerente": "Marcos Rodrigues"
+  },
+  "40873": {
+   "gerente": "Marcos Rodrigues"
+  },
+  "40874": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Carlos Alberto"
+  },
+  "40875": {
+   "gerente": "Danilo"
+  },
+  "40876": {
+   "gerente": "Marcos Rodrigues"
+  },
+  "40877": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Valmir Monteiro"
+  },
+  "40878": {
+   "gerente": "Marcos Rodrigues"
+  },
+  "40879": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Carlos Alberto"
+  },
+  "40881": {
+   "gerente": "Danilo"
+  },
+  "40882": {
+   "gerente": "Danilo"
+  },
+  "40883": {
+   "gerente": "Danilo"
+  },
+  "40884": {
+   "gerente": "Danilo"
+  },
+  "40885": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Carlos Alberto"
+  },
+  "40886": {
+   "gerente": "Marcos Rodrigues",
+   "gestor": "André"
+  },
+  "40887": {
+   "gerente": "Marcos Rodrigues"
+  },
+  "40888": {
+   "gerente": "Marcos Rodrigues",
+   "gestor": "André"
+  },
+  "40889": {
+   "gerente": "Danilo"
+  },
+  "40890": {
+   "gerente": "Marcos Rodrigues",
+   "gestor": "André"
+  },
+  "40891": {
+   "gerente": "Marcos Rodrigues",
+   "gestor": "Luiz Paulo",
+   "lider": "Conrado"
+  },
+  "40892": {
+   "gerente": "Marcos Rodrigues",
+   "gestor": "Arthur Borges"
+  },
+  "40893": {
+   "gerente": "Marcos Rodrigues",
+   "gestor": "André"
+  },
+  "40894": {
+   "gerente": "Danilo"
+  },
+  "40895": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Carlos Alberto"
+  },
+  "40896": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Patrick"
+  },
+  "40897": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Carlos Alberto"
+  },
+  "40898": {
+   "gerente": "Marcos Rodrigues"
+  },
+  "40900": {
+   "gerente": "Marcos Rodrigues"
+  },
+  "40901": {
+   "gerente": "Marcos Rodrigues"
+  },
+  "40903": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Carlos Alberto"
+  },
+  "40904": {
+   "gerente": "Marcos Rodrigues",
+   "gestor": "André"
+  },
+  "40905": {
+   "gerente": "Marcos Rodrigues",
+   "gestor": "André"
+  },
+  "40906": {
+   "gerente": "Marcos Rodrigues"
+  },
+  "40907": {
+   "gerente": "Danilo"
+  },
+  "40908": {
+   "gerente": "Danilo"
+  },
+  "40909": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Patrick"
+  },
+  "70019": {
+   "gerente": "Danilo"
+  },
+  "961315": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Carlos Alberto"
+  },
+  "961316": {
+   "gerente": "Fábio Pozzi",
+   "gestor": "Carlos Alberto"
+  }
+ }
+}

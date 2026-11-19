@@ -394,13 +394,31 @@ def compactar_mapa(D):
         v = F.get(f)
         if not v:
             continue
-        g = (v.get("frota"), v.get("processo"), v.get("responsavel", ""))
+        g = (v.get("frota"), v.get("processo"), v.get("responsavel", ""), v.get("gerente", ""), v.get("gestor", ""), v.get("lider", ""))
         if g not in gi:
             gi[g] = len(grupos); grupos.append(list(g))
         k = (d // 7, t, gi[g], int(round(la / CEL)), int(round(lo / CEL)), li)
         cont[k] = cont.get(k, 0) + n
     C["mapa"] = {"cel": CEL / 1000.0, "grupos": grupos, "locais": C.pop("locais", []),
                  "pts": sorted(list(k) + [n] for k, n in cont.items())}
+
+
+def aplicar_hierarquia(D):
+    """Gerente, gestor e líder de cada frota do Comportamental (ferramentas/hierarquia_frotas.json, 19/11/2026).
+    O coordenador é o responsável. O gerente da planilha passa na frente da gerência que vem das ocorrências."""
+    caminho = os.path.join(os.path.dirname(os.path.abspath(__file__)), "hierarquia_frotas.json")
+    if not os.path.exists(caminho):
+        return
+    H = json.load(open(caminho, encoding="utf-8")).get("frotas", {})
+    for f, v in D.get("comportamento", {}).get("frotas", {}).items():
+        h = H.get(norm(f)) or H.get(str(f)) or {}
+        for k in ("gerente", "gestor", "lider"):
+            if h.get(k):
+                v[k] = h[k]
+            else:
+                v.pop(k, None)
+        if h.get("gerente"):
+            v["gerencia"] = h["gerente"]
 
 
 def remover_excluidas(D):
@@ -451,6 +469,7 @@ def preparar(fonte):
     aplicar_processos_informados(D)
     feitos = completar_processos(D)
     aplicar_responsaveis(D)
+    aplicar_hierarquia(D)
     if feitos:
         print("%d frota(s) sem processo completadas pelo processo de outra aba" % len(feitos))
     remover_excluidas(D)
