@@ -574,6 +574,13 @@ rect.seg.c-vel{fill:var(--c-vel)}rect.seg.c-celular{fill:var(--c-celular)}rect.s
 .ap-lim-b{height:2.4rem;background:var(--soft);border-radius:8px;overflow:hidden}.ap-lim-b i{display:block;height:100%;border-radius:8px}
 .ap-lim-r.lim1 .ap-lim-b i{background:var(--v1)}.ap-lim-r.lim2 .ap-lim-b i{background:var(--v2)}.ap-lim-r.lim3 .ap-lim-b i{background:var(--v3)}
 .ap-lim-n{text-align:right}.ap-lim-n strong{display:block;font-family:var(--display);font-size:1.7rem;line-height:1.1}.ap-lim-n small{color:var(--muted)}
+.ap-vl{display:grid;gap:.45rem}
+.ap-vl-r{display:grid;grid-template-columns:5.2rem minmax(0,1fr) 6.2rem 11.5rem;gap:.7rem;align-items:center}
+.ap-vl-r b{font-family:var(--display);font-size:1.05rem}
+.ap-vl-b{height:1.5rem;background:var(--soft);border-radius:6px;overflow:hidden}.ap-vl-b i{display:block;height:100%;background:var(--c-vel);border-radius:6px}
+.ap-vl-n{text-align:right;font-weight:700;font-variant-numeric:tabular-nums}.ap-vl-n small{display:block;font-weight:400;color:var(--muted);font-size:.78rem}
+.ap-vl-a{font-size:.82rem;color:var(--muted)}.ap-vl-a.alto{color:#fff;background:var(--v3);border-radius:999px;padding:.15rem .55rem;font-weight:600;justify-self:start}
+.ap-vl-leg{margin-top:.6rem;font-size:.85rem}
 @media (max-width:900px){.ap-lim-w{grid-template-columns:minmax(0,1fr)}}
 .ap-prop{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:2rem;align-items:start;margin-top:1rem}
 .ap-prop-l{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:.8rem}
@@ -588,7 +595,7 @@ rect.seg.c-vel{fill:var(--c-vel)}rect.seg.c-celular{fill:var(--c-celular)}rect.s
 </style>
 </head><body>
 <header class="band"><div class="band-in gut">
-  <img class="logo" src="logo-branco.png?v=202611191011" alt="Bioenergética Aroeira" width="67" height="92">
+  <img class="logo" src="logo-branco.png?v=202611191020" alt="Bioenergética Aroeira" width="67" height="92">
   <div><h1>MONITORAMENTO COMPORTAMENTAL</h1><p class="per" id="periodo"></p></div>
   <div class="quem" id="quem" hidden><span><b id="quem-nome"></b><small id="quem-escopo"></small></span><button type="button" id="atualizar" hidden>Atualizar dados</button><button type="button" id="sair">Sair</button></div>
   <p class="atu-ult" id="atualizado" hidden></p>
@@ -620,9 +627,9 @@ rect.seg.c-vel{fill:var(--c-vel)}rect.seg.c-celular{fill:var(--c-celular)}rect.s
 </div>
 <footer class="foot gut">Bioenergética Aroeira S/A, Tupaciguara/MG. <a href="https://www.bioaroeira.com.br" target="_blank" rel="noopener">www.bioaroeira.com.br</a></footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" defer></script>
-<script src="acesso.js?v=202611191011"></script>
-<script src="app.js?v=202611191011"></script>
-<script src="jszip.min.js?v=202611191011"></script>
-<script src="painel-atualizar.js?v=202611191011"></script>
-<script src="login.js?v=202611191011"></script>
+<script src="acesso.js?v=202611191020"></script>
+<script src="app.js?v=202611191020"></script>
+<script src="jszip.min.js?v=202611191020"></script>
+<script src="painel-atualizar.js?v=202611191020"></script>
+<script src="login.js?v=202611191020"></script>
 </body></html>

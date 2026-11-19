@@ -88,6 +88,8 @@ def recorte(D, procs):
         C = d["comportamento"]
         C["frotas"] = {f: v for f, v in C["frotas"].items() if chave_proc(v["processo"]) in procs}
         C["ev"] = [e for e in C["ev"] if e[2] in C["frotas"]]
+        if "vlim" in C:
+            C["vlim"] = dict(C["vlim"], ev=[e for e in C["vlim"]["ev"] if e[3] in C["frotas"]])
         if "mapa" in C:
             M = C["mapa"]
             ok = {i for i, g in enumerate(M["grupos"]) if chave_proc(g[1]) in procs}
@@ -412,6 +414,8 @@ def remover_excluidas(D):
         C = D["comportamento"]
         C["frotas"] = {f: v for f, v in C["frotas"].items() if not sai(f)}
         C["ev"] = [e for e in C["ev"] if not sai(e[2])]
+        if "vlim" in C:
+            C["vlim"]["ev"] = [e for e in C["vlim"]["ev"] if not sai(e[3])]
         if "pts" in C:
             C["pts"] = [e for e in C["pts"] if not sai(e[2])]
     if "motorOcioso" in D:

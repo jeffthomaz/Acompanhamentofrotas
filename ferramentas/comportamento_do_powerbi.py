@@ -120,11 +120,24 @@ def main(leves, pesadas, base_xlsx, destino):
     montar(linhas(leves), linhas(pesadas), base, destino)
 
 
+def limiar_kmh(r):
+    """Limite da via (km/h) de um excesso de velocidade, inteiro; None se não tiver."""
+    v = kmh(r.get("lim"))
+    return int(round(v)) if v else None
+
+
+def vlim_json(vl, ini):
+    """Excessos por limiar da via: {lims: [km/h...], ev: [[dia, índice do limiar, faixa 0-2, frota, quantidade]]}."""
+    lims = sorted({k[1] for k in vl})
+    li = {v: i for i, v in enumerate(lims)}
+    return {"lims": lims, "ev": sorted([[(date.fromisoformat(d) - ini).days, li[l], int(t[3]) - 1, f, n] for (d, l, t, f), n in vl.items()])}
+
+
 def montar(rows_leves, rows_pesadas, base, destino, manter_faixa=True):
     """rows_*: dicts com f, placa, grupo, tipo, lim, exc, d (aaaa-mm-dd), proc (só leves), ger, rot, desc."""
 
     frotas, proc_v, ger_v = {}, defaultdict(Counter), defaultdict(Counter)
-    cont, ignorados, pts = Counter(), Counter(), Counter()
+    cont, ignorados, pts, vl = Counter(), Counter(), Counter(), Counter()
     dias = set()
     for origem, rows in (("Leve", rows_leves), ("Pesada", rows_pesadas)):
         for r in rows:
@@ -140,6 +153,8 @@ def montar(rows_leves, rows_pesadas, base, destino, manter_faixa=True):
             cont[(r["d"], t, f, r.get("turno"), r.get("hora"))] += 1
             if t != "bocejo" and r.get("lat") and r.get("lon"):  # mapa de calor (sem bocejo)
                 pts[(r["d"], t, f, round(r["lat"], 3), round(r["lon"], 3), r.get("loc") or "Sem local")] += 1
+            if t in ("vel1", "vel2", "vel3") and limiar_kmh(r):  # excessos por limiar da via (19/11/2026)
+                vl[(r["d"], limiar_kmh(r), t, f)] += 1
             dias.add(r["d"])
     for f, x in frotas.items():
         x["processo"] = proc_v[f].most_common(1)[0][0]
@@ -177,6 +192,12 @@ def montar(rows_leves, rows_pesadas, base, destino, manter_faixa=True):
             d = (ini_v + timedelta(days=p[0])).isoformat()
             if d < corte and ids_v[p[1]] in validos:
                 pts[(d, ids_v[p[1]], p[2], p[3] / 1000, p[4] / 1000, lv[p[6]] if p[6] < len(lv) else "Sem local")] += p[5]
+        # Excessos por limiar dos dias mantidos (antes do corte)
+        vv = velho.get("vlim") or {}
+        for e in vv.get("ev") or []:
+            d = (ini_v + timedelta(days=e[0])).isoformat()
+            if d < corte:
+                vl[(d, vv["lims"][e[1]], "vel%d" % (e[2] + 1), e[3])] += e[4]
         novo3 = Counter()
         for (d, t, f, _, _), n in novo.items():
             novo3[(d, t, f)] += n
@@ -204,6 +225,8 @@ def montar(rows_leves, rows_pesadas, base, destino, manter_faixa=True):
         D["comportamento"]["locais"] = nomes
         D["comportamento"]["pts"] = sorted([[(date.fromisoformat(d) - ini).days, tid[t], f, int(round(la * 1000)), int(round(lo * 1000)), n, li[loc]]
                                             for (d, t, f, la, lo, loc), n in pts.items()])
+    if vl:
+        D["comportamento"]["vlim"] = vlim_json(vl, ini)
     json.dump(D, open(destino, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
     tot = sum(cont.values())
     print("%d ocorrências, %d frotas, %d linhas, %s" % (tot, len(frotas), len(ev), D["comportamento"]["periodo"]))
