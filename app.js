@@ -1621,15 +1621,22 @@ window.iniciarPainel = function (D) {
       c100.map(function (v, k) { return { k: k, f: v - Math.floor(v) }; }).sort(function (a, b) { return b.f - a.f; }).slice(0, sobra).forEach(function (x) { int100[x.k]++; });
       var ordL = linhasL.map(function (x, k) { return { x: x, n: int100[k] }; }).sort(function (a, b) { return b.n - a.n || b.x.t - a.x.t; });
       var princ = ordL.filter(function (o) { return o.n >= 1; }).slice(0, 3);
-      var tituloL = "De cada <span class=\"ap-dest\">100 excessos</span>, " + princ.map(function (o) { return "<b>" + o.n + "</b> " + (o.n === 1 ? "é" : "são") + " em vias de " + o.x.l + " km/h"; }).join(", ").replace(/, ([^,]*)$/, " e $1");
+      var tituloL = "A cada <span class=\"ap-dest\">100 excessos</span>, " + princ.map(function (o) { return "<b>" + o.n + "</b> " + (o.n === 1 ? "é" : "são") + " em vias de " + o.x.l + " km/h"; }).join(", ").replace(/, ([^,]*)$/, " e $1");
       var umCada = function (x) { return x.a ? Math.max(1, Math.round(x.t / x.a)) : 0; };
-      // Sem as faixas (até 20%, 20–50%, acima de 50%) por enquanto, a pedido (19/11/2026): só a proporção por limite.
+      // Leitura em frase (19/11/2026): "A cada 100 excessos, 40 são em vias de 80 km/h", com quadro de 100 quadradinhos.
+      var CORL = ["#0F4A2A", "#2F7D3E", "#5FAE48", "#9CCB5B", "#E9A800", "#E2701B", "#C23B2B"];
+      var visiveis = ordL.filter(function (o) { return o.n >= 1; }), raros = ordL.filter(function (o) { return o.n < 1; });
+      var corDe = {}; visiveis.forEach(function (o, k) { corDe[o.x.l] = CORL[Math.min(k, CORL.length - 1)]; });
+      var wafL = ""; visiveis.forEach(function (o) { for (var w = 0; w < o.n; w++) wafL += '<i style="background:' + corDe[o.x.l] + '" title="' + o.x.l + ' km/h"></i>'; });
+      var rarT = raros.reduce(function (a, o) { return a + o.x.t; }, 0);
       limiar = '<section class="ap-slide"><p class="ap-kick">Excesso de velocidade por limiar da via</p><h2>' + tituloL + "</h2>" +
         '<p class="ap-sub">' + num(totL, 0) + " excessos com limite da via registrado.</p>" +
-        '<ul class="ap-vlp ap-vlp-larga">' + ordL.map(function (o) {
-          var x = o.x;
-          return "<li><b>" + x.l + " km/h</b><strong>" + (o.n >= 1 ? o.n : "&lt;1") + "</strong><span>de cada 100 excessos</span><em>" + num(x.t, 0) + " " + plural(x.t, "excesso", "excessos") + "</em></li>";
-        }).join("") + "</ul></section>";
+        '<div class="ap-lf"><div class="ap-waf-w"><p class="ap-h3">A cada 100 excessos</p><div class="ap-waf">' + wafL + "</div></div>" +
+        '<ul class="ap-frases">' + visiveis.map(function (o) {
+          return '<li><i style="background:' + corDe[o.x.l] + '"></i><strong>' + o.n + "</strong><span>a cada 100 excessos " + (o.n === 1 ? "é" : "são") + " em vias de <b>" + o.x.l + " km/h</b></span></li>";
+        }).join("") +
+        (raros.length ? '<li class="ap-raro"><i></i><strong>&lt;1</strong><span>a cada 100 excessos é em vias de <b>' + raros.map(function (o) { return o.x.l; }).sort(function (a, b) { return a - b; }).join(", ").replace(/, (\d+)$/, " e $1") + " km/h</b> (" + num(rarT, 0) + " excessos no total)</span></li>" : "") +
+        "</ul></div></section>";
     } else {
       limiar = "";
     }
