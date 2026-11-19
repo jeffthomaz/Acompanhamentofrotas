@@ -557,11 +557,20 @@ rect.seg.c-vel{fill:var(--c-vel)}rect.seg.c-celular{fill:var(--c-celular)}rect.s
 .ap-tipo svg{width:1.6rem;height:1.6rem;color:var(--cc)}.ap-tipo b{font-size:.92rem}.ap-tipo strong{font-family:var(--display);font-size:1.9rem;line-height:1.1}
 .ap-tipo span{color:var(--muted);font-size:.85rem}.ap-tipo em{font-style:normal;font-size:.85rem;font-weight:600}.ap-tipo em.bom{color:var(--folha)}.ap-tipo em.ruim{color:var(--v3)}
 .ap-tipo.c-vel{--cc:var(--c-vel)}.ap-tipo.c-celular{--cc:var(--c-celular)}.ap-tipo.c-cinto{--cc:var(--c-cinto)}.ap-tipo.c-cigarro{--cc:var(--c-outros)}.ap-tipo.c-distracao{--cc:var(--c-distracao)}.ap-tipo.c-fadiga{--cc:var(--c-cigarro)}.ap-tipo.c-faixa{--cc:var(--c-faixa)}
+.ap-mapa-w{display:grid;grid-template-columns:minmax(0,2.2fr) minmax(0,1fr);gap:1.25rem;align-items:stretch}
+.ap-mapa{height:520px;border-radius:14px;overflow:hidden}
+.ap-locs{list-style:none;margin:0;padding:0;display:grid;gap:.6rem;align-content:start}
+.ap-locs button{all:unset;box-sizing:border-box;width:100%;display:flex;gap:.8rem;align-items:center;padding:.75rem .9rem;border:1px solid var(--line);border-radius:12px;cursor:pointer;background:var(--card)}
+.ap-locs button:hover{border-color:var(--ink)}.ap-locs button:focus-visible{outline:3px solid var(--maq)}
+.ap-ln{flex:none;width:2rem;height:2rem;border-radius:50%;background:var(--v3);color:#fff;display:grid;place-items:center;font-family:var(--display);font-weight:800}
+.ap-lt{display:grid;gap:.15rem;min-width:0;flex:1}.ap-lt b{font-size:1rem}.ap-lt small{color:var(--muted)}.ap-lt i{display:block;height:.35rem;border-radius:999px;background:var(--v2)}
+.ap-pin span{display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:#C23B2B;color:#fff;font-weight:800;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4)}
+@media (max-width:900px){.ap-mapa-w{grid-template-columns:minmax(0,1fr)}.ap-mapa{height:380px}}
 @media (max-width:900px){.ap-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.ap-pir-w{grid-template-columns:minmax(0,1fr)}.ap-slide{padding:1.25rem}}
 </style>
 </head><body>
 <header class="band"><div class="band-in gut">
-  <img class="logo" src="logo-branco.png?v=202611190752" alt="Bioenergética Aroeira" width="67" height="92">
+  <img class="logo" src="logo-branco.png?v=202611190803" alt="Bioenergética Aroeira" width="67" height="92">
   <div><h1>MONITORAMENTO COMPORTAMENTAL</h1><p class="per" id="periodo"></p></div>
   <div class="quem" id="quem" hidden><span><b id="quem-nome"></b><small id="quem-escopo"></small></span><button type="button" id="atualizar" hidden>Atualizar dados</button><button type="button" id="sair">Sair</button></div>
   <p class="atu-ult" id="atualizado" hidden></p>
@@ -593,9 +602,9 @@ rect.seg.c-vel{fill:var(--c-vel)}rect.seg.c-celular{fill:var(--c-celular)}rect.s
 </div>
 <footer class="foot gut">Bioenergética Aroeira S/A, Tupaciguara/MG. <a href="https://www.bioaroeira.com.br" target="_blank" rel="noopener">www.bioaroeira.com.br</a></footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" defer></script>
-<script src="acesso.js?v=202611190752"></script>
-<script src="app.js?v=202611190752"></script>
-<script src="jszip.min.js?v=202611190752"></script>
-<script src="painel-atualizar.js?v=202611190752"></script>
-<script src="login.js?v=202611190752"></script>
+<script src="acesso.js?v=202611190803"></script>
+<script src="app.js?v=202611190803"></script>
+<script src="jszip.min.js?v=202611190803"></script>
+<script src="painel-atualizar.js?v=202611190803"></script>
+<script src="login.js?v=202611190803"></script>
 </body></html>

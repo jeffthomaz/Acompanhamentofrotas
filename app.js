@@ -1477,6 +1477,29 @@ window.iniciarPainel = function (D) {
   }
 
   // ---------- Aba Apresentação (17-19/11/2026): pirâmide de Bird e tendência mensal. Por enquanto, DADOS FICTÍCIOS. ----------
+  var apm = { mapa: null, pontos: [], locs: [], marcas: [] };
+  function montarMapaAp() {
+    var el = document.getElementById("mapa-ap"); if (!el) return;
+    var L = window.L;
+    if (!L || !L.map) { var t = (montarMapaAp.t = (montarMapaAp.t || 0) + 1); if (t > 60) { el.innerHTML = '<p class="mapa-msg">Não foi possível carregar o mapa.</p>'; return; } return setTimeout(montarMapaAp, 150); }
+    montarMapaAp.t = 0;
+    if (apm.mapa) { apm.mapa.remove(); apm.mapa = null; }
+    el.innerHTML = "";
+    var mapa = apm.mapa = L.map(el, { scrollWheelZoom: false, zoomControl: true });
+    var ruas = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, attribution: "&copy; OpenStreetMap" });
+    var sat = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", { maxZoom: 19, attribution: "Imagens &copy; Esri" });
+    sat.addTo(mapa);
+    L.control.layers({ "Satélite": sat, "Mapa": ruas }, null, { position: "topright" }).addTo(mapa);
+    mapa.on("focus", function () { mapa.scrollWheelZoom.enable(); }); mapa.on("blur", function () { mapa.scrollWheelZoom.disable(); });
+    if (apm.pontos.length) camadaCalor(L, apm.pontos, 12).addTo(mapa);
+    var mx = Math.max.apply(null, [1].concat(apm.locs.map(function (x) { return x.n; })));
+    apm.marcas = apm.locs.map(function (x, k) {
+      return L.marker([x.lat, x.lon], { icon: L.divIcon({ className: "ap-pin", html: "<span>" + (k + 1) + "</span>", iconSize: [30, 30], iconAnchor: [15, 15] }) })
+        .bindPopup("<b>" + (k + 1) + ". " + esc(x.nome) + "</b><br>" + num(x.n, 0) + " excessos").addTo(mapa);
+    });
+    if (apm.pontos.length) mapa.fitBounds(L.latLngBounds(apm.pontos.map(function (p) { return [p[0], p[1]]; })).pad(.08), { maxZoom: 12 });
+    else mapa.setView([-18.6, -48.6], 9);
+  }
   function abaApresentacao() {
     var MES = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out"];
     // Fictício: ocorrências por mês e tipo (mesma ordem de CATS).
@@ -1528,7 +1551,27 @@ window.iniciarPainel = function (D) {
       return '<div class="ap-tipo c-' + c.id + '">' + ico(c.icone) + "<b>" + esc(c.nome) + "</b><strong>" + num(tAno, 0) + "</strong><span>" + num(tAno / totAno * 100, 1) + "% do total</span>" +
         '<em class="' + (dv === null ? "" : dv <= 0 ? "bom" : "ruim") + '">' + (dv === null ? (u ? u + " em " + ult.d : "sem registros em " + ult.d) : (dv <= 0 ? "↓ " : "↑ ") + num(Math.abs(dv), 0) + "% em " + ult.d) + "</em></div>";
     }).join("") + "</div></section>";
-    return '<div class="ap"><div class="ap-bar"><button type="button" data-ap-tela="1">Tela cheia</button></div>' + ficticio + capa + piramide + tend + tipos + "</div>";
+    // Mapa dos excessos de velocidade: dados reais do mapa do Comportamental (ano todo, todos os processos).
+    var mapaSl = "", C0 = D.comportamento, M0 = C0 && C0.mapa;
+    if (M0 && M0.pts && M0.pts.length) {
+      var ixV = {}; C0.tipos.forEach(function (t, i) { if ((t.grupo || t.id) === "vel") ixV[i] = 1; });
+      var cel = {}, loc = {}, totV = 0;
+      M0.pts.forEach(function (e) {
+        if (!ixV[e[1]]) return;
+        totV += e[6];
+        var k = e[3] + "," + e[4]; cel[k] = (cel[k] || 0) + e[6];
+        var l = loc[e[5]] || (loc[e[5]] = { i: e[5], n: 0, la: 0, lo: 0 });
+        l.n += e[6]; l.la += e[3] * e[6]; l.lo += e[4] * e[6];
+      });
+      apm.pontos = Object.keys(cel).map(function (k) { var q = k.split(","); return [q[0] * M0.cel, q[1] * M0.cel, cel[k]]; });
+      apm.locs = Object.keys(loc).map(function (k) { var l = loc[k]; return { nome: M0.locais[l.i], n: l.n, lat: l.la / l.n * M0.cel, lon: l.lo / l.n * M0.cel }; }).sort(function (a, b) { return b.n - a.n; }).slice(0, 5);
+      var top5 = apm.locs.reduce(function (a, x) { return a + x.n; }, 0), mxL = apm.locs.length ? apm.locs[0].n : 1;
+      mapaSl = '<section class="ap-slide"><p class="ap-kick">Excesso de velocidade · dados reais</p><h2>Onde acontece a maioria dos excessos</h2><p class="ap-sub">' + num(totV, 0) + " excessos com local registrado em 2026. Os 5 locais abaixo concentram " + (totV ? num(top5 / totV * 100, 0) : "0") + "% deles.</p>" +
+        '<div class="ap-mapa-w"><div id="mapa-ap" class="mapa ap-mapa" role="region" aria-label="Mapa de calor dos excessos de velocidade"><p class="mapa-msg">Carregando mapa…</p></div><ol class="ap-locs">' +
+        apm.locs.map(function (x, k) { return '<li><button type="button" data-aploc="' + k + '"><span class="ap-ln">' + (k + 1) + '</span><span class="ap-lt"><b>' + esc(x.nome) + "</b><small>" + num(x.n, 0) + " excessos · " + num(x.n / totV * 100, 1) + '% do total</small><i style="width:' + (x.n / mxL * 100).toFixed(1) + '%"></i></span></button></li>'; }).join("") +
+        '</ol></div><p class="mapa-leg"><span>Menos</span><i class="esc"></i><span>Mais excessos</span></p></section>';
+    }
+    return '<div class="ap"><div class="ap-bar"><button type="button" data-ap-tela="1">Tela cheia</button></div>' + ficticio + capa + piramide + tend + mapaSl + tipos + "</div>";
   }
 
   function abaResumo() {
@@ -1680,6 +1723,8 @@ window.iniciarPainel = function (D) {
     painel.innerHTML = VIEWS[id]();
     if (id === "permanencia") montarMapa();
     if (id === "comportamento") montarMapaComp();
+    if (apm.mapa) { apm.mapa.remove(); apm.mapa = null; }
+    if (id === "apresentacao") montarMapaAp();
     fil.hidden = true;
     var blocos = { "apresentacao": { real: false, periodo: "Apresentação" }, "resumo": { real: !D.exemplo, periodo: "Semana de segunda a domingo" }, "comportamento": D.comportamento, "motor-ocioso": D.motorOcioso, "permanencia": D.permanencia, "conectividade": D.conectividade, "cameras": D.cameras }, b = blocos[id], real = b && b.real;
     document.getElementById("periodo").textContent = real ? b.periodo + " · dados reais" : D.periodo;
@@ -1745,6 +1790,8 @@ window.iniciarPainel = function (D) {
     var tb = e.target.closest("[data-turno]");
     if (tb) { trocaTurno(+tb.dataset.turno); return; }
     if (e.target.closest("[data-top5]")) { trocaTop5(); return; }
+    var apl = e.target.closest("[data-aploc]");
+    if (apl && apm.mapa) { var x = apm.locs[+apl.dataset.aploc]; apm.mapa.setView([x.lat, x.lon], 13); apm.marcas[+apl.dataset.aploc].openPopup(); return; }
     if (e.target.closest("[data-ap-tela]")) { var ap = document.querySelector(".ap"); if (document.fullscreenElement) document.exitFullscreen(); else if (ap && ap.requestFullscreen) ap.requestFullscreen(); return; }
     if (e.target.closest(".ktop")) return; // clique na gaveta do top 5 não troca o filtro
     var kt0 = e.target.closest("article[data-tipo]");
