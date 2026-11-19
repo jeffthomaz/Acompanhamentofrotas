@@ -1616,12 +1616,19 @@ window.iniciarPainel = function (D) {
       var topL = linhasL.slice().sort(function (a, b) { return b.t - a.t; });
       var baixos = linhasL.filter(function (x) { return x.l <= 25; }), bT = baixos.reduce(function (a, x) { return a + x.t; }, 0), bA = baixos.reduce(function (a, x) { return a + x.a; }, 0);
       var top2 = topL.slice(0, 2), top2p = top2.reduce(function (a, x) { return a + x.t; }, 0) / totL * 100;
-      limiar = '<section class="ap-slide"><p class="ap-kick">Excesso de velocidade por limiar da via</p><h2>Vias de ' + top2.map(function (x) { return x.l; }).join(" e ") + " km/h concentram " + num(top2p, 0) + "% dos excessos</h2>" +
-        '<p class="ap-sub">' + num(totL, 0) + " excessos com limite da via registrado." + (bT ? " Nas vias internas de até 25 km/h os excessos são poucos, mas " + num(bA / bT * 100, 0) + "% deles passam de 20% do limite." : "") + "</p>" +
-        '<div class="ap-lim-w"><div class="ap-vl">' + linhasL.map(function (x) {
-          var pA = x.t ? x.a / x.t * 100 : 0;
-          return '<div class="ap-vl-r"><b>' + x.l + ' km/h</b><div class="ap-vl-b"><i style="width:' + Math.max(x.t / mxL2 * 100, .5).toFixed(2) + '%"></i></div><span class="ap-vl-n">' + num(x.t, 0) + "<small>" + num(x.t / totL * 100, 1) + '%</small></span><span class="ap-vl-a' + (pA >= 5 ? " alto" : "") + '" title="excessos acima de 20% do limite">' + (x.a ? num(x.a, 0) + " acima de 20% (" + num(pA, pA < 1 ? 1 : 0) + "%)" : "—") + "</span></div>";
-        }).join("") + '<p class="ap-sub ap-vl-leg"><span class="ap-vl-a alto">em destaque</span> limiares em que 5% ou mais dos excessos passam de 20%.</p></div>' +
+      // Estilo "proporção" (regra de 3, 19/11/2026): de cada 100 excessos, quantos em cada limiar; e em cada limiar, 1 a cada N passa de 20%.
+      var c100 = linhasL.map(function (x) { return x.t / totL * 100; }), int100 = c100.map(Math.floor), sobra = 100 - int100.reduce(function (a, b) { return a + b; }, 0);
+      c100.map(function (v, k) { return { k: k, f: v - Math.floor(v) }; }).sort(function (a, b) { return b.f - a.f; }).slice(0, sobra).forEach(function (x) { int100[x.k]++; });
+      var ordL = linhasL.map(function (x, k) { return { x: x, n: int100[k] }; }).sort(function (a, b) { return b.n - a.n || b.x.t - a.x.t; });
+      var princ = ordL.filter(function (o) { return o.n >= 1; }).slice(0, 3);
+      var tituloL = "De cada <span class=\"ap-dest\">100 excessos</span>, " + princ.map(function (o) { return "<b>" + o.n + "</b> " + (o.n === 1 ? "é" : "são") + " em vias de " + o.x.l + " km/h"; }).join(", ").replace(/, ([^,]*)$/, " e $1");
+      var umCada = function (x) { return x.a ? Math.max(1, Math.round(x.t / x.a)) : 0; };
+      limiar = '<section class="ap-slide"><p class="ap-kick">Excesso de velocidade por limiar da via</p><h2>' + tituloL + "</h2>" +
+        '<p class="ap-sub">' + num(totL, 0) + " excessos com limite da via registrado. Em cada limite, o quadro mostra quantos de cada 100 excessos acontecem ali e com que frequência o excesso passa de 20% do limite.</p>" +
+        '<div class="ap-lim-w"><ul class="ap-vlp">' + ordL.map(function (o) {
+          var x = o.x, u = umCada(x);
+          return '<li class="' + (u && u <= 20 ? "alto" : "") + '"><b>' + x.l + ' km/h</b><strong>' + (o.n >= 1 ? o.n : "&lt;1") + '</strong><span>de cada 100 excessos</span><em>' + (u ? "1 a cada " + num(u, 0) + " passa de 20%" : "nenhum passou de 20%") + "</em></li>";
+        }).join("") + "</ul>" +
         '<div><p class="ap-h3">Acima de 20% por mês</p><ul class="legend"><li><i class="c-lim2"></i>De 20% até 50%</li><li><i class="c-lim3"></i>Acima de 50%</li></ul>' + empilhado(mesLim, false, 640, [LIM[1], LIM[2]]) +
         (meses.length && meses[meses.length - 1].parcial ? '<p class="ap-sub">* mês parcial.</p>' : "") + "</div></div></section>";
     } else {
