@@ -1,8 +1,6 @@
 {
-  "_obs": "Logins (do cadastros.xlsx) que veem a aba Apresentação. Desde 19/11/2026: Jefferson, Giovanna e Ana Paula.",
+  "_obs": "Logins (do cadastros.xlsx) que veem a aba Apresentação. Desde 19/11/2026 (09:30): só Jefferson.",
   "usuarios": [
-    "jeffersonmelo",
-    "giovannatulio",
-    "anaschaffer"
+    "jeffersonmelo"
   ]
 }
