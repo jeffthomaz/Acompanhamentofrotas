@@ -425,6 +425,13 @@ def aplicar_hierarquia(D):
     H = {k: dict(v) for k, v in H.items()}
     for f, g in gestor_troca.items():
         H.setdefault(f, {}).setdefault("gestor", g)
+    # Gerente de todas as frotas de um coordenador (ex.: Ednaldo -> Fábio Pozzi).
+    gpc = json.load(open(caminho, encoding="utf-8")).get("gerente_por_coordenador", {})
+    if gpc:
+        for f, v in regs_t:
+            gr = gpc.get(v.get("responsavel") or "")
+            if gr:
+                H.setdefault(norm(f), {})["gerente"] = gr
     for f, v in D.get("comportamento", {}).get("frotas", {}).items():
         h = H.get(norm(f)) or H.get(str(f)) or {}
         for k in ("gerente", "gestor", "lider"):
