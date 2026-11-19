@@ -6,8 +6,9 @@ window.iniciarPainel = function (D) {
     { id: "motor-ocioso", nome: "Motor ocioso", tem: "motorOcioso" },
     { id: "permanencia", nome: "Permanência", tem: "permanencia" },
     { id: "conectividade", nome: "Conectividade", tem: "conectividade" },
-    { id: "cameras", nome: "Câmeras", tem: "cameras" }
-  ].filter(function (a) { return a.tem === "resumo" ? D.comportamento || D.motorOcioso || D.permanencia || D.conectividade || D.cameras : D[a.tem]; });
+    { id: "cameras", nome: "Câmeras", tem: "cameras" },
+    { id: "apresentacao", nome: "Apresentação", tem: "apresentacao" }
+  ].filter(function (a) { return a.tem === "apresentacao" ? true : a.tem === "resumo" ? D.comportamento || D.motorOcioso || D.permanencia || D.conectividade || D.cameras : D[a.tem]; });
   var filtro = "Todos";
   var ordem = {};
 
@@ -1475,6 +1476,61 @@ window.iniciarPainel = function (D) {
     return linhas.join("");
   }
 
+  // ---------- Aba Apresentação (17-19/11/2026): pirâmide de Bird e tendência mensal. Por enquanto, DADOS FICTÍCIOS. ----------
+  function abaApresentacao() {
+    var MES = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out"];
+    // Fictício: ocorrências por mês e tipo (mesma ordem de CATS).
+    var base = [[1700, 4, 6, 1, 30, 420, 2], [1500, 3, 5, 0, 26, 380, 1], [1820, 5, 4, 1, 34, 450, 3], [2050, 6, 7, 0, 40, 520, 2], [2210, 4, 5, 1, 38, 560, 4],
+      [2140, 5, 6, 0, 35, 600, 2], [2380, 3, 4, 1, 41, 640, 3], [2290, 2, 5, 0, 33, 610, 1], [2050, 3, 3, 0, 29, 540, 2], [1810, 2, 2, 0, 22, 470, 1]];
+    var meses = base.map(function (v, i) { return { d: MES[i] + "/26", partes: v, total: v.reduce(function (a, b) { return a + b; }, 0) }; });
+    var trat = [14, 12, 15, 17, 16, 13, 15, 11, 9, 7]; // fictício: tratativas por mês
+    var totAno = meses.reduce(function (a, m) { return a + m.total; }, 0), ult = meses[meses.length - 1], pen = meses[meses.length - 2], pico = meses.reduce(function (a, m) { return m.total > a.total ? m : a; });
+    var varUlt = (ult.total - pen.total) / pen.total * 100, varPico = (ult.total - pico.total) / pico.total * 100;
+    var ficticio = '<p class="ap-fic"><b>Dados fictícios.</b> Esta aba está em construção: os números servem só para montar o layout da apresentação.</p>';
+    var capa = '<section class="ap-slide ap-capa"><div><p class="ap-kick">Monitoramento comportamental da frota · Safra 2026</p><h2>Ocorrências, tratativas e tendência</h2><p class="ap-sub">Janeiro a outubro de 2026 · todos os processos</p></div>' +
+      '<div class="ap-kpis">' + [[num(totAno, 0), "ocorrências registradas"], [num(trat.reduce(function (a, b) { return a + b; }, 0), 0), "tratativas aplicadas"], ["239", "frotas ativas monitoradas"], [(varPico < 0 ? "↓ " : "↑ ") + num(Math.abs(varPico), 0) + "%", "de " + pico.d + " (pico) a " + ult.d]].map(function (k) {
+        return '<div class="ap-kpi"><strong>' + k[0] + "</strong><span>" + k[1] + "</span></div>";
+      }).join("") + "</div></section>";
+    // Pirâmide de Bird adaptada à frota (fictício). Referência de Frank Bird (1969): 1 : 10 : 30 : 600.
+    var NIV = [
+      { n: 1, nome: "Acidente com afastamento", desc: "lesão grave ou incapacitante", ref: "1", cor: "#C23B2B" },
+      { n: 4, nome: "Acidente sem afastamento", desc: "lesão leve, primeiros socorros", ref: "10", cor: "#E2701B" },
+      { n: 18, nome: "Danos materiais", desc: "avarias, colisões sem vítima", ref: "30", cor: "#E9A800" },
+      { n: 136, nome: "Quase-acidentes", desc: "alarmes verdadeiros que geraram tratativa", ref: "600", cor: "#3E9B34" },
+      { n: totAno, nome: "Desvios comportamentais", desc: "ocorrências de telemetria e câmera", ref: "—", cor: "#0F4A2A" }];
+    var W = 1120, H = 470, cx = 300, hN = 82, gap = 6, pir = '<svg viewBox="0 0 ' + W + " " + H + '" class="ap-pir" role="img" aria-label="Pirâmide de Bird adaptada à frota">';
+    NIV.forEach(function (v, i) {
+      var y0 = 10 + i * (hN + gap), y1 = y0 + hN, meia = function (y) { return (y - 10) / (H - 20) * 280 + 18; };
+      var l0 = cx - meia(y0), r0 = cx + meia(y0), l1 = cx - meia(y1), r1 = cx + meia(y1), ym = (y0 + y1) / 2;
+      pir += '<path d="M' + l0.toFixed(1) + " " + y0 + "L" + r0.toFixed(1) + " " + y0 + "L" + r1.toFixed(1) + " " + y1 + "L" + l1.toFixed(1) + " " + y1 + 'Z" fill="' + v.cor + '" class="ap-niv" style="animation-delay:' + (NIV.length - i) * 90 + 'ms"/>' +
+        '<text x="' + cx + '" y="' + (ym + 9) + '" text-anchor="middle" class="ap-pn">' + num(v.n, 0) + "</text>" +
+        '<line x1="' + (r0 + (r1 - r0) / 2 + 8).toFixed(1) + '" y1="' + ym + '" x2="620" y2="' + ym + '" class="ap-ld"/>' +
+        '<text x="632" y="' + (ym - 4) + '" class="ap-pt">' + esc(v.nome) + '</text><text x="632" y="' + (ym + 16) + '" class="ap-pd">' + esc(v.desc) + (v.ref !== "—" ? " · Bird: " + v.ref : "") + "</text>";
+    });
+    pir += "</svg>";
+    var razao = "1 : " + num(NIV[1].n / NIV[0].n, 0) + " : " + num(NIV[2].n / NIV[0].n, 0) + " : " + num(NIV[3].n / NIV[0].n, 0) + " : " + num(NIV[4].n / NIV[0].n, 0);
+    var piramide = '<section class="ap-slide"><p class="ap-kick">Pirâmide de Bird</p><h2>Cada acidente grave tem uma base de desvios que pode ser tratada antes</h2>' +
+      '<div class="ap-pir-w">' + pir + '<aside class="ap-nota"><p><b>Proporção da frota</b><br><span class="ap-razao">' + razao + "</span></p>" +
+      "<p>Na pirâmide de Frank Bird (1969), para cada acidente grave há em média 10 leves, 30 com danos materiais e 600 quase-acidentes.</p>" +
+      "<p>O monitoramento atua na <b>base</b>: cada desvio de comportamento tratado diminui a chance de subir para os níveis de cima.</p></aside></div></section>";
+    var leg = CATS.map(function (c) { return '<li><i class="c-' + c.id + '"></i>' + esc(c.nome) + "</li>"; }).join("");
+    // Tratativas por mês (linha) sobre as barras: mini gráfico próprio.
+    var mx = Math.max.apply(null, trat), lw = 1300, lh = 140, lp = 40, pts = trat.map(function (t, i) { var bw = (lw - lp - 6) / trat.length; return [lp + i * bw + bw / 2, 34 + (1 - t / mx) * (lh - 60)]; });
+    var linha = '<svg viewBox="0 0 ' + lw + " " + lh + '" class="ap-linha" role="img" aria-label="Tratativas por mês"><polyline points="' + pts.map(function (p) { return p[0].toFixed(1) + "," + p[1].toFixed(1); }).join(" ") + '"/>' +
+      pts.map(function (p, i) { return '<circle cx="' + p[0].toFixed(1) + '" cy="' + p[1].toFixed(1) + '" r="6"/><text x="' + p[0].toFixed(1) + '" y="' + (p[1] - 12).toFixed(1) + '" text-anchor="middle">' + trat[i] + '</text><text class="tl" x="' + p[0].toFixed(1) + '" y="' + (lh - 4) + '" text-anchor="middle">' + meses[i].d + "</text>"; }).join("") + "</svg>";
+    var tend = '<section class="ap-slide"><p class="ap-kick">Tendência mensal</p><h2>' + (varUlt < 0 ? "Ocorrências em queda desde " + pico.d : "Ocorrências em alta") + '</h2><p class="ap-sub">' + ult.d + ": " + num(ult.total, 0) + " ocorrências, " + (varUlt < 0 ? "↓ " : "↑ ") + num(Math.abs(varUlt), 1) + "% sobre " + pen.d + " e " + num(Math.abs(varPico), 0) + "% " + (varPico < 0 ? "abaixo" : "acima") + " do pico de " + pico.d + ".</p>" +
+      '<ul class="legend">' + leg + "</ul>" + empilhado(meses, false, 1300) +
+      '<h3 class="ap-h3">Tratativas aplicadas por mês</h3>' + linha + "</section>";
+    // Tipo a tipo: total do ano e variação do último mês.
+    var tipos = '<section class="ap-slide"><p class="ap-kick">Por tipo de ocorrência</p><h2>Onde estão os desvios</h2><div class="ap-tipos">' + CATS.map(function (c, k) {
+      var tAno = meses.reduce(function (a, m) { return a + m.partes[k]; }, 0), u = ult.partes[k], pe = pen.partes[k];
+      var dv = pe ? (u - pe) / pe * 100 : null;
+      return '<div class="ap-tipo c-' + c.id + '">' + ico(c.icone) + "<b>" + esc(c.nome) + "</b><strong>" + num(tAno, 0) + "</strong><span>" + num(tAno / totAno * 100, 1) + "% do total</span>" +
+        '<em class="' + (dv === null ? "" : dv <= 0 ? "bom" : "ruim") + '">' + (dv === null ? (u ? u + " em " + ult.d : "sem registros em " + ult.d) : (dv <= 0 ? "↓ " : "↑ ") + num(Math.abs(dv), 0) + "% em " + ult.d) + "</em></div>";
+    }).join("") + "</div></section>";
+    return '<div class="ap"><div class="ap-bar"><button type="button" data-ap-tela="1">Tela cheia</button></div>' + ficticio + capa + piramide + tend + tipos + "</div>";
+  }
+
   function abaResumo() {
     var S = semanaRef();
     var A = [rzComportamento(S), rzOcioso(S), rzPermanencia(S), rzConectividade(S), rzCameras()].filter(Boolean);
@@ -1608,8 +1664,8 @@ window.iniciarPainel = function (D) {
   }
 
   // Ícone de cada aba (as mesmas figuras dos cards do Resumo; o Resumo usa um painel de blocos).
-  var ABA_ICO = { "resumo": "M4 4h7v8H4zM13 4h7v5h-7zM13 11h7v9h-7zM4 14h7v6H4z" };
-  var VIEWS = { "resumo": abaResumo, "comportamento": abaComportamento, "motor-ocioso": abaOcioso, "permanencia": abaPermanencia, "conectividade": abaConectividade, "cameras": abaCameras };
+  var ABA_ICO = { "resumo": "M4 4h7v8H4zM13 4h7v5h-7zM13 11h7v9h-7zM4 14h7v6H4z", "apresentacao": "M3 4h18v12H3zM12 16v4M8 20h8M7 12l3-3 2 2 4-4" };
+  var VIEWS = { "resumo": abaResumo, "comportamento": abaComportamento, "motor-ocioso": abaOcioso, "permanencia": abaPermanencia, "conectividade": abaConectividade, "cameras": abaCameras, "apresentacao": abaApresentacao };
   var tabs = document.getElementById("tabs"), painel = document.getElementById("painel"), fil = document.getElementById("filtro");
 
   function atual() { var h = (location.hash || "").replace("#", ""); return ABAS.some(function (a) { return a.id === h; }) ? h : ABAS[0].id; }
@@ -1625,7 +1681,7 @@ window.iniciarPainel = function (D) {
     if (id === "permanencia") montarMapa();
     if (id === "comportamento") montarMapaComp();
     fil.hidden = true;
-    var blocos = { "resumo": { real: !D.exemplo, periodo: "Semana de segunda a domingo" }, "comportamento": D.comportamento, "motor-ocioso": D.motorOcioso, "permanencia": D.permanencia, "conectividade": D.conectividade, "cameras": D.cameras }, b = blocos[id], real = b && b.real;
+    var blocos = { "apresentacao": { real: false, periodo: "Apresentação" }, "resumo": { real: !D.exemplo, periodo: "Semana de segunda a domingo" }, "comportamento": D.comportamento, "motor-ocioso": D.motorOcioso, "permanencia": D.permanencia, "conectividade": D.conectividade, "cameras": D.cameras }, b = blocos[id], real = b && b.real;
     document.getElementById("periodo").textContent = real ? b.periodo + " · dados reais" : D.periodo;
     document.getElementById("aviso").hidden = real || !D.exemplo;
   }
@@ -1689,6 +1745,7 @@ window.iniciarPainel = function (D) {
     var tb = e.target.closest("[data-turno]");
     if (tb) { trocaTurno(+tb.dataset.turno); return; }
     if (e.target.closest("[data-top5]")) { trocaTop5(); return; }
+    if (e.target.closest("[data-ap-tela]")) { var ap = document.querySelector(".ap"); if (document.fullscreenElement) document.exitFullscreen(); else if (ap && ap.requestFullscreen) ap.requestFullscreen(); return; }
     if (e.target.closest(".ktop")) return; // clique na gaveta do top 5 não troca o filtro
     var kt0 = e.target.closest("article[data-tipo]");
     if (kt0) { trocaTipo(kt0.dataset.tipo); return; }
