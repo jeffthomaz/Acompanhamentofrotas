@@ -410,6 +410,21 @@ def aplicar_hierarquia(D):
     if not os.path.exists(caminho):
         return
     H = json.load(open(caminho, encoding="utf-8")).get("frotas", {})
+    # Trocas de responsável (ex.: Cristiano Colucci passou a gestor; o coordenador é Jeanrrion Renan).
+    ct = os.path.join(os.path.dirname(os.path.abspath(__file__)), "trocas_responsavel.json")
+    trocas = json.load(open(ct, encoding="utf-8")).get("trocas", {}) if os.path.exists(ct) else {}
+    gestor_troca = {}
+    regs_t = list(D.get("comportamento", {}).get("frotas", {}).items()) + list(D.get("conectividade", {}).get("frotas", {}).items()) \
+        + list(D.get("permanencia", {}).get("veiculos", {}).items()) + [(v.get("id"), v) for v in D.get("motorOcioso", {}).get("veiculos", [])]
+    for f, v in regs_t:
+        t = trocas.get(v.get("responsavel") or "")
+        if t:
+            v["responsavel"] = t["coordenador"]
+            if t.get("gestor"):
+                gestor_troca[norm(f)] = t["gestor"]
+    H = {k: dict(v) for k, v in H.items()}
+    for f, g in gestor_troca.items():
+        H.setdefault(f, {}).setdefault("gestor", g)
     for f, v in D.get("comportamento", {}).get("frotas", {}).items():
         h = H.get(norm(f)) or H.get(str(f)) or {}
         for k in ("gerente", "gestor", "lider"):
