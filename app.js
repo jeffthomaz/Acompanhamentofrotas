@@ -66,6 +66,20 @@ window.iniciarPainel = function (D) {
     render();
     var t2 = document.querySelector('[data-turno="' + ti + '"]'); if (t2) t2.focus({ preventScroll: true });
   }
+  // Hierarquia (Gerente > Coordenador > Gestor > Líder), compartilhada por Comportamental, Motor ocioso e Permanência (19/11/2026).
+  var NIV_H = [["ger", "gerente", "Gerente", "Todos os gerentes"], ["resp", "responsavel", "Coordenador", "Todos os coordenadores"], ["gest", "gestor", "Gestor", "Todos os gestores"], ["lid", "lider", "Líder", "Todos os líderes"]];
+  function hierAtiva() { var h = fil_.h || {}; return !!(h.ger || h.resp || h.gest || h.lid); }
+  // itens: lista; reg(item) devolve o registro com gerente/responsavel/gestor/lider. Devolve os itens filtrados e o HTML dos 4 selects.
+  function hier(itens, reg, pre) {
+    var h = fil_.h || (fil_.h = { ger: "", resp: "", gest: "", lid: "" }), html = "";
+    NIV_H.forEach(function (n) {
+      var l = unicos(itens.map(function (x) { return (reg(x) || {})[n[1]]; }).filter(Boolean));
+      if (h[n[0]] && l.indexOf(h[n[0]]) < 0) h[n[0]] = "";
+      itens = itens.filter(function (x) { return !h[n[0]] || (reg(x) || {})[n[1]] === h[n[0]]; });
+      html += "<label>" + n[2] + '<select data-hier="' + n[0] + '" id="' + pre + "-" + n[0] + '">' + opcoes(l, h[n[0]], n[3]) + "</select></label>";
+    });
+    return { itens: itens, html: html };
+  }
   function top5Aberto() { try { return localStorage.getItem("painel-top5") === "1"; } catch (e) { return !!fil_.top5; } }
   function trocaTop5() { var v = !top5Aberto(); fil_.top5 = v; try { localStorage.setItem("painel-top5", v ? "1" : "0"); } catch (e) {} render(); var b = document.querySelector("[data-top5]"); if (b) b.focus({ preventScroll: true }); }
   // Clique num card de tipo: sem filtro, fica só ele; senão soma/tira; sem nenhum, volta a todos.
@@ -200,14 +214,8 @@ window.iniciarPainel = function (D) {
     var processos = unicos(ids.map(function (f) { return F[f].processo; }));
     if (fil_.processo && processos.indexOf(fil_.processo) < 0) fil_.processo = "";
     ids = ids.filter(function (f) { return !fil_.processo || F[f].processo === fil_.processo; });
-    // Hierarquia (19/11/2026): Gerente > Coordenador (o responsável) > Gestor > Líder, em cascata.
-    function nivel(campo, chave) {
-      var l = unicos(ids.map(function (f) { return F[f][campo]; }).filter(Boolean));
-      if (fc[chave] && l.indexOf(fc[chave]) < 0) fc[chave] = "";
-      ids = ids.filter(function (f) { return !fc[chave] || F[f][campo] === fc[chave]; });
-      return l;
-    }
-    var gers = nivel("gerente", "ger"), resps = nivel("responsavel", "resp"), gests = nivel("gestor", "gest"), lids = nivel("lider", "lid");
+    var hC = hier(ids, function (f) { return F[f]; }, "c"); ids = hC.itens;
+
     var sel = {}; ids.forEach(function (f) { sel[f] = 1; });
     var ev = C.ev.filter(function (e) { return sel[e[2]]; });
 
@@ -270,16 +278,13 @@ window.iniciarPainel = function (D) {
 
     var filtros = '<div class="filtros">' +
       '<label>Processo<select data-fil="processo" id="c-processo">' + opcoes(processos, fil_.processo, D.escopo && D.escopo !== "todos" ? "Todos os meus processos" : "Todos os processos") + "</select></label>" +
-      '<label>Gerente<select data-comp="ger" id="c-ger">' + opcoes(gers, fc.ger, "Todos os gerentes") + "</select></label>" +
-      '<label>Coordenador<select data-comp="resp" id="c-resp">' + opcoes(resps, fc.resp, "Todos os coordenadores") + "</select></label>" +
-      '<label>Gestor<select data-comp="gest" id="c-gest">' + opcoes(gests, fc.gest, "Todos os gestores") + "</select></label>" +
-      '<label>Líder<select data-comp="lid" id="c-lid">' + opcoes(lids, fc.lid, "Todos os líderes") + "</select></label>" +
+      hC.html +
       perControle("comportamento", stC, diasC, fC) +
       // Frota (Todas/Leve/Pesada) vai para a segunda linha, para as datas caberem na primeira (17/11/2026).
       '<div class="campo"><span class="rot">Frota</span><div class="pills" role="group" aria-label="Tipo de frota">' + [["", "Todas"], ["Leve", "Leve"], ["Pesada", "Pesada"]].map(function (o) {
         return '<button type="button" data-cfrota="' + o[0] + '" aria-pressed="' + (fc.frota === o[0]) + '">' + o[1] + "</button>";
       }).join("") + "</div></div>" +
-      (fc.frota || fil_.processo || fc.resp || fc.ger || fc.gest || fc.lid || fil_.tipos || stC.p !== stC.padrao || !todosTurnos() ? '<button type="button" class="limpar" data-limpar="1">Limpar filtros</button>' : "") +
+      (fc.frota || fil_.processo || hierAtiva() || fil_.tipos || stC.p !== stC.padrao || !todosTurnos() ? '<button type="button" class="limpar" data-limpar="1">Limpar filtros</button>' : "") +
       '<p class="ctx">' + num(nVeic, 0) + " " + plural(nVeic, "veículo", "veículos") + " com ocorrência, " + rot(a0) + " a " + rot(a1) + (temBase ? " (comparado com " + rot(b0) + " a " + rot(a0 - 1) + ")" : "") + (turnoTexto() ? ", só " + turnoTexto() + " (clique nos turnos para mudar; o mapa mostra todos)" : "") + (fil_.tipos ? ". Tipos: " + CATS.filter(function (c) { return c.on; }).map(function (c) { return c.nome.toLowerCase(); }).join(", ") + " (clique nos cards para mudar)" : "") + "</p></div>";
 
     // Top 5 veículos de cada tipo, numa gaveta embaixo de cada card (abre e fecha tudo junto; a escolha fica guardada).
@@ -392,7 +397,7 @@ window.iniciarPainel = function (D) {
     if (cm.tipo && !cats.some(function (c) { return c.id === cm.tipo; })) cm.tipo = "";
     // Os pontos do mapa vêm por semana (dias 0–6, 7–13...): entra a semana que toca o período.
     var semOk = function (w) { return w * 7 <= a1 && w * 7 + 6 >= a0; }, aprox = a0 % 7 !== 0 || (a1 + 1) % 7 !== 0;
-    var gOk = M.grupos.map(function (g) { return (!fc.frota || g[0] === fc.frota) && (!fil_.processo || g[1] === fil_.processo) && (!fc.resp || g[2] === fc.resp) && (!fc.ger || g[3] === fc.ger) && (!fc.gest || g[4] === fc.gest) && (!fc.lid || g[5] === fc.lid); });
+    var gOk = M.grupos.map(function (g) { return (!fc.frota || g[0] === fc.frota) && (!fil_.processo || g[1] === fil_.processo) && (!fil_.h || ((!fil_.h.resp || g[2] === fil_.h.resp) && (!fil_.h.ger || g[3] === fil_.h.ger) && (!fil_.h.gest || g[4] === fil_.h.gest) && (!fil_.h.lid || g[5] === fil_.h.lid))); });
     var porTipo = {}, tOk = {};
     // Filtro de tipo dos cards também vale no mapa.
     var catOn = function (id) { return !fil_.tipos || !!fil_.tipos[id === "fadiga" ? "fadiga" : id]; };
@@ -467,9 +472,7 @@ window.iniciarPainel = function (D) {
     var processos = unicos(V.map(function (v) { return v.processo; }));
     if (fil_.processo && processos.indexOf(fil_.processo) < 0) fil_.processo = "";
     var doProc = V.filter(function (v) { return !fil_.processo || v.processo === fil_.processo; });
-    var resps = unicos(doProc.map(function (v) { return v.responsavel; }).filter(Boolean));
-    if (fil_.responsavel && resps.indexOf(fil_.responsavel) < 0) fil_.responsavel = "";
-    var vs = doProc.filter(function (v) { return !fil_.responsavel || v.responsavel === fil_.responsavel; });
+    var hO = hier(doProc, function (v) { return v; }, "o"), vs = hO.itens;
     var tot = function (a) { return sum(a, function (x) { return x; }); };
     var rows = vs.map(function (v) {
       var li = kds ? somaD(v.dl) : tot(v.ligado), oc = kds ? somaD(v.do) : tot(v.ocioso);
@@ -483,9 +486,9 @@ window.iniciarPainel = function (D) {
     var acima = rows.filter(function (r) { return r.pct > meta; }).sort(function (a, b) { return b.pct - a.pct; });
 
     var filtros = '<div class="filtros"><label>Processo<select data-fil="processo" id="o-processo">' + opcoes(processos, fil_.processo, D.escopo && D.escopo !== "todos" ? "Todos os meus processos" : "Todos os processos") + "</select></label>" +
-      '<label>Responsável<select data-fil="responsavel" id="o-responsavel">' + opcoes(resps, fil_.responsavel, "Todos os responsáveis") + "</select></label>" +
+      hO.html +
       (diasOp.length ? perControle("motor-ocioso", stO, diasOp, fO) : "") +
-      (fil_.processo || fil_.responsavel || stO.p !== stO.padrao ? '<button type="button" class="limpar" data-limpar="1">Limpar filtros</button>' : "") +
+      (fil_.processo || hierAtiva() || stO.p !== stO.padrao ? '<button type="button" class="limpar" data-limpar="1">Limpar filtros</button>' : "") +
       '<p class="ctx">' + rows.length + " " + plural(rows.length, "veículo leve", "veículos leves") + ", " + (kds ? (fO.de === fO.ate ? "em " : "de ") + perTexto(fO) : esc(m.periodo)) + "</p></div>";
 
     var lead = (kds ? (fO.de === fO.ate ? "Em " : "De ") + perTexto(fO) + ", os" : "Os") + " veículos ficaram <b>" + num(pct, 1) + "%</b> do tempo de motor ligado parados, <b>" + horas(oc) + "</b> de " + horas(li) + ". " +
@@ -514,7 +517,7 @@ window.iniciarPainel = function (D) {
     }
     var lv = rows.map(function (r) { r.quem = "<b>" + esc(r.v.id) + "</b><span>" + esc([r.v.placa, fil_.processo ? r.v.responsavel : r.v.processo].filter(Boolean).join(" · ")) + "</span>"; return r; })
       .sort(function (a, b) { return b.pct - a.pct; });
-    var limite = fil_.processo || fil_.responsavel ? lv.length : 15;
+    var limite = fil_.processo || hierAtiva() ? lv.length : 15;
     secoes += '<section class="sec"><h2>' + (limite < lv.length ? "Os " + limite + " veículos mais ociosos" : "Veículos do mais ocioso ao menos") + "</h2>" +
       '<p class="sub">Horas de motor ligado parado ' + (kds && fO.de === fO.ate ? "no dia" : "no período") + "." + (limite < lv.length ? " Escolha um processo para ver todos os veículos dele." : "") + "</p>" + quadro(lv.slice(0, limite)) + "</section>";
 
@@ -535,14 +538,15 @@ window.iniciarPainel = function (D) {
     var P = D.permanencia, V = P.veiculos;
     var processos = unicos(Object.keys(V).map(function (f) { return V[f].processo; }));
     if (fil_.processo && processos.indexOf(fil_.processo) < 0) fil_.processo = "";
-    var frotasProc = Object.keys(V).filter(function (f) { return !fil_.processo || V[f].processo === fil_.processo; }).sort();
+    var hP = hier(Object.keys(V).filter(function (f) { return !fil_.processo || V[f].processo === fil_.processo; }), function (f) { return V[f]; }, "p");
+    var frotasProc = hP.itens.sort();
     pm.frotas = pm.frotas.filter(function (f) { return frotasProc.indexOf(f) >= 0; });
     var sel = pm.frotas.length ? pm.frotas : frotasProc, set = {};
     sel.forEach(function (f) { set[f] = 1; });
     var diasEv = unicos(P.eventos.map(function (e) { return e[5]; })).sort();
     var st = perEstado("permanencia", "todo"), f = perFaixa(st, diasEv);
     var ev = P.eventos.filter(function (e) { return set[e[0]] && (f.todo || (e[5] >= f.de && e[5] <= f.ate)); });
-    return { P: P, V: V, processos: processos, frotasProc: frotasProc, ev: ev, diasEv: diasEv, st: st, f: f };
+    return { P: P, V: V, processos: processos, frotasProc: frotasProc, ev: ev, diasEv: diasEv, st: st, f: f, hierHtml: hP.html };
   }
   function dataBR(s) { return s.slice(8, 10) + "/" + s.slice(5, 7) + "/" + s.slice(0, 4); }
   function hmin(m) { return m >= 6000 ? num(m / 60, 0) + " h" : m >= 60 ? dur(Math.round(m)) : num(m, 0) + " min"; }
@@ -564,11 +568,11 @@ window.iniciarPainel = function (D) {
       return '<label class="chk"><input type="checkbox" data-frota="' + esc(f) + '"' + (pm.frotas.length && on ? " checked" : "") + "><span><b>" + esc(f) + "</b> " + esc([v.placa, fil_.processo ? v.responsavel : v.processo].filter(Boolean).join(" · ")) + "</span></label>";
     }).join("");
     var rotFrotas = pm.frotas.length ? pm.frotas.length + " de " + F.frotasProc.length + " selecionadas" : "Todas (" + F.frotasProc.length + ")";
-    var filtros = '<div class="filtros"><label>Processo<select data-fil="processo" id="p-processo">' + opcoes(F.processos, fil_.processo, D.escopo && D.escopo !== "todos" ? "Todos os meus processos" : "Todos os processos") + "</select></label>" +
+    var filtros = '<div class="filtros"><label>Processo<select data-fil="processo" id="p-processo">' + opcoes(F.processos, fil_.processo, D.escopo && D.escopo !== "todos" ? "Todos os meus processos" : "Todos os processos") + "</select></label>" + F.hierHtml +
       '<div class="campo"><span class="rot">Frotas</span><details class="frotas" id="p-frotas"' + (pm.abertoFrotas ? " open" : "") + '><summary>' + rotFrotas + '</summary><div class="fl-acoes"><button type="button" data-frotas="todas">Marcar todas</button><button type="button" data-frotas="limpar">Ver todas sem filtro</button></div><div class="fl-lista">' + listaFrotas + "</div></details></div>" +
       (F.diasEv.length ? perControle("permanencia", F.st, F.diasEv, F.f) : "") +
       '<div class="campo"><span class="rot">Calor por</span><div class="pills" role="group" aria-label="Medida do mapa de calor"><button type="button" data-medida="tempo" aria-pressed="' + (pm.medida === "tempo") + '">Tempo parado</button><button type="button" data-medida="vezes" aria-pressed="' + (pm.medida === "vezes") + '">Nº de permanências</button></div></div>' +
-      (fil_.processo || pm.frotas.length || F.st.p !== F.st.padrao ? '<button type="button" class="limpar" data-limpar="1">Limpar filtros</button>' : "") + "</div>";
+      (fil_.processo || hierAtiva() || pm.frotas.length || F.st.p !== F.st.padrao ? '<button type="button" class="limpar" data-limpar="1">Limpar filtros</button>' : "") + "</div>";
 
     // Nas observações, só estabelecimentos (posto, padaria, restaurante...), nunca cercas com nome de colaborador.
     var topoX = locais.filter(function (x) { return P.locais[x.i].tipo === "estabelecimento"; })[0];
@@ -1867,11 +1871,12 @@ window.iniciarPainel = function (D) {
       var nf = document.getElementById(pr.id); if (nf) nf.focus();
       return;
     }
-    var sel = e.target.closest("select[data-fil], select[data-pm], select[data-comp], select[data-kon], select[data-om]"); if (!sel) return;
+    var sel = e.target.closest("select[data-fil], select[data-pm], select[data-comp], select[data-kon], select[data-om], select[data-hier]"); if (!sel) return;
     if (sel.dataset.om) { om[sel.dataset.om] = sel.value; render(); var n5 = document.getElementById(sel.id); if (n5) n5.focus(); return; }
     if (sel.dataset.kon) { fco[sel.dataset.kon] = sel.dataset.kon === "dia" ? +sel.value : sel.value; render(); var n4 = document.getElementById(sel.id); if (n4) n4.focus(); return; }
     if (sel.dataset.comp) { fil_.comp[sel.dataset.comp] = sel.dataset.comp === "janela" ? +sel.value : sel.value; render(); var n3 = document.getElementById(sel.id); if (n3) n3.focus(); return; }
     if (sel.dataset.pm) pm[sel.dataset.pm] = sel.dataset.pm === "dia" ? sel.value : +sel.value;
+    else if (sel.dataset.hier) { (fil_.h || (fil_.h = {}))[sel.dataset.hier] = sel.value; pm.frotas = []; }
     else { fil_[sel.dataset.fil] = sel.value; if (sel.dataset.fil === "processo") { fil_.responsavel = ""; pm.frotas = []; } }
     pm.refit = true;
     render();
@@ -1879,7 +1884,7 @@ window.iniciarPainel = function (D) {
   });
   painel.addEventListener("click", function (e) {
     var l = e.target.closest("[data-limpar]");
-    if (l) { fil_.processo = ""; fil_.responsavel = ""; fil_.turnos = [1, 1, 1]; fil_.tipos = null; if (fil_.comp) { fil_.comp.frota = ""; fil_.comp.resp = ""; fil_.comp.ger = ""; fil_.comp.gest = ""; fil_.comp.lid = ""; } fco.dia = -1; fcm.tipo = ""; pm.frotas = []; Object.keys(PER).forEach(function (a) { PER[a].p = PER[a].padrao; PER[a].de = PER[a].ate = ""; }); pm.refit = true; render(); return; }
+    if (l) { fil_.processo = ""; fil_.responsavel = ""; fil_.turnos = [1, 1, 1]; fil_.tipos = null; if (fil_.comp) fil_.comp.frota = ""; fil_.h = { ger: "", resp: "", gest: "", lid: "" }; fco.dia = -1; fcm.tipo = ""; pm.frotas = []; Object.keys(PER).forEach(function (a) { PER[a].p = PER[a].padrao; PER[a].de = PER[a].ate = ""; }); pm.refit = true; render(); return; }
     var kt = e.target.closest("[data-ktodos]");
     if (kt) { fco.todos = !fco.todos; render(); return; }
     var kd = e.target.closest("[data-kdia]");

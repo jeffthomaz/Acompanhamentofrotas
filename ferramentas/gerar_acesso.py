@@ -419,6 +419,15 @@ def aplicar_hierarquia(D):
                 v.pop(k, None)
         if h.get("gerente"):
             v["gerencia"] = h["gerente"]
+    # Mesma hierarquia no Motor ocioso e na Permanência (filtros desde 19/11/2026).
+    regs = list(D.get("permanencia", {}).get("veiculos", {}).items()) + [(v.get("id"), v) for v in D.get("motorOcioso", {}).get("veiculos", [])]
+    for f, v in regs:
+        h = H.get(norm(f)) or H.get(str(f)) or {}
+        for k in ("gerente", "gestor", "lider"):
+            if h.get(k):
+                v[k] = h[k]
+            else:
+                v.pop(k, None)
 
 
 def remover_excluidas(D):
