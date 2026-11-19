@@ -1593,7 +1593,7 @@ window.iniciarPainel = function (D) {
     var prop = '<section class="ap-slide"><p class="ap-kick">Proporção</p><h2>A cada <span class="ap-dest">' + num(baseN, 0) + "</h2>" +
       '<div class="ap-prop"><ul class="ap-prop-l">' + itensP.map(function (x) {
         return '<li class="c-' + x.c.id + (x.v < .5 ? " ap-zero" : "") + '">' + ico(x.c.icone) + "<strong>" + fmtP(x.v) + "</strong><span>" + esc(nomeP(x.c)) + "</span></li>";
-      }).join("") + '</ul><div class="ap-waf-w"><p class="ap-h3">A cada 100 ocorrências (sem bocejo)</p><div class="ap-waf">' + waffle + '</div><p class="ap-sub">' + CATS.map(function (c, k) { return inteiro[k] ? '<span class="ap-wl"><i class="c-' + c.id + '"></i>' + inteiro[k] + " " + esc(nomeP(c).toLowerCase()) + "</span>" : ""; }).join("") + "</p></div></div></section>";
+      }).join("") + '</ul><div class="ap-waf-w"><p class="ap-h3">A cada 100 ocorrências</p><div class="ap-waf">' + waffle + '</div><p class="ap-sub">' + CATS.map(function (c, k) { return inteiro[k] ? '<span class="ap-wl"><i class="c-' + c.id + '"></i>' + inteiro[k] + " " + esc(nomeP(c).toLowerCase()) + "</span>" : ""; }).join("") + "</p></div></div></section>";
     var vP = function (k) { return Math.round(totT[k] / ancora); }, eh = function (n) { return n === 1 ? " é " : " são "; };
     var tit = '<span class="ap-dest">' + num(baseN, 0) + " ocorrências</span>, <b>" + num(vP(0), 0) + "</b>" + eh(vP(0)) + "excesso de velocidade, <b>" + num(vP(iCel), 0) + "</b>" + eh(vP(iCel)) + "uso de celular e <b>" + num(vP(iCin), 0) + "</b>" + eh(vP(iCin)) + "sem cinto";
     prop = prop.replace('<span class="ap-dest">' + num(baseN, 0) + "</h2>", tit + "</h2>");
