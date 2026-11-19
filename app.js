@@ -1623,19 +1623,15 @@ window.iniciarPainel = function (D) {
       var princ = ordL.filter(function (o) { return o.n >= 1; }).slice(0, 3);
       var tituloL = "De cada <span class=\"ap-dest\">100 excessos</span>, " + princ.map(function (o) { return "<b>" + o.n + "</b> " + (o.n === 1 ? "é" : "são") + " em vias de " + o.x.l + " km/h"; }).join(", ").replace(/, ([^,]*)$/, " e $1");
       var umCada = function (x) { return x.a ? Math.max(1, Math.round(x.t / x.a)) : 0; };
+      // Sem as faixas (até 20%, 20–50%, acima de 50%) por enquanto, a pedido (19/11/2026): só a proporção por limite.
       limiar = '<section class="ap-slide"><p class="ap-kick">Excesso de velocidade por limiar da via</p><h2>' + tituloL + "</h2>" +
-        '<p class="ap-sub">' + num(totL, 0) + " excessos com limite da via registrado. Em cada limite, o quadro mostra quantos de cada 100 excessos acontecem ali e com que frequência o excesso passa de 20% do limite.</p>" +
-        '<div class="ap-lim-w"><ul class="ap-vlp">' + ordL.map(function (o) {
-          var x = o.x, u = umCada(x);
-          return '<li class="' + (u && u <= 20 ? "alto" : "") + '"><b>' + x.l + ' km/h</b><strong>' + (o.n >= 1 ? o.n : "&lt;1") + '</strong><span>de cada 100 excessos</span><em>' + (u ? "1 a cada " + num(u, 0) + " passa de 20%" : "nenhum passou de 20%") + "</em></li>";
-        }).join("") + "</ul>" +
-        '<div><p class="ap-h3">Acima de 20% por mês</p><ul class="legend"><li><i class="c-lim2"></i>De 20% até 50%</li><li><i class="c-lim3"></i>Acima de 50%</li></ul>' + empilhado(mesLim, false, 640, [LIM[1], LIM[2]]) +
-        (meses.length && meses[meses.length - 1].parcial ? '<p class="ap-sub">* mês parcial.</p>' : "") + "</div></div></section>";
+        '<p class="ap-sub">' + num(totL, 0) + " excessos com limite da via registrado.</p>" +
+        '<ul class="ap-vlp ap-vlp-larga">' + ordL.map(function (o) {
+          var x = o.x;
+          return "<li><b>" + x.l + " km/h</b><strong>" + (o.n >= 1 ? o.n : "&lt;1") + "</strong><span>de cada 100 excessos</span><em>" + num(x.t, 0) + " " + plural(x.t, "excesso", "excessos") + "</em></li>";
+        }).join("") + "</ul></section>";
     } else {
-      limiar += '<div class="ap-lim-w"><div class="ap-lim">' + LIM.map(function (l, k) {
-        return '<div class="ap-lim-r ' + l.id + '"><div class="ap-lim-t"><b>' + l.nome + "</b><small>" + l.sub + '</small></div><div class="ap-lim-b"><i style="width:' + Math.max(limAno[k] / mxLim * 100, .6).toFixed(2) + '%"></i></div><div class="ap-lim-n"><strong>' + num(limAno[k], 0) + "</strong><small>" + num(totLim ? limAno[k] / totLim * 100 : 0, 1) + "%</small></div></div>";
-      }).join("") + '</div><div><p class="ap-h3">Acima de 20% por mês</p><ul class="legend"><li><i class="c-lim2"></i>De 20% até 50%</li><li><i class="c-lim3"></i>Acima de 50%</li></ul>' + empilhado(mesLim, false, 640, [LIM[1], LIM[2]]) +
-        (meses.length && meses[meses.length - 1].parcial ? '<p class="ap-sub">* mês parcial.</p>' : "") + "</div></div></section>";
+      limiar = "";
     }
 
     // Mapa dos excessos de velocidade: dados reais do mapa do Comportamental (ano todo, todos os processos).
