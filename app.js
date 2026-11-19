@@ -1512,15 +1512,16 @@ window.iniciarPainel = function (D) {
     var T = C.tipos, d0 = new Date(C.inicio + "T00:00:00"), dF = new Date(C.fim + "T00:00:00");
     var catDe = T.map(function (t) { var g = t.grupo || t.id; for (var k = 0; k < CATS.length; k++) if (CATS[k].id === g) return k; return -1; });
     var GRAVE = { vel2: 1, vel3: 1, celular: 1, cinto: 1, cigarro: 1, faixa: 1 }; // desvios com potencial grave
-    var meses = [], porMes = {}, frotasAno = {}, gravesAno = 0, bocejoAno = 0;
+    var meses = [], porMes = {}, frotasAno = {}, gravesAno = 0, bocejoAno = 0, LIM_ID = ["vel1", "vel2", "vel3"], limAno = [0, 0, 0];
     C.ev.forEach(function (e) {
       var ci = catDe[e[1]]; if (ci < 0) return;
       var dt = new Date(d0); dt.setDate(dt.getDate() + e[0]);
       var ch = dt.getFullYear() * 12 + dt.getMonth(), m = porMes[ch];
-      if (!m) { m = porMes[ch] = { ch: ch, d: MES[dt.getMonth()] + "/" + String(dt.getFullYear()).slice(2), partes: CATS.map(function () { return 0; }), total: 0, graves: 0 }; }
+      if (!m) { m = porMes[ch] = { ch: ch, d: MES[dt.getMonth()] + "/" + String(dt.getFullYear()).slice(2), partes: CATS.map(function () { return 0; }), total: 0, graves: 0, lim: [0, 0, 0] }; }
       m.partes[ci] += e[3]; m.total += e[3]; frotasAno[e[2]] = 1;
       if (GRAVE[T[e[1]].id]) { m.graves += e[3]; gravesAno += e[3]; }
       if (T[e[1]].id === "bocejo") bocejoAno += e[3];
+      var li = LIM_ID.indexOf(T[e[1]].id); if (li >= 0) { m.lim[li] += e[3]; limAno[li] += e[3]; }
     });
     meses = Object.keys(porMes).map(function (k) { return porMes[k]; }).sort(function (a, b) { return a.ch - b.ch; });
     var fimMes = new Date(dF.getFullYear(), dF.getMonth() + 1, 0).getDate() === dF.getDate();
@@ -1598,6 +1599,18 @@ window.iniciarPainel = function (D) {
     var tit = '<span class="ap-dest">' + num(baseN, 0) + " ocorrências</span>, <b>" + num(vP(0), 0) + "</b>" + eh(vP(0)) + "excesso de velocidade, <b>" + num(vP(iCel), 0) + "</b>" + eh(vP(iCel)) + "uso de celular e <b>" + num(vP(iCin), 0) + "</b>" + eh(vP(iCin)) + "sem cinto";
     prop = prop.replace('<span class="ap-dest">' + num(baseN, 0) + "</h2>", tit + "</h2>");
 
+    // Excesso de velocidade por limiar (19/11/2026): até 20%, 20–50% e acima de 50% do limite da via.
+    var LIM = [{ id: "lim1", nome: "Até 20%", sub: "dentro da tolerância" }, { id: "lim2", nome: "De 20% até 50%", sub: "gera tratativa" }, { id: "lim3", nome: "Acima de 50%", sub: "gera tratativa" }];
+    var totLim = limAno[0] + limAno[1] + limAno[2], mxLim = Math.max(1, limAno[0]);
+    var acima = limAno[1] + limAno[2];
+    var mesLim = meses.map(function (m) { return { d: m.d + (m.parcial ? "*" : ""), partes: [m.lim[1], m.lim[2]], total: m.lim[1] + m.lim[2] }; });
+    var limiar = '<section class="ap-slide"><p class="ap-kick">Excesso de velocidade por limiar</p><h2>' + num(totLim ? limAno[0] / totLim * 100 : 0, 1) + "% dos excessos ficam até 20% acima do limite</h2>" +
+      '<p class="ap-sub">' + num(totLim, 0) + " excessos no período. " + num(acima, 0) + " passaram de 20% (" + num(totLim ? acima / totLim * 100 : 0, 1) + "%) e " + num(limAno[2], 0) + " passaram de 50%.</p>" +
+      '<div class="ap-lim-w"><div class="ap-lim">' + LIM.map(function (l, k) {
+        return '<div class="ap-lim-r ' + l.id + '"><div class="ap-lim-t"><b>' + l.nome + "</b><small>" + l.sub + '</small></div><div class="ap-lim-b"><i style="width:' + Math.max(limAno[k] / mxLim * 100, .6).toFixed(2) + '%"></i></div><div class="ap-lim-n"><strong>' + num(limAno[k], 0) + "</strong><small>" + num(totLim ? limAno[k] / totLim * 100 : 0, 1) + "%</small></div></div>";
+      }).join("") + '</div><div><p class="ap-h3">Acima de 20% por mês</p><ul class="legend"><li><i class="c-lim2"></i>De 20% até 50%</li><li><i class="c-lim3"></i>Acima de 50%</li></ul>' + empilhado(mesLim, false, 640, [LIM[1], LIM[2]]) +
+      (meses.length && meses[meses.length - 1].parcial ? '<p class="ap-sub">* mês parcial.</p>' : "") + "</div></div></section>";
+
     // Mapa dos excessos de velocidade: dados reais do mapa do Comportamental (ano todo, todos os processos).
     var mapaSl = "", C0 = D.comportamento, M0 = C0 && C0.mapa;
     if (M0 && M0.pts && M0.pts.length) {
@@ -1618,7 +1631,7 @@ window.iniciarPainel = function (D) {
         apm.locs.map(function (x, k) { return '<li><button type="button" data-aploc="' + k + '"><span class="ap-ln">' + (k + 1) + '</span><span class="ap-lt"><b>' + esc(x.nome) + "</b><small>" + num(x.n, 0) + " excessos · " + num(x.n / totV * 100, 1) + '% do total</small><i style="width:' + (x.n / mxL * 100).toFixed(1) + '%"></i></span></button></li>'; }).join("") +
         '</ol></div><p class="mapa-leg"><span>Menos</span><i class="esc"></i><span>Mais excessos</span></p></section>';
     }
-    return '<div class="ap"><div class="ap-bar"><button type="button" data-ap-tela="1">Tela cheia</button></div>' + ficticio + capa + prop + piramide + tend + mapaSl + tipos + "</div>";
+    return '<div class="ap"><div class="ap-bar"><button type="button" data-ap-tela="1">Tela cheia</button></div>' + ficticio + capa + prop + piramide + tend + limiar + mapaSl + tipos + "</div>";
   }
 
   function abaResumo() {

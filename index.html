@@ -566,6 +566,15 @@ rect.seg.c-vel{fill:var(--c-vel)}rect.seg.c-celular{fill:var(--c-celular)}rect.s
 .ap-lt{display:grid;gap:.15rem;min-width:0;flex:1}.ap-lt b{font-size:1rem}.ap-lt small{color:var(--muted)}.ap-lt i{display:block;height:.35rem;border-radius:999px;background:var(--v2)}
 .ap-pin span{display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:#C23B2B;color:#fff;font-weight:800;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4)}
 .ap-dest{color:var(--v2)}
+.c-lim1{--cc:var(--v1)}.c-lim2{--cc:var(--v2)}.c-lim3{--cc:var(--v3)}rect.seg.c-lim2{fill:var(--v2)}rect.seg.c-lim3{fill:var(--v3)}.legend i.c-lim2{background:var(--v2)}.legend i.c-lim3{background:var(--v3)}
+.ap-lim-w{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:2rem;align-items:start;margin-top:1rem}
+.ap-lim{display:grid;gap:1.1rem}
+.ap-lim-r{display:grid;grid-template-columns:9.5rem minmax(0,1fr) 7rem;gap:.9rem;align-items:center}
+.ap-lim-t b{display:block;font-size:1.05rem}.ap-lim-t small{color:var(--muted)}
+.ap-lim-b{height:2.4rem;background:var(--soft);border-radius:8px;overflow:hidden}.ap-lim-b i{display:block;height:100%;border-radius:8px}
+.ap-lim-r.lim1 .ap-lim-b i{background:var(--v1)}.ap-lim-r.lim2 .ap-lim-b i{background:var(--v2)}.ap-lim-r.lim3 .ap-lim-b i{background:var(--v3)}
+.ap-lim-n{text-align:right}.ap-lim-n strong{display:block;font-family:var(--display);font-size:1.7rem;line-height:1.1}.ap-lim-n small{color:var(--muted)}
+@media (max-width:900px){.ap-lim-w{grid-template-columns:minmax(0,1fr)}}
 .ap-prop{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:2rem;align-items:start;margin-top:1rem}
 .ap-prop-l{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:.8rem}
 .ap-prop-l li{border:1px solid var(--line);border-left:6px solid var(--cc);border-radius:12px;padding:.8rem 1rem;display:grid;gap:.1rem}
@@ -579,7 +588,7 @@ rect.seg.c-vel{fill:var(--c-vel)}rect.seg.c-celular{fill:var(--c-celular)}rect.s
 </style>
 </head><body>
 <header class="band"><div class="band-in gut">
-  <img class="logo" src="logo-branco.png?v=202611190959" alt="Bioenergética Aroeira" width="67" height="92">
+  <img class="logo" src="logo-branco.png?v=202611191011" alt="Bioenergética Aroeira" width="67" height="92">
   <div><h1>MONITORAMENTO COMPORTAMENTAL</h1><p class="per" id="periodo"></p></div>
   <div class="quem" id="quem" hidden><span><b id="quem-nome"></b><small id="quem-escopo"></small></span><button type="button" id="atualizar" hidden>Atualizar dados</button><button type="button" id="sair">Sair</button></div>
   <p class="atu-ult" id="atualizado" hidden></p>
@@ -611,9 +620,9 @@ rect.seg.c-vel{fill:var(--c-vel)}rect.seg.c-celular{fill:var(--c-celular)}rect.s
 </div>
 <footer class="foot gut">Bioenergética Aroeira S/A, Tupaciguara/MG. <a href="https://www.bioaroeira.com.br" target="_blank" rel="noopener">www.bioaroeira.com.br</a></footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" defer></script>
-<script src="acesso.js?v=202611190959"></script>
-<script src="app.js?v=202611190959"></script>
-<script src="jszip.min.js?v=202611190959"></script>
-<script src="painel-atualizar.js?v=202611190959"></script>
-<script src="login.js?v=202611190959"></script>
+<script src="acesso.js?v=202611191011"></script>
+<script src="app.js?v=202611191011"></script>
+<script src="jszip.min.js?v=202611191011"></script>
+<script src="painel-atualizar.js?v=202611191011"></script>
+<script src="login.js?v=202611191011"></script>
 </body></html>
