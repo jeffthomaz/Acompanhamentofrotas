@@ -1555,6 +1555,26 @@ window.iniciarPainel = function (D) {
       return '<div class="ap-tipo c-' + c.id + '">' + ico(c.icone) + "<b>" + esc(c.nome) + "</b><strong>" + num(tAno, 0) + "</strong><span>" + num(tAno / totAno * 100, 1) + "% do total</span>" +
         '<em class="' + (dv === null ? "" : dv <= 0 ? "bom" : "ruim") + '">' + (dv === null ? (u ? u + " em " + ult.d : "sem registros em " + ult.d) : (dv <= 0 ? "↓ " : "↑ ") + num(Math.abs(dv), 0) + "% em " + ult.d) + "</em></div>";
     }).join("") + "</div></section>";
+    // Proporção (19/11/2026): "a cada N ocorrências, X excessos, 1 celular, 1 sem cinto" — menos números na tela.
+    var totT = CATS.map(function (c, k) { return meses.reduce(function (a, m) { return a + m.partes[k]; }, 0); });
+    var iCel = 1, iCin = 2, ancora = Math.min(totT[iCel] || Infinity, totT[iCin] || Infinity);
+    if (!isFinite(ancora)) ancora = Math.max(1, Math.min.apply(null, totT.filter(Boolean)));
+    var baseN = Math.round(totAno / ancora);
+    var itensP = CATS.map(function (c, k) { return { c: c, v: totT[k] / ancora }; }).sort(function (a, b) { return b.v - a.v; });
+    var fmtP = function (v) { return v >= .5 ? num(Math.round(v), 0) : "menos de 1"; };
+    // Waffle: 100 quadrinhos = composição a cada 100 ocorrências.
+    var q = CATS.map(function (c, k) { return totT[k] / totAno * 100; }), inteiro = q.map(Math.floor), resto = 100 - inteiro.reduce(function (a, b) { return a + b; }, 0);
+    q.map(function (v, k) { return { k: k, f: v - Math.floor(v) }; }).sort(function (a, b) { return b.f - a.f; }).slice(0, resto).forEach(function (x) { inteiro[x.k]++; });
+    var waffle = "";
+    CATS.forEach(function (c, k) { for (var w = 0; w < inteiro[k]; w++) waffle += '<i class="c-' + c.id + '" title="' + esc(c.nome) + '"></i>'; });
+    var prop = '<section class="ap-slide"><p class="ap-kick">Proporção</p><h2>A cada <span class="ap-dest">' + num(baseN, 0) + "</h2>" +
+      '<div class="ap-prop"><ul class="ap-prop-l">' + itensP.map(function (x) {
+        return '<li class="c-' + x.c.id + (x.v < .5 ? " ap-zero" : "") + '">' + ico(x.c.icone) + "<strong>" + fmtP(x.v) + "</strong><span>" + esc(x.c.nome) + "</span></li>";
+      }).join("") + '</ul><div class="ap-waf-w"><p class="ap-h3">A cada 100 ocorrências</p><div class="ap-waf">' + waffle + '</div><p class="ap-sub">' + CATS.map(function (c, k) { return inteiro[k] ? '<span class="ap-wl"><i class="c-' + c.id + '"></i>' + inteiro[k] + " " + esc(c.nome.toLowerCase()) + "</span>" : ""; }).join("") + "</p></div></div></section>";
+    var vP = function (k) { return Math.round(totT[k] / ancora); }, eh = function (n) { return n === 1 ? " é " : " são "; };
+    var tit = '<span class="ap-dest">' + num(baseN, 0) + " ocorrências</span>, <b>" + num(vP(0), 0) + "</b>" + eh(vP(0)) + "excesso de velocidade, <b>" + num(vP(iCel), 0) + "</b>" + eh(vP(iCel)) + "uso de celular e <b>" + num(vP(iCin), 0) + "</b>" + eh(vP(iCin)) + "sem cinto";
+    prop = prop.replace('<span class="ap-dest">' + num(baseN, 0) + "</h2>", tit + "</h2>");
+
     // Mapa dos excessos de velocidade: dados reais do mapa do Comportamental (ano todo, todos os processos).
     var mapaSl = "", C0 = D.comportamento, M0 = C0 && C0.mapa;
     if (M0 && M0.pts && M0.pts.length) {
@@ -1575,7 +1595,7 @@ window.iniciarPainel = function (D) {
         apm.locs.map(function (x, k) { return '<li><button type="button" data-aploc="' + k + '"><span class="ap-ln">' + (k + 1) + '</span><span class="ap-lt"><b>' + esc(x.nome) + "</b><small>" + num(x.n, 0) + " excessos · " + num(x.n / totV * 100, 1) + '% do total</small><i style="width:' + (x.n / mxL * 100).toFixed(1) + '%"></i></span></button></li>'; }).join("") +
         '</ol></div><p class="mapa-leg"><span>Menos</span><i class="esc"></i><span>Mais excessos</span></p></section>';
     }
-    return '<div class="ap"><div class="ap-bar"><button type="button" data-ap-tela="1">Tela cheia</button></div>' + ficticio + capa + piramide + tend + mapaSl + tipos + "</div>";
+    return '<div class="ap"><div class="ap-bar"><button type="button" data-ap-tela="1">Tela cheia</button></div>' + ficticio + capa + prop + piramide + tend + mapaSl + tipos + "</div>";
   }
 
   function abaResumo() {
