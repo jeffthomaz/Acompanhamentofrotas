@@ -470,13 +470,29 @@ def escrever(saida, pacote):
         open(idx, "w", encoding="utf-8").write(re.sub(r"\?v=\d{12}", "?v=" + datetime.now().strftime("%Y%m%d%H%M"), h))
 
 
+def marcar_apresentacao(usuarios):
+    """Marca (ap=1) os usuários que veem a aba Apresentação (ferramentas/apresentacao_usuarios.json). Devolve uma cópia."""
+    try:
+        logins = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "apresentacao_usuarios.json"), encoding="utf-8"))["usuarios"]
+    except (OSError, ValueError, KeyError):
+        logins = []
+    ids = {id_usuario(l) for l in logins}
+    out = {}
+    for uid, u in usuarios.items():
+        u = {k: v for k, v in u.items() if k != "ap"}
+        if uid in ids:
+            u["ap"] = 1
+        out[uid] = u
+    return out
+
+
 def so_dados(chaves_json, fonte, saida):
     """Modo --dados: regera só os dados dos grupos com as chaves guardadas (usuários e senhas iguais)."""
     C = json.load(open(chaves_json, encoding="utf-8"))
     D = preparar(fonte)
     pacote = {
         "v": 1, "iter": ITERACOES, "gerado": datetime.now().strftime("%d/%m/%Y %H:%M"),
-        "usuarios": C["usuarios"],
+        "usuarios": marcar_apresentacao(C["usuarios"]),
         "grupos": {gid: cifrar(base64.b64decode(g["chave"]),
                                json.dumps(recorte(D, None if g["procs"] is None else frozenset(g["procs"])), ensure_ascii=False).encode(), "dados:" + gid)
                    for gid, g in C["chaves"].items()},
@@ -535,7 +551,7 @@ def main(cad, fonte, saida):
 
     pacote = {
         "v": 1, "iter": ITERACOES, "gerado": datetime.now().strftime("%d/%m/%Y %H:%M"),
-        "usuarios": usuarios,
+        "usuarios": marcar_apresentacao(usuarios),
         "grupos": {gid: cifrar(g["chave"], json.dumps(recorte(D, g["procs"]), ensure_ascii=False).encode(), "dados:" + gid)
                    for gid, g in grupos.items()},
     }

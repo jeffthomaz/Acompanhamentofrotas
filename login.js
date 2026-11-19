@@ -71,6 +71,7 @@
 
   // Continua logado ao atualizar a página (só nesta aba; some ao fechar o navegador).
   var s = sessao();
+  if (s && A.grupos[s.g]) window.painelAp = !!s.ap;
   if (s && A.grupos[s.g]) entrarComChave(s.g, bin(s.k), s.n).then(function () { botaoAtualizar(s.t, s.n); }).catch(function () { sessao(null); });
 
   form.addEventListener("submit", function (e) {
@@ -91,9 +92,10 @@
       return Promise.all([abrir(kek, u, "chave:" + uid), tok]);
     }).then(function (res) {
       raw = new Uint8Array(res[0]); token = res[1];
+      window.painelAp = !!u.ap; // vê a aba Apresentação
       return entrarComChave(u.g, raw, usuario.trim());
     }).then(function () {
-      sessao({ g: u.g, k: b64(raw), n: usuario.trim(), t: token || undefined });
+      sessao({ g: u.g, k: b64(raw), n: usuario.trim(), t: token || undefined, ap: u.ap ? 1 : undefined });
       botaoAtualizar(token, usuario.trim());
       form.reset();
     }).catch(function () {

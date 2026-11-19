@@ -8,7 +8,7 @@ window.iniciarPainel = function (D) {
     { id: "conectividade", nome: "Conectividade", tem: "conectividade" },
     { id: "cameras", nome: "Câmeras", tem: "cameras" },
     { id: "apresentacao", nome: "Apresentação", tem: "apresentacao" }
-  ].filter(function (a) { return a.tem === "apresentacao" ? true : a.tem === "resumo" ? D.comportamento || D.motorOcioso || D.permanencia || D.conectividade || D.cameras : D[a.tem]; });
+  ].filter(function (a) { return a.tem === "apresentacao" ? !!window.painelAp : a.tem === "resumo" ? D.comportamento || D.motorOcioso || D.permanencia || D.conectividade || D.cameras : D[a.tem]; });
   var filtro = "Todos";
   var ordem = {};
 
