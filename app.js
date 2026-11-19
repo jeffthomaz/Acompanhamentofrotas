@@ -1512,7 +1512,7 @@ window.iniciarPainel = function (D) {
     var T = C.tipos, d0 = new Date(C.inicio + "T00:00:00"), dF = new Date(C.fim + "T00:00:00");
     var catDe = T.map(function (t) { var g = t.grupo || t.id; for (var k = 0; k < CATS.length; k++) if (CATS[k].id === g) return k; return -1; });
     var GRAVE = { vel2: 1, vel3: 1, celular: 1, cinto: 1, cigarro: 1, faixa: 1 }; // desvios com potencial grave
-    var meses = [], porMes = {}, frotasAno = {}, gravesAno = 0;
+    var meses = [], porMes = {}, frotasAno = {}, gravesAno = 0, bocejoAno = 0;
     C.ev.forEach(function (e) {
       var ci = catDe[e[1]]; if (ci < 0) return;
       var dt = new Date(d0); dt.setDate(dt.getDate() + e[0]);
@@ -1520,6 +1520,7 @@ window.iniciarPainel = function (D) {
       if (!m) { m = porMes[ch] = { ch: ch, d: MES[dt.getMonth()] + "/" + String(dt.getFullYear()).slice(2), partes: CATS.map(function () { return 0; }), total: 0, graves: 0 }; }
       m.partes[ci] += e[3]; m.total += e[3]; frotasAno[e[2]] = 1;
       if (GRAVE[T[e[1]].id]) { m.graves += e[3]; gravesAno += e[3]; }
+      if (T[e[1]].id === "bocejo") bocejoAno += e[3];
     });
     meses = Object.keys(porMes).map(function (k) { return porMes[k]; }).sort(function (a, b) { return a.ch - b.ch; });
     var fimMes = new Date(dF.getFullYear(), dF.getMonth() + 1, 0).getDate() === dF.getDate();
@@ -1575,21 +1576,24 @@ window.iniciarPainel = function (D) {
         '<em class="' + (dv === null ? "" : dv <= 0 ? "bom" : "ruim") + '">' + (dv === null ? (u ? u + " em " + ult.d : "sem registros em " + ult.d) : (dv <= 0 ? "↓ " : "↑ ") + num(Math.abs(dv), 0) + "% em " + ult.d) + "</em></div>";
     }).join("") + "</div></section>";
     // Proporção (19/11/2026): "a cada N ocorrências, X excessos, 1 celular, 1 sem cinto" — menos números na tela.
-    var totT = CATS.map(function (c, k) { return meses.reduce(function (a, m) { return a + m.partes[k]; }, 0); });
+    // Proporção sem bocejo (pedido em 19/11/2026): no tipo fadiga e bocejo entra só a fadiga.
+    var iFad = CATS.map(function (c) { return c.id; }).indexOf("fadiga");
+    var totT = CATS.map(function (c, k) { return meses.reduce(function (a, m) { return a + m.partes[k]; }, 0) - (k === iFad ? bocejoAno : 0); });
+    var totP = totAno - bocejoAno, nomeP = function (c) { return c.id === "fadiga" ? "Fadiga" : c.nome; };
     var iCel = 1, iCin = 2, ancora = Math.min(totT[iCel] || Infinity, totT[iCin] || Infinity);
     if (!isFinite(ancora)) ancora = Math.max(1, Math.min.apply(null, totT.filter(Boolean)));
-    var baseN = Math.round(totAno / ancora);
+    var baseN = Math.round(totP / ancora);
     var itensP = CATS.map(function (c, k) { return { c: c, v: totT[k] / ancora }; }).sort(function (a, b) { return b.v - a.v; });
     var fmtP = function (v) { return v >= .5 ? num(Math.round(v), 0) : "menos de 1"; };
     // Waffle: 100 quadrinhos = composição a cada 100 ocorrências.
-    var q = CATS.map(function (c, k) { return totT[k] / totAno * 100; }), inteiro = q.map(Math.floor), resto = 100 - inteiro.reduce(function (a, b) { return a + b; }, 0);
+    var q = CATS.map(function (c, k) { return totT[k] / totP * 100; }), inteiro = q.map(Math.floor), resto = 100 - inteiro.reduce(function (a, b) { return a + b; }, 0);
     q.map(function (v, k) { return { k: k, f: v - Math.floor(v) }; }).sort(function (a, b) { return b.f - a.f; }).slice(0, resto).forEach(function (x) { inteiro[x.k]++; });
     var waffle = "";
-    CATS.forEach(function (c, k) { for (var w = 0; w < inteiro[k]; w++) waffle += '<i class="c-' + c.id + '" title="' + esc(c.nome) + '"></i>'; });
+    CATS.forEach(function (c, k) { for (var w = 0; w < inteiro[k]; w++) waffle += '<i class="c-' + c.id + '" title="' + esc(nomeP(c)) + '"></i>'; });
     var prop = '<section class="ap-slide"><p class="ap-kick">Proporção</p><h2>A cada <span class="ap-dest">' + num(baseN, 0) + "</h2>" +
       '<div class="ap-prop"><ul class="ap-prop-l">' + itensP.map(function (x) {
-        return '<li class="c-' + x.c.id + (x.v < .5 ? " ap-zero" : "") + '">' + ico(x.c.icone) + "<strong>" + fmtP(x.v) + "</strong><span>" + esc(x.c.nome) + "</span></li>";
-      }).join("") + '</ul><div class="ap-waf-w"><p class="ap-h3">A cada 100 ocorrências</p><div class="ap-waf">' + waffle + '</div><p class="ap-sub">' + CATS.map(function (c, k) { return inteiro[k] ? '<span class="ap-wl"><i class="c-' + c.id + '"></i>' + inteiro[k] + " " + esc(c.nome.toLowerCase()) + "</span>" : ""; }).join("") + "</p></div></div></section>";
+        return '<li class="c-' + x.c.id + (x.v < .5 ? " ap-zero" : "") + '">' + ico(x.c.icone) + "<strong>" + fmtP(x.v) + "</strong><span>" + esc(nomeP(x.c)) + "</span></li>";
+      }).join("") + '</ul><div class="ap-waf-w"><p class="ap-h3">A cada 100 ocorrências (sem bocejo)</p><div class="ap-waf">' + waffle + '</div><p class="ap-sub">' + CATS.map(function (c, k) { return inteiro[k] ? '<span class="ap-wl"><i class="c-' + c.id + '"></i>' + inteiro[k] + " " + esc(nomeP(c).toLowerCase()) + "</span>" : ""; }).join("") + "</p></div></div></section>";
     var vP = function (k) { return Math.round(totT[k] / ancora); }, eh = function (n) { return n === 1 ? " é " : " são "; };
     var tit = '<span class="ap-dest">' + num(baseN, 0) + " ocorrências</span>, <b>" + num(vP(0), 0) + "</b>" + eh(vP(0)) + "excesso de velocidade, <b>" + num(vP(iCel), 0) + "</b>" + eh(vP(iCel)) + "uso de celular e <b>" + num(vP(iCin), 0) + "</b>" + eh(vP(iCin)) + "sem cinto";
     prop = prop.replace('<span class="ap-dest">' + num(baseN, 0) + "</h2>", tit + "</h2>");
