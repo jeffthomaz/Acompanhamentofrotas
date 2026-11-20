@@ -589,7 +589,7 @@ window.iniciarPainel = function (D) {
     }).join("") + "</ol></div>" : "";
     var piorProc = lpP[0];
     var painelMO = '<div class="mo-g1"><section class="card mo-card"><div class="mo-h"><h3><span class="mo-ic">▮▮</span> Evolução do motor ocioso</h3><ul class="mo-leg"><li><i class="b"></i>Tempo ocioso (h)</li><li><i class="l"></i>Percentual (%)</li></ul></div>' + combo + "</section>" +
-      '<section class="card mo-card"><h3><span class="mo-ic">★</span> Top 5 veículos</h3><ol class="mo-top">' + top5.map(function (r, i) {
+      '<section class="card mo-card"><h3>Top 5 veículos</h3><ol class="mo-top">' + top5.map(function (r, i) {
         return '<li><span class="mo-n">' + (i + 1) + '</span><span class="mo-f">Frota ' + esc(r.v.id) + '</span><span class="mo-b"><i style="width:' + (r.oc / mxT * 100).toFixed(1) + '%"></i></span><span class="mo-hh">' + horas(r.oc) + '</span><strong class="' + (r.pct > meta ? "acima" : "") + '">' + num(r.pct, 1) + "%</strong></li>";
       }).join("") + '</ol><p class="mo-nota">Horas ociosas no período e % do tempo de motor ligado (vermelho acima da meta de ' + meta + "%).</p></section></div>" +
       '<div class="mo-g2"><section class="card mo-card"><h3><span class="mo-ic">●</span> Por processo</h3><div class="mo-ctx">' + rosc + '<ul class="mo-cl">' + donut.map(function (x, i) {
