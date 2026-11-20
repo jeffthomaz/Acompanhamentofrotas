@@ -582,6 +582,11 @@ window.iniciarPainel = function (D) {
       return sv + '<text x="21" y="21.5" text-anchor="middle" class="rc-n">' + horas(tot) + '</text><text x="21" y="26.5" text-anchor="middle" class="rc-t">Total</text></svg>';
     })();
     var totD = sum(donut, function (x) { return x.h; });
+    // Veículos menos usados: menor tempo de ignição ligada no período (20/11/2026).
+    var usados = rows.filter(function (r) { return r.li > 0; }).sort(function (a, b) { return a.li - b.li; }), zerados = rows.length - usados.length;
+    var menosUsados = usados.length ? '<div class="mo-mu"><p class="mo-mut">Veículos menos usados <small>(menor tempo de ignição ligada)</small></p><ol>' + usados.slice(0, 5).map(function (r) {
+      return "<li><span>Frota <b>" + esc(r.v.id) + "</b><small>" + esc(r.v.processo || "") + "</small></span><strong>" + horas(r.li) + "</strong></li>";
+    }).join("") + "</ol>" + (zerados ? '<p class="mo-nota">' + zerados + " " + plural(zerados, "veículo ficou", "veículos ficaram") + " sem ignição ligada no período.</p>" : "") + "</div>" : "";
     var piorProc = lpP[0];
     var painelMO = '<div class="mo-g1"><section class="card mo-card"><div class="mo-h"><h3><span class="mo-ic">▮▮</span> Evolução do motor ocioso</h3><ul class="mo-leg"><li><i class="b"></i>Tempo ocioso (h)</li><li><i class="l"></i>Percentual (%)</li></ul></div>' + combo + "</section>" +
       '<section class="card mo-card"><h3><span class="mo-ic">★</span> Top 5 veículos</h3><ol class="mo-top">' + top5.map(function (r, i) {
@@ -599,7 +604,7 @@ window.iniciarPainel = function (D) {
         "<li>Reforçar orientações sobre desligamento do motor em paradas prolongadas.</li>" +
         (top5.length ? "<li>Monitorar os veículos com maior índice de ociosidade" + (top5[0] ? " (frota " + esc(top5[0].v.id) + " lidera)" : "") + ".</li>" : "") +
         (piorProc && !fil_.processo ? "<li>Alinhar com " + esc(piorProc.nome) + ", processo com mais horas ociosas.</li>" : "") +
-        "<li>Acompanhar a evolução no próximo período.</li></ul><p class=\"mo-slogan\">Menos motor ocioso. Mais eficiência na operação.</p></section></div>";
+        "<li>Acompanhar a evolução no próximo período.</li></ul>" + menosUsados + "<p class=\"mo-slogan\">Menos motor ocioso. Mais eficiência na operação.</p></section></div>";
     return filtros + '<div class="head"><p class="lead">' + lead + "</p></div>" + painelMO + secoes; // sem a área "Atualizar a aba Motor ocioso" (pedido em 20/11/2026: a atualização é pelo botão Atualizar dados)
   }
 
