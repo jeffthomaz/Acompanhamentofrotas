@@ -644,7 +644,7 @@ window.iniciarPainel = function (D) {
       '<div class="mo-g2"><section class="card mo-card"><h3><span class="mo-ic">●</span> Por processo</h3><div class="mo-ctx">' + rosc + '<ul class="mo-cl">' + donut.map(function (x, i) {
         return '<li><i style="background:' + CORD[i] + '"></i><span>' + esc(x.nome) + "</span><b>" + num(totD ? x.h / totD * 100 : 0, 1) + "%</b></li>";
       }).join("") + "</ul></div></section>" +
-      '<section class="card mo-card"><h3><span class="mo-ic">💡</span> Insights</h3><ul class="mo-ins">' + insResumo +
+      '<section class="card mo-card"><h3><span class="mo-ic">💡</span> Conclusões</h3><ul class="mo-ins">' + insResumo +
         (varH !== null ? '<li><span class="mo-ii">' + (varH > 0 ? "↗" : "↘") + "</span><span>O tempo de motor ocioso " + (varH > 0 ? "aumentou" : "diminuiu") + " <b>" + num(Math.abs(varH), 0) + "%</b> na semana de " + sU.r + " em relação à de " + sA.r + ".</span></li>" : "") +
         '<li><span class="mo-ii">⛽</span><span>Isso representa um consumo estimado de <b>' + num(litros, 0) + " litros</b> de etanol no período.</span></li>" +
         '<li><span class="mo-ii">$</span><span>O custo estimado é de <b>R$ ' + num(custo, 2) + "</b> no período.</span></li>" +
