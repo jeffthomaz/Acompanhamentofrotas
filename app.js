@@ -600,7 +600,7 @@ window.iniciarPainel = function (D) {
         (top5.length ? "<li>Monitorar os veículos com maior índice de ociosidade" + (top5[0] ? " (frota " + esc(top5[0].v.id) + " lidera)" : "") + ".</li>" : "") +
         (piorProc && !fil_.processo ? "<li>Alinhar com " + esc(piorProc.nome) + ", processo com mais horas ociosas.</li>" : "") +
         "<li>Acompanhar a evolução no próximo período.</li></ul><p class=\"mo-slogan\">Menos motor ocioso. Mais eficiência na operação.</p></section></div>";
-    return filtros + '<div class="head"><p class="lead">' + lead + "</p></div>" + painelMO + secoes + (m.diasIncluidos ? secaoEnvio("motorOcioso", m.periodo.replace(" · arquivo carregado", "")) : "");
+    return filtros + '<div class="head"><p class="lead">' + lead + "</p></div>" + painelMO + secoes; // sem a área "Atualizar a aba Motor ocioso" (pedido em 20/11/2026: a atualização é pelo botão Atualizar dados)
   }
 
   // ---------- Permanência: mapa de calor (dados reais da tabela Ocorrências do Power BI) ----------
