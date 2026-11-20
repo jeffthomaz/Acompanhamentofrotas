@@ -554,7 +554,7 @@ window.iniciarPainel = function (D) {
         var fimS = new Date(i0s); fimS.setDate(fimS.getDate() + 7 * k + 6);
         var fimTxt = fimS.getFullYear() + "-" + ("0" + (fimS.getMonth() + 1)).slice(-2) + "-" + ("0" + fimS.getDate()).slice(-2);
         var parc = !!ultDia && fimTxt > ultDia;
-        return { r: w + (parc ? "*" : ""), h: b, p: a ? b / a * 100 : 0, parcial: parc, vo: function (v) { return v.ocioso[k] || 0; }, vl: function (v) { return v.ligado[k] || 0; } };
+        return { r: w + (parc ? "*" : ""), faixa: w + " a " + dd(parc ? ultDia : fimTxt), h: b, p: a ? b / a * 100 : 0, parcial: parc, vo: function (v) { return v.ocioso[k] || 0; }, vl: function (v) { return v.ligado[k] || 0; } };
       }).slice(-12);
     }
     var LH = m.consumoLh || 0.66, PRECO = m.precoLitro || 5;
@@ -605,7 +605,7 @@ window.iniciarPainel = function (D) {
     var painelMO = '<div class="mo-g1"><section class="card mo-card"><div class="mo-h"><h3><span class="mo-ic">▮▮</span> Evolução do motor ocioso</h3><ul class="mo-leg"><li><i class="b"></i>Tempo ocioso (h)</li><li><i class="l"></i>Percentual (%)</li></ul></div>' + combo + (kds ? "" : '<p class="mo-nota">Cada barra representa uma semana, de segunda a domingo (o rótulo é o primeiro dia da semana).</p>') + '<p class="mo-nota">Clique numa barra para ver no Top 5 as frotas mais ociosas ' + (serie.length && serie[0].parcial === undefined ? "do dia" : "da semana") + ".</p></section>" +
       '<section class="card mo-card"><div class="longas-h"><h3>Top 5 veículos' + (xSel ? " · " + (xSel.parcial === undefined ? "dia " : "semana de ") + esc(xSel.r.replace("*", "")) : "") + "</h3>" + (xSel ? '<button type="button" class="limpar" data-mobar-todos="1">Ver período todo</button>' : "") + '</div><ol class="mo-top">' + (top5.length ? "" : "<li><span></span><span>Nenhuma frota com motor ocioso nesse período.</span></li>") + top5.map(function (r, i) {
         return '<li><span class="mo-n">' + (i + 1) + '</span><span class="mo-f">Frota ' + esc(r.v.id) + '</span><span class="mo-pr" title="' + esc(r.v.processo || "") + '">' + esc((r.v.processo || "—").toLowerCase()) + '</span><span class="mo-b"><i style="width:' + (r.oc / mxT * 100).toFixed(1) + '%"></i></span><span class="mo-hh">' + horas(r.oc) + '</span><strong class="' + (r.pct > meta ? "acima" : "") + '">' + num(r.pct, 1) + "%</strong></li>";
-      }).join("") + '</ol><p class="mo-nota">Horas ociosas ' + (xSel ? (xSel.parcial === undefined ? "no dia" : "na semana") : "no período") + ' e % do tempo de motor ligado (vermelho acima da meta de ' + meta + "%).</p></section></div>" +
+      }).join("") + '</ol><p class="mo-nota">Horas ociosas ' + (xSel ? (xSel.parcial === undefined ? "no dia <b>" + esc(xSel.r) + "</b>" : "de <b>" + esc(xSel.faixa || xSel.r) + "</b>") : "de <b>" + (kds ? dd(fO.de) + " a " + dd(fO.ate) : esc((m.periodo || "").replace(/\/2026/g, ""))) + "</b>") + ' e % do tempo de motor ligado (vermelho acima da meta de ' + meta + "%).</p></section></div>" +
       '<div class="mo-g2"><section class="card mo-card"><h3><span class="mo-ic">●</span> Por processo</h3><div class="mo-ctx">' + rosc + '<ul class="mo-cl">' + donut.map(function (x, i) {
         return '<li><i style="background:' + CORD[i] + '"></i><span>' + esc(x.nome) + "</span><b>" + num(totD ? x.h / totD * 100 : 0, 1) + "%</b></li>";
       }).join("") + "</ul></div></section>" +
