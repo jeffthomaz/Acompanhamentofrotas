@@ -525,9 +525,30 @@ window.iniciarPainel = function (D) {
     if (!fil_.processo && processos.length > 1) {
       var mp = {};
       rows.forEach(function (r) { var x = mp[r.v.processo] || (mp[r.v.processo] = { li: 0, oc: 0, n: 0 }); x.li += r.li; x.oc += r.oc; x.n++; });
-      var lp = Object.keys(mp).map(function (k) { var x = mp[k]; return { nome: k, li: x.li, oc: x.oc, pct: x.li ? x.oc / x.li * 100 : 0, quem: "<b>" + esc(k) + "</b><span>" + x.n + " " + plural(x.n, "veículo", "veículos") + "</span>" }; })
+      var lp = Object.keys(mp).map(function (k) { var x = mp[k]; return { nome: k, li: x.li, oc: x.oc, n: x.n, pct: x.li ? x.oc / x.li * 100 : 0, quem: "<b>" + esc(k) + "</b><span>" + x.n + " " + plural(x.n, "veículo", "veículos") + "</span>" }; })
         .sort(function (a, b) { return b.pct - a.pct; });
-      secoes += '<section class="sec"><h2>Processos do mais ocioso ao menos</h2><p class="sub">A barra é a parte do tempo de motor ligado em que o veículo ficou parado. A linha vertical marca a meta. Clique em um processo para ver os veículos dele.</p>' + quadro(lp, "processo", true) + "</section>";
+      // Em colunas, no estilo do gráfico de evolução (20/11/2026).
+      var colP = (function () {
+        var n = lp.length, W = Math.max(720, n * 96), H = 330, pl = 46, pr = 12, pt = 30, pb = 74, iw = W - pl - pr, ih = H - pt - pb, bw = iw / n;
+        var mxP = Math.max(meta * 1.25, Math.max.apply(null, lp.map(function (x) { return x.pct; })) * 1.15), pP = mxP > 40 ? 10 : 5, topo = Math.ceil(mxP / pP) * pP;
+        var sv = '<svg viewBox="0 0 ' + W + " " + H + '" class="mo-combo mo-proc" role="img" aria-label="% de motor ocioso por processo">';
+        for (var g = 0; g <= topo; g += pP) { var y = pt + ih - g / topo * ih; sv += '<line x1="' + pl + '" x2="' + (W - pr) + '" y1="' + y + '" y2="' + y + '" class="gl"/><text x="' + (pl - 8) + '" y="' + (y + 4) + '" text-anchor="end" class="ax">' + g + "%</text>"; }
+        lp.forEach(function (x, i) {
+          var bh = x.pct / topo * ih, cx = pl + i * bw + bw / 2, over = x.pct > meta;
+          var pal = String(x.nome).split(/\s+/).map(function (w) { return /^(SESMT|CCT|TI|RH)$/.test(w) ? w : w.toLowerCase(); }), lin = [], cur = "";
+          pal.forEach(function (w) { if (cur && (cur + " " + w).length > 14) { lin.push(cur); cur = w; } else cur = cur ? cur + " " + w : w; }); if (cur) lin.push(cur);
+          lin = lin.slice(0, 3);
+          sv += '<g class="mo-col" data-set="processo:' + esc(x.nome) + '" role="button" tabindex="0"><rect x="' + (pl + i * bw).toFixed(1) + '" y="' + pt + '" width="' + bw.toFixed(1) + '" height="' + (H - pt) + '" class="mo-hit"/>' +
+            '<rect x="' + (cx - bw * .3).toFixed(1) + '" y="' + (pt + ih - bh).toFixed(1) + '" width="' + (bw * .6).toFixed(1) + '" height="' + Math.max(bh, 1).toFixed(1) + '" rx="3" class="mo-bar' + (over ? " acima" : "") + '"><title>' + esc(x.nome) + ": " + num(x.pct, 1) + "% · " + horas(x.oc) + " ociosas de " + horas(x.li) + " de ignição · " + x.n + " " + plural(x.n, "veículo", "veículos") + " · clique para ver os veículos</title></rect>" +
+            '<text x="' + cx.toFixed(1) + '" y="' + (pt + ih - bh - 8).toFixed(1) + '" text-anchor="middle" class="mo-bl' + (over ? " acima" : "") + '">' + num(x.pct, 1) + "%</text>" +
+            lin.map(function (t, j) { return '<text x="' + cx.toFixed(1) + '" y="' + (pt + ih + 16 + j * 13) + '" text-anchor="middle" class="ax mo-pn">' + esc(t) + "</text>"; }).join("") +
+            '<text x="' + cx.toFixed(1) + '" y="' + (pt + ih + 18 + lin.length * 13) + '" text-anchor="middle" class="ax">' + x.n + " " + plural(x.n, "veíc.", "veíc.") + "</text></g>";
+        });
+        var ym = pt + ih - meta / topo * ih;
+        sv += '<line x1="' + pl + '" x2="' + (W - pr) + '" y1="' + ym + '" y2="' + ym + '" class="mo-meta"/><text x="' + (W - pr - 4) + '" y="' + (ym - 6) + '" text-anchor="end" class="mo-metat">meta ' + meta + "%</text>";
+        return sv + "</svg>";
+      })();
+      secoes += '<section class="sec"><h2>Processos do mais ocioso ao menos</h2><section class="card mo-card">' + colP + '<p class="mo-nota">Cada coluna é o % do tempo de motor ligado em que os veículos do processo ficaram parados (vermelho acima da meta de ' + meta + '%). Passe o mouse para ver as horas; clique em um processo para ver os veículos dele.</p></section></section>';
     }
     var lv = rows.map(function (r) { r.quem = "<b>" + esc(r.v.id) + "</b><span>" + esc([r.v.placa, fil_.processo ? r.v.responsavel : r.v.processo].filter(Boolean).join(" · ")) + "</span>"; return r; })
       .sort(function (a, b) { return b.pct - a.pct; });
