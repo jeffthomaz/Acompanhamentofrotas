@@ -386,6 +386,7 @@ window.iniciarPainel = function (D) {
   }
 
   // ---------- Comportamental: mapa de calor por tipo de ocorrência (sem bocejo) ----------
+  var moSel = null; // período clicado no gráfico de motor ocioso (filtra o Top 5)
   var cm = { tipo: "", mapa: null, base: "ruas", pontos: [], locs: [], marcas: [] };
   function mapaComp(C, fc, a0, a1) {
     var M = C.mapa; if (!M || !M.pts || !M.pts.length) return "";
@@ -534,7 +535,7 @@ window.iniciarPainel = function (D) {
     if (kds && kds.length && kds.length <= 31) {
       var ks2 = kds.length === 1 ? [] : kds.slice();
       if (kds.length === 1) for (var q2 = Math.max(0, kds[0] - 6); q2 <= kds[0]; q2++) ks2.push(q2);
-      serie = ks2.map(function (q) { var a = sum(vs, function (v) { return (v.dl || [])[q] || 0; }), b = sum(vs, function (v) { return (v.do || [])[q] || 0; }); return { r: dd(U[q]), h: b, p: a ? b / a * 100 : 0 }; });
+      serie = ks2.map(function (q) { var a = sum(vs, function (v) { return (v.dl || [])[q] || 0; }), b = sum(vs, function (v) { return (v.do || [])[q] || 0; }); return { r: dd(U[q]), h: b, p: a ? b / a * 100 : 0, vo: function (v) { return (v.do || [])[q] || 0; }, vl: function (v) { return (v.dl || [])[q] || 0; } }; });
     } else {
       // Semana incompleta (a última, se os dados ainda não chegaram ao domingo) fica marcada com * e fora da comparação.
       var ultDia = (m.diasIncluidos || []).slice().sort().pop() || "", i0s = new Date((m.inicioSemana || "2026-01-01") + "T00:00:00");
@@ -543,11 +544,14 @@ window.iniciarPainel = function (D) {
         var fimS = new Date(i0s); fimS.setDate(fimS.getDate() + 7 * k + 6);
         var fimTxt = fimS.getFullYear() + "-" + ("0" + (fimS.getMonth() + 1)).slice(-2) + "-" + ("0" + fimS.getDate()).slice(-2);
         var parc = !!ultDia && fimTxt > ultDia;
-        return { r: w + (parc ? "*" : ""), h: b, p: a ? b / a * 100 : 0, parcial: parc };
+        return { r: w + (parc ? "*" : ""), h: b, p: a ? b / a * 100 : 0, parcial: parc, vo: function (v) { return v.ocioso[k] || 0; }, vl: function (v) { return v.ligado[k] || 0; } };
       }).slice(-12);
     }
     var LH = m.consumoLh || 0.66, PRECO = m.precoLitro || 5;
-    var top5 = rows.slice().sort(function (a, b) { return b.oc - a.oc; }).slice(0, 5), mxT = top5.length ? top5[0].oc : 1;
+    // Clique numa barra: o Top 5 passa a mostrar as frotas mais ociosas daquele dia/semana (20/11/2026).
+    var xSel = serie.filter(function (x) { return x.r === moSel; })[0] || null; if (!xSel) moSel = null;
+    var baseTop = xSel ? rows.map(function (r) { var o = xSel.vo(r.v), l = xSel.vl(r.v); return { v: r.v, oc: o, li: l, pct: l ? o / l * 100 : 0 }; }).filter(function (r) { return r.oc > 0; }) : rows;
+    var top5 = baseTop.slice().sort(function (a, b) { return b.oc - a.oc; }).slice(0, 5), mxT = top5.length ? top5[0].oc : 1;
     var mpP = {}; rows.forEach(function (r) { mpP[r.v.processo || "Sem processo"] = (mpP[r.v.processo || "Sem processo"] || 0) + r.oc; });
     var lpP = Object.keys(mpP).map(function (k) { return { nome: k, h: mpP[k] }; }).sort(function (a, b) { return b.h - a.h; });
     var donut = lpP.slice(0, 3); if (lpP.length > 3) donut.push({ nome: "Outros", h: sum(lpP.slice(3), function (x) { return x.h; }) });
@@ -567,7 +571,7 @@ window.iniciarPainel = function (D) {
       var pts = [];
       serie.forEach(function (x, i) {
         var bh = x.h / topoH * ih, bx = pl + i * bw + bw * .2, cx = pl + i * bw + bw / 2, py = pt + ih - x.p / topoP * ih;
-        sv += '<rect x="' + bx.toFixed(1) + '" y="' + (pt + ih - bh).toFixed(1) + '" width="' + (bw * .6).toFixed(1) + '" height="' + bh.toFixed(1) + '" rx="3" class="mo-bar"><title>' + x.r + ": " + horas(x.h) + "</title></rect>" +
+        sv += '<g class="mo-col' + (x.r === moSel ? " sel" : moSel ? " fora" : "") + '" data-mobar="' + esc(x.r) + '" role="button" tabindex="0" aria-pressed="' + (x.r === moSel) + '"><rect x="' + (pl + i * bw).toFixed(1) + '" y="' + pt + '" width="' + bw.toFixed(1) + '" height="' + ih + '" class="mo-hit"/><rect x="' + bx.toFixed(1) + '" y="' + (pt + ih - bh).toFixed(1) + '" width="' + (bw * .6).toFixed(1) + '" height="' + bh.toFixed(1) + '" rx="3" class="mo-bar"><title>' + x.r + ": " + horas(x.h) + " · clique para ver as frotas no Top 5</title></rect></g>" +
           '<text x="' + cx.toFixed(1) + '" y="' + (pt + ih - bh - 8).toFixed(1) + '" text-anchor="middle" class="mo-bl">' + horas(x.h) + "</text>" +
           '<text x="' + cx.toFixed(1) + '" y="' + (H - 8) + '" text-anchor="middle" class="ax">' + x.r + "</text>";
         pts.push([cx, py, x.p]);
@@ -588,10 +592,10 @@ window.iniciarPainel = function (D) {
       return "<li><span>Frota <b>" + esc(r.v.id) + "</b><small>" + esc(r.v.processo || "") + "</small></span><strong>" + horas(r.li) + "</strong></li>";
     }).join("") + "</ol></div>" : "";
     var piorProc = lpP[0];
-    var painelMO = '<div class="mo-g1"><section class="card mo-card"><div class="mo-h"><h3><span class="mo-ic">▮▮</span> Evolução do motor ocioso</h3><ul class="mo-leg"><li><i class="b"></i>Tempo ocioso (h)</li><li><i class="l"></i>Percentual (%)</li></ul></div>' + combo + "</section>" +
-      '<section class="card mo-card"><h3>Top 5 veículos</h3><ol class="mo-top">' + top5.map(function (r, i) {
+    var painelMO = '<div class="mo-g1"><section class="card mo-card"><div class="mo-h"><h3><span class="mo-ic">▮▮</span> Evolução do motor ocioso</h3><ul class="mo-leg"><li><i class="b"></i>Tempo ocioso (h)</li><li><i class="l"></i>Percentual (%)</li></ul></div>' + combo + '<p class="mo-nota">Clique numa barra para ver no Top 5 as frotas mais ociosas ' + (serie.length && serie[0].parcial === undefined ? "do dia" : "da semana") + ".</p></section>" +
+      '<section class="card mo-card"><div class="longas-h"><h3>Top 5 veículos' + (xSel ? " · " + (xSel.parcial === undefined ? "dia " : "semana de ") + esc(xSel.r.replace("*", "")) : "") + "</h3>" + (xSel ? '<button type="button" class="limpar" data-mobar-todos="1">Ver período todo</button>' : "") + '</div><ol class="mo-top">' + (top5.length ? "" : "<li><span></span><span>Nenhuma frota com motor ocioso nesse período.</span></li>") + top5.map(function (r, i) {
         return '<li><span class="mo-n">' + (i + 1) + '</span><span class="mo-f">Frota ' + esc(r.v.id) + '</span><span class="mo-b"><i style="width:' + (r.oc / mxT * 100).toFixed(1) + '%"></i></span><span class="mo-hh">' + horas(r.oc) + '</span><strong class="' + (r.pct > meta ? "acima" : "") + '">' + num(r.pct, 1) + "%</strong></li>";
-      }).join("") + '</ol><p class="mo-nota">Horas ociosas no período e % do tempo de motor ligado (vermelho acima da meta de ' + meta + "%).</p></section></div>" +
+      }).join("") + '</ol><p class="mo-nota">Horas ociosas ' + (xSel ? (xSel.parcial === undefined ? "no dia" : "na semana") : "no período") + ' e % do tempo de motor ligado (vermelho acima da meta de ' + meta + "%).</p></section></div>" +
       '<div class="mo-g2"><section class="card mo-card"><h3><span class="mo-ic">●</span> Por processo</h3><div class="mo-ctx">' + rosc + '<ul class="mo-cl">' + donut.map(function (x, i) {
         return '<li><i style="background:' + CORD[i] + '"></i><span>' + esc(x.nome) + "</span><b>" + num(totD ? x.h / totD * 100 : 0, 1) + "%</b></li>";
       }).join("") + "</ul></div></section>" +
@@ -1996,6 +2000,9 @@ window.iniciarPainel = function (D) {
     if (md) { pm.medida = md.dataset.medida; render(); return; }
     var fa = e.target.closest("[data-frotas]");
     if (fa) { pm.frotas = fa.dataset.frotas === "todas" ? permFiltrados().frotasProc.slice() : []; if (pm.frotas.length === permFiltrados().frotasProc.length && fa.dataset.frotas !== "todas") pm.frotas = []; pm.refit = true; pm.abertoFrotas = true; render(); return; }
+    var mb = e.target.closest("[data-mobar]");
+    if (mb) { moSel = moSel === mb.dataset.mobar ? null : mb.dataset.mobar; render(); return; }
+    if (e.target.closest("[data-mobar-todos]")) { moSel = null; render(); return; }
     var lc = e.target.closest("[data-local]");
     if (lc) {
       trocaLocal(+lc.dataset.local);
