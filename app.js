@@ -507,7 +507,7 @@ window.iniciarPainel = function (D) {
 
     // Resumo do período: saiu do topo e foi para os Insights (20/11/2026).
     var insResumo = '<li><span class="mo-ii">%</span><span>' + (kds ? (fO.de === fO.ate ? "Em " : "De ") + perTexto(fO) + ", os" : "Os") + " veículos ficaram <b>" + num(pct, 1) + "%</b> do tempo de motor ligado parados, <b>" + horas(oc) + "</b> de " + horas(li) + ".</span></li>" +
-      '<li><span class="mo-ii">' + (acima.length ? "⚑" : "✓") + "</span><span>" + (acima.length ? "<b>" + acima.length + "</b> " + plural(acima.length, "veículo passou", "veículos passaram") + " da meta de " + meta + "%, e o <b>" + esc(acima[0].v.id) + "</b> lidera com " + num(acima[0].pct, 1) + "%."
+      '<li><span class="mo-ii">' + (acima.length ? "⚑" : "✓") + "</span><span>" + (acima.length ? "<b>" + acima.length + "</b> " + plural(acima.length, "veículo passou", "veículos passaram") + " da meta de " + meta + "%, e o <b>" + esc(acima[0].v.id) + "</b> tem o maior percentual, " + num(acima[0].pct, 1) + "% (" + horas(acima[0].oc) + " ociosas de " + horas(acima[0].li) + ")."
                     : "Todos os veículos estão dentro da meta de " + meta + "%.") + "</span></li>";
 
     function quadro(lista, chave, clicavel) {
@@ -645,7 +645,7 @@ window.iniciarPainel = function (D) {
         return '<li><i style="background:' + CORD[i] + '"></i><span>' + esc(x.nome) + "</span><b>" + num(totD ? x.h / totD * 100 : 0, 1) + "%</b></li>";
       }).join("") + "</ul></div></section>" +
       '<section class="card mo-card"><h3><span class="mo-ic">💡</span> Conclusões</h3><ul class="mo-ins">' + insResumo +
-        (varH !== null ? '<li><span class="mo-ii">' + (varH > 0 ? "↗" : "↘") + "</span><span>O tempo de motor ocioso " + (varH > 0 ? "aumentou" : "diminuiu") + " <b>" + num(Math.abs(varH), 0) + "%</b> na semana de " + sU.r + " em relação à de " + sA.r + ".</span></li>" : "") +
+        (varH !== null ? '<li><span class="mo-ii">' + (varH > 0 ? "↗" : "↘") + "</span><span>O tempo de motor ocioso " + (varH > 0 ? "aumentou" : "diminuiu") + " <b>" + num(Math.abs(varH), 0) + "%</b> " + (sU.parcial === undefined ? "no dia " + sU.r + " em relação ao dia " + sA.r : "na semana de " + (sU.faixa || sU.r) + " em relação à de " + (sA.faixa || sA.r)) + ".</span></li>" : "") +
         '<li><span class="mo-ii">⛽</span><span>Isso representa um consumo estimado de <b>' + num(litros, 0) + " litros</b> de etanol no período.</span></li>" +
         '<li><span class="mo-ii">$</span><span>O custo estimado é de <b>R$ ' + num(custo, 2) + "</b> no período.</span></li>" +
         '</ul><p class="mo-nota">Estimativa: ' + num(LH, 2) + " L por hora ociosa e R$ " + num(PRECO, 2) + " por litro de etanol (média da região de Minas).</p></section>" +
