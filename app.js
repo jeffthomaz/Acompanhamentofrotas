@@ -606,7 +606,7 @@ window.iniciarPainel = function (D) {
   }
 
   // ---------- Permanência: mapa de calor (dados reais da tabela Ocorrências do Power BI) ----------
-  var pm = { frotas: [], medida: "tempo", dias: 0, dia: "", abertoFrotas: false, refit: true, mapa: null, vista: null, marcas: {} };
+  var pm = { frotas: [], medida: "tempo", dias: 0, dia: "", abertoFrotas: false, refit: true, mapa: null, vista: null, marcas: {}, localSel: null };
   function permFiltrados() {
     var P = D.permanencia, V = P.veiculos;
     var processos = unicos(Object.keys(V).map(function (f) { return V[f].processo; }));
@@ -623,6 +623,22 @@ window.iniciarPainel = function (D) {
   }
   function dataBR(s) { return s.slice(8, 10) + "/" + s.slice(5, 7) + "/" + s.slice(0, 4); }
   function hmin(m) { return m >= 6000 ? num(m / 60, 0) + " h" : m >= 60 ? dur(Math.round(m)) : num(m, 0) + " min"; }
+
+  function longasHtml(ev, P, V) {
+    var sel = pm.localSel, lst = ev.filter(function (e) { return sel === null || sel === undefined || e[4] === sel; });
+    var longas = lst.slice().sort(function (a, b) { return b[3] - a[3]; }).slice(0, 12);
+    var tit = sel === null || sel === undefined ? "Permanências mais longas" : "Permanências mais longas em " + esc(P.locais[sel].nome);
+    return '<section class="card longas-card"><div class="longas-h"><h3>' + tit + "</h3>" + (sel === null || sel === undefined ? "" : '<button type="button" class="limpar" data-local-todos="1">Ver todos os locais</button>') + "</div>" +
+      (longas.length ? '<ul class="longas longas-2">' + longas.map(function (e) {
+        return "<li><span><b>" + esc(e[0]) + "</b> em " + esc(P.locais[e[4]].nome) + "<small>" + dataBR(e[5]) + " às " + e[6] + " · " + esc(V[e[0]].processo) + "</small></span><strong>" + hmin(e[3]) + "</strong></li>";
+      }).join("") + "</ul>" : '<p class="cs">Nenhuma permanência.</p>') + "</section>";
+  }
+  function trocaLocal(i) {
+    pm.localSel = pm.localSel === i ? null : i;
+    var c = document.querySelector(".longas-card"), P = D.permanencia;
+    if (c && pm.ultimo) c.outerHTML = longasHtml(pm.ultimo.ev, P, P.veiculos);
+    document.querySelectorAll("[data-local]").forEach(function (b) { var on = +b.dataset.local === pm.localSel; b.classList.toggle("sel", on); b.setAttribute("aria-pressed", on); });
+  }
 
   function abaPermanencia() {
     var F = permFiltrados(), P = F.P, V = F.V, ev = F.ev;
@@ -659,17 +675,15 @@ window.iniciarPainel = function (D) {
     var mx = Math.max.apply(null, [1].concat(porParadas.map(function (x) { return x.n; })));
     var ranking = '<section class="card"><h3>Locais de permanência</h3><p class="cs">Quantidade de paradas e tempo médio de cada parada. Clique para ver no mapa.</p><div class="rolagem alta">' + porParadas.map(function (x, k) {
       var L0 = P.locais[x.i], nf = Object.keys(x.fr).length;
-      return '<button type="button" class="li lib" data-local="' + x.i + '"><span class="t">' + esc(L0.nome) + "<small>" + esc([L0.cidade, nf + " " + plural(nf, "frota", "frotas")].filter(Boolean).join(" · ")) + '</small></span><span class="n">' +
+      return '<button type="button" class="li lib' + (pm.localSel === x.i ? " sel" : "") + '" aria-pressed="' + (pm.localSel === x.i) + '" data-local="' + x.i + '"><span class="t">' + esc(L0.nome) + "<small>" + esc([L0.cidade, nf + " " + plural(nf, "frota", "frotas")].filter(Boolean).join(" · ")) + '</small></span><span class="n">' +
         num(x.n, 0) + " " + plural(x.n, "parada", "paradas") + "<small>média de " + hmin(x.min / x.n) + "</small>" +
         '</span><div class="bb"><div class="ff" style="width:' + (x.n / mx * 100).toFixed(1) + "%;--i:" + k + '"></div></div></button>';
     }).join("") + "</div></section>";
 
     // Permanências mais longas embaixo do mapa, na largura dele, em duas colunas (20/11/2026).
-    var longas = ev.slice().sort(function (a, b) { return b[3] - a[3]; }).slice(0, 12);
-    var tabela = longas.length ? '<section class="card longas-card"><h3>Permanências mais longas</h3><ul class="longas longas-2">' + longas.map(function (e) {
-      return "<li><span><b>" + esc(e[0]) + "</b> em " + esc(P.locais[e[4]].nome) + "<small>" + dataBR(e[5]) + " às " + e[6] + " · " + esc(V[e[0]].processo) + "</small></span><strong>" + hmin(e[3]) + "</strong></li>";
-    }).join("") + "</ul></section>" : "";
-
+    // Clique num local da lista "Locais de permanência" filtra esta lista por ele (clique de novo para voltar a todos).
+    if (pm.localSel !== null && pm.localSel !== undefined && !porLocal[pm.localSel]) pm.localSel = null;
+    var tabela = longasHtml(ev, P, V);
     pm.ultimo = { ev: ev, locais: locais };
     return filtros + '<div class="head"><p class="lead">' + lead + "</p></div>" +
       '<div class="mapa-g"><div class="mapa-esq"><section class="card mapa-card"><div id="mapa" class="mapa" role="region" aria-label="Mapa de calor das permanências"><p class="mapa-msg">Carregando mapa…</p></div>' +
@@ -1983,7 +1997,12 @@ window.iniciarPainel = function (D) {
     var fa = e.target.closest("[data-frotas]");
     if (fa) { pm.frotas = fa.dataset.frotas === "todas" ? permFiltrados().frotasProc.slice() : []; if (pm.frotas.length === permFiltrados().frotasProc.length && fa.dataset.frotas !== "todas") pm.frotas = []; pm.refit = true; pm.abertoFrotas = true; render(); return; }
     var lc = e.target.closest("[data-local]");
-    if (lc && pm.mapa && pm.marcas[lc.dataset.local]) { var mk = pm.marcas[lc.dataset.local]; pm.mapa.flyTo(mk.getLatLng(), 15); mk.openPopup(); document.getElementById("mapa").scrollIntoView({ behavior: "smooth", block: "center" }); return; }
+    if (lc) {
+      trocaLocal(+lc.dataset.local);
+      if (pm.localSel !== null && pm.mapa && pm.marcas[lc.dataset.local]) { var mk = pm.marcas[lc.dataset.local]; pm.mapa.flyTo(mk.getLatLng(), 15); mk.openPopup(); }
+      return;
+    }
+    if (e.target.closest("[data-local-todos]")) { trocaLocal(pm.localSel); return; }
     var b = e.target.closest("[data-set]"); if (!b) return;
     var p = b.dataset.set, k = p.indexOf(":");
     fil_[p.slice(0, k)] = p.slice(k + 1); pm.frotas = []; pm.refit = true; render();
