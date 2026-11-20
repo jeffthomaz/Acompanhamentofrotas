@@ -52,12 +52,20 @@ window.iniciarPainel = function (D) {
   }
 
   // ---------- Comportamento (painel de ocorrências, filtrado por processo e responsável) ----------
-  var fil_ = { processo: "", responsavel: "", turnos: [1, 1, 1] };
+  var fil_ = { processo: "", responsavel: "", turnos: [1, 1, 1], horas: null };
   // Filtro de turno (Comportamental e Resumo): A 07:00–15:10, B 15:10–23:10, C 23:10–07:00, pela hora da ocorrência (5º item do ev).
   var TURNO_NOMES = [["A", "07:00 – 15:10"], ["B", "15:10 – 23:10"], ["C", "23:10 – 07:00"]];
   function todosTurnos() { return fil_.turnos[0] && fil_.turnos[1] && fil_.turnos[2]; }
   // Ocorrência sem hora só entra com os três turnos marcados.
   function turnoOk(e) { var t = e.length > 4 ? e[4] : 3; return t === 3 ? todosTurnos() : !!fil_.turnos[t]; }
+  // Filtro por hora (clicando nas barras de "Horas de pico", 20/11/2026): null = todas; senão {hora: 1}. Ocorrência sem hora só entra sem filtro.
+  function horaOk(e) { return !fil_.horas || (e.length > 5 && !!fil_.horas[e[5]]); }
+  function trocaHora(h) {
+    var nv = fil_.horas ? Object.assign({}, fil_.horas) : {};
+    if (nv[h]) delete nv[h]; else nv[h] = 1;
+    fil_.horas = Object.keys(nv).length ? nv : null;
+    render();
+  }
   // Clique num quadro de turno: com todos marcados, fica só ele; senão marca/desmarca; sem nenhum, volta a todos.
   function trocaTurno(ti) {
     var nv = todosTurnos() ? [0, 0, 0] : fil_.turnos.slice();
@@ -92,9 +100,11 @@ window.iniciarPainel = function (D) {
     var a = document.querySelector('article[data-tipo="' + id + '"]'); if (a) a.focus({ preventScroll: true });
   }
   function turnoTexto() {
-    if (todosTurnos()) return "";
+    var hs = fil_.horas ? Object.keys(fil_.horas).map(Number).sort(function (a, b) { return a - b; }) : [];
+    var hT = hs.length ? (hs.length === 1 ? "hora " : "horas ") + hs.map(function (h) { return pad(h) + "h"; }).join(", ") : "";
+    if (todosTurnos()) return hT;
     var m = TURNO_NOMES.filter(function (_, i) { return fil_.turnos[i]; }).map(function (t) { return t[0]; });
-    return m.length === 1 ? "turno " + m[0] : "turnos " + m.join(" e ");
+    return (m.length === 1 ? "turno " + m[0] : "turnos " + m.join(" e ")) + (hT ? ", " + hT : "");
   }
   var CATS = [
     { id: "vel", nome: "Excesso de velocidade", icone: "M4 17a8 8 0 1 1 16 0M12 17l4-5" },
@@ -246,11 +256,15 @@ window.iniciarPainel = function (D) {
     // Os quadros de turno contam todos os turnos (para dar para clicar neles); o resto da aba, só os turnos escolhidos.
     ev.forEach(function (e) {
       if (!tOn[e[1]]) return;
-      var t0 = e.length > 4 ? e[4] : 3, tOk = turnoOk(e);
-      if (e[0] >= a0 && e[0] <= a1) { hz.tu[t0] += e[3]; if (ciT[e[1]] >= 0) hz.tuC[t0][ciT[e[1]]] += e[3]; hz.tuT[t0][e[1]] += e[3]; }
-      else if (b0 >= 0 && e[0] >= b0 && e[0] < a0) hz.tuA[t0] += e[3];
+      var t0 = e.length > 4 ? e[4] : 3, tOk = turnoOk(e), hOk = horaOk(e);
+      // Quadros de turno: todos os turnos, respeitando as horas escolhidas; barras de hora: todas as horas, respeitando os turnos.
+      if (e[0] >= a0 && e[0] <= a1) {
+        if (hOk) { hz.tu[t0] += e[3]; if (ciT[e[1]] >= 0) hz.tuC[t0][ciT[e[1]]] += e[3]; hz.tuT[t0][e[1]] += e[3]; }
+        if (tOk && e.length > 5) { hz.hr[e[5]] += e[3]; if (ciT[e[1]] >= 0) hz.hrC[e[5]][ciT[e[1]]] += e[3]; }
+      }
+      else if (hOk && b0 >= 0 && e[0] >= b0 && e[0] < a0) hz.tuA[t0] += e[3];
     });
-    ev = ev.filter(turnoOk);
+    ev = ev.filter(function (e) { return turnoOk(e) && horaOk(e); });
     var porCatF = CATS.map(function () { return {}; }); // frotas por tipo de card, para o top 5
     ev.forEach(function (e) {
       var on = tOn[e[1]];
@@ -261,7 +275,6 @@ window.iniciarPainel = function (D) {
         if (!on) return;
         porFrota[e[2]] = (porFrota[e[2]] || 0) + e[3];
         hz.cur += e[3];
-        if (e.length > 5) { hz.hr[e[5]] += e[3]; if (ciT[e[1]] >= 0) hz.hrC[e[5]][ciT[e[1]]] += e[3]; }
       }
       else if (b0 >= 0 && e[0] >= b0 && e[0] < a0) ant[e[1]] += e[3];
     });
@@ -284,8 +297,8 @@ window.iniciarPainel = function (D) {
       '<div class="campo"><span class="rot">Frota</span><div class="pills" role="group" aria-label="Tipo de frota">' + [["", "Todas"], ["Leve", "Leve"], ["Pesada", "Pesada"]].map(function (o) {
         return '<button type="button" data-cfrota="' + o[0] + '" aria-pressed="' + (fc.frota === o[0]) + '">' + o[1] + "</button>";
       }).join("") + "</div></div>" +
-      (fc.frota || fil_.processo || hierAtiva() || fil_.tipos || stC.p !== stC.padrao || !todosTurnos() ? '<button type="button" class="limpar" data-limpar="1">Limpar filtros</button>' : "") +
-      '<p class="ctx">' + num(nVeic, 0) + " " + plural(nVeic, "veículo", "veículos") + " com ocorrência, " + rot(a0) + " a " + rot(a1) + (temBase ? " (comparado com " + rot(b0) + " a " + rot(a0 - 1) + ")" : "") + (turnoTexto() ? ", só " + turnoTexto() + " (clique nos turnos para mudar; o mapa mostra todos)" : "") + (fil_.tipos ? ". Tipos: " + CATS.filter(function (c) { return c.on; }).map(function (c) { return c.nome.toLowerCase(); }).join(", ") + " (clique nos cards para mudar)" : "") + "</p></div>";
+      (fc.frota || fil_.processo || hierAtiva() || fil_.tipos || stC.p !== stC.padrao || !todosTurnos() || fil_.horas ? '<button type="button" class="limpar" data-limpar="1">Limpar filtros</button>' : "") +
+      '<p class="ctx">' + num(nVeic, 0) + " " + plural(nVeic, "veículo", "veículos") + " com ocorrência, " + rot(a0) + " a " + rot(a1) + (temBase ? " (comparado com " + rot(b0) + " a " + rot(a0 - 1) + ")" : "") + (turnoTexto() ? ", só " + turnoTexto() + " (clique nos turnos ou nas horas para mudar; o mapa mostra todos)" : "") + (fil_.tipos ? ". Tipos: " + CATS.filter(function (c) { return c.on; }).map(function (c) { return c.nome.toLowerCase(); }).join(", ") + " (clique nos cards para mudar)" : "") + "</p></div>";
 
     // Top 5 veículos de cada tipo, numa gaveta embaixo de cada card (abre e fecha tudo junto; a escolha fica guardada).
     var abreTop = top5Aberto();
@@ -1361,12 +1374,13 @@ window.iniciarPainel = function (D) {
       var f = F[e[2]]; if (!f || !noProc(f.processo) || e[0] > fimC || ci[e[1]] < 0) return; // só tipos com card
       var k = e[0] - i0, q = e[0] - a0, t0 = e.length > 4 ? e[4] : 3, nk = k >= 0 && k < 7 && por[k] !== null;
       // Quadros de turno: todos os turnos (são eles que filtram); o resto, só os turnos escolhidos.
-      if (nk) { tu[t0] += e[3]; tuC[t0][ci[e[1]]] += e[3]; } else if (q >= 0 && q < 7 && okA[q]) tuA[t0] += e[3];
-      if (!turnoOk(e)) return;
+      var hOk = horaOk(e);
+      if (nk) { if (hOk) { tu[t0] += e[3]; tuC[t0][ci[e[1]]] += e[3]; } if (turnoOk(e) && e.length > 5) { hr[e[5]] += e[3]; hrC[e[5]][ci[e[1]]] += e[3]; } }
+      else if (hOk && q >= 0 && q < 7 && okA[q]) tuA[t0] += e[3];
+      if (!turnoOk(e) || !hOk) return;
       if (nk) {
         por[k] += e[3]; cur += e[3]; porT[e[1]] += e[3]; porP[f.processo] = (porP[f.processo] || 0) + e[3]; porF[e[2]] = (porF[e[2]] || 0) + e[3];
         porDC[k][ci[e[1]]] += e[3];
-        if (e.length > 5) { hr[e[5]] += e[3]; hrC[e[5]][ci[e[1]]] += e[3]; }
       }
       else if (q >= 0 && q < 7 && okA[q]) { ant += e[3]; porTA[e[1]] += e[3]; }
     });
@@ -1572,10 +1586,11 @@ window.iniciarPainel = function (D) {
         });
         c.hr.forEach(function (v, h) {
           var x = pl + h * bw, hh = v ? Math.max(v / mxH * (base - pt), 2) : 0;
-          if (hh) g += '<rect class="rz-hbar' + (ePico[h] ? " pico" : "") + '" x="' + (x + bw * .14).toFixed(1) + '" y="' + (base - hh).toFixed(1) + '" width="' + (bw * .72).toFixed(1) + '" height="' + hh.toFixed(1) + '" rx="2"/>';
+          var hSel = fil_.horas ? (fil_.horas[h] ? " sel" : " fora") : "";
+          if (hh) g += '<rect class="rz-hbar' + (ePico[h] ? " pico" : "") + hSel + '" x="' + (x + bw * .14).toFixed(1) + '" y="' + (base - hh).toFixed(1) + '" width="' + (bw * .72).toFixed(1) + '" height="' + hh.toFixed(1) + '" rx="2"/>';
           if (ePico[h]) g += '<text class="rz-hv" x="' + (x + bw / 2).toFixed(1) + '" y="' + (base - hh - 5).toFixed(1) + '" text-anchor="middle">' + num(v, 0) + "</text>";
           if (h % 3 === 0) g += '<text class="tl" x="' + (x + bw / 2).toFixed(1) + '" y="' + (base + 14) + '" text-anchor="middle">' + pad(h) + "h</text>";
-          g += '<rect class="rz-hit" x="' + x.toFixed(1) + '" y="0" width="' + bw.toFixed(1) + '" height="' + (base + 4) + '"><title>' + esc(faixaH(h) + ": " + num(v, 0) + " " + plural(v, "ocorrência", "ocorrências")) + "</title></rect>";
+          g += '<rect class="rz-hit" data-hora="' + h + '" role="button" tabindex="0" aria-pressed="' + !!(fil_.horas && fil_.horas[h]) + '" x="' + x.toFixed(1) + '" y="0" width="' + bw.toFixed(1) + '" height="' + (base + 4) + '"><title>' + esc(faixaH(h) + ": " + num(v, 0) + " " + plural(v, "ocorrência", "ocorrências") + (fil_.horas && fil_.horas[h] ? " · clique para tirar o filtro" : " · clique para filtrar por essa hora")) + "</title></rect>";
         });
         g += '<line class="rz-hax" x1="' + pl + '" x2="' + (W - pr) + '" y1="' + base + '" y2="' + base + '"/></svg>';
         var lp = '<ol class="rz-pic">' + picos.map(function (x, i) {
@@ -1587,7 +1602,7 @@ window.iniciarPainel = function (D) {
         var menos = ordH[ordH.length - 1];
         linhas.push('<div class="rz-row">' + rzCard("Horas de pico", "comportamental · " + per,
           '<div class="rz-hrw"><div class="rz-hrg">' + g + '</div>' + lp + '</div><p class="rz-nota">As 3 horas de pico somam <b>' + num(p3 / totH * 100, 0) + "%</b> das ocorrências " + daPer + "." +
-          (menos ? " Hora mais tranquila: " + faixaH(menos.h) + " (" + num(menos.n, 0) + ")." : "") + " Passe o mouse (ou toque) nas barras para ver cada hora.</p>", "rz-larga") + "</div>");
+          (menos ? " Hora mais tranquila: " + faixaH(menos.h) + " (" + num(menos.n, 0) + ")." : "") + " Clique numa barra para filtrar a aba por essa hora; clique em outra para somar e de novo para tirar.</p>", "rz-larga") + "</div>");
       }
     }
     return linhas.join("");
@@ -1787,8 +1802,8 @@ window.iniciarPainel = function (D) {
     ((D.motorOcioso || {}).veiculos || []).forEach(function (v) { procs[v.processo] = 1; });
     var lista = unicos(Object.keys(procs));
     var filtros = '<div class="filtros rz-fil"><label>Processo<select data-fil="processo" id="r-processo">' + opcoes(lista, fil_.processo, D.escopo && D.escopo !== "todos" ? "Todos os meus processos" : "Todos os processos") + "</select></label>" +
-      (fil_.processo || !todosTurnos() ? '<button type="button" class="limpar" data-limpar="1">Limpar filtros</button>' : "") +
-      '<p class="ctx"><span class="rz-sem">Semana <b>' + dd(S.ini) + " – " + dd(S.fim) + "</b></span> comparada com " + dd(S.ant[0]) + " – " + dd(S.ant[6]) + "." + (turnoTexto() ? " Comportamental: só " + turnoTexto() + " (clique nos turnos para mudar; as outras abas não têm turno)." : "") + " Conectividade: situação atual. Câmeras: relatório do dia.</p></div>";
+      (fil_.processo || !todosTurnos() || fil_.horas ? '<button type="button" class="limpar" data-limpar="1">Limpar filtros</button>' : "") +
+      '<p class="ctx"><span class="rz-sem">Semana <b>' + dd(S.ini) + " – " + dd(S.fim) + "</b></span> comparada com " + dd(S.ant[0]) + " – " + dd(S.ant[6]) + "." + (turnoTexto() ? " Comportamental: só " + turnoTexto() + " (clique nos turnos ou nas horas para mudar; as outras abas não têm turno)." : "") + " Conectividade: situação atual. Câmeras: relatório do dia.</p></div>";
 
     var by = {}; A.forEach(function (a) { if (a.valor !== "—") by[a.aba] = a; });
     var nivel = { ruim: 3, atencao: 2, bom: 1 };
@@ -1986,13 +2001,15 @@ window.iniciarPainel = function (D) {
   });
   painel.addEventListener("click", function (e) {
     var l = e.target.closest("[data-limpar]");
-    if (l) { fil_.processo = ""; fil_.responsavel = ""; fil_.turnos = [1, 1, 1]; fil_.tipos = null; if (fil_.comp) fil_.comp.frota = ""; fil_.h = { ger: "", resp: "", gest: "", lid: "" }; fco.dia = -1; fcm.tipo = ""; pm.frotas = []; Object.keys(PER).forEach(function (a) { PER[a].p = PER[a].padrao; PER[a].de = PER[a].ate = ""; }); pm.refit = true; render(); return; }
+    if (l) { fil_.processo = ""; fil_.responsavel = ""; fil_.turnos = [1, 1, 1]; fil_.horas = null; fil_.tipos = null; if (fil_.comp) fil_.comp.frota = ""; fil_.h = { ger: "", resp: "", gest: "", lid: "" }; fco.dia = -1; fcm.tipo = ""; pm.frotas = []; Object.keys(PER).forEach(function (a) { PER[a].p = PER[a].padrao; PER[a].de = PER[a].ate = ""; }); pm.refit = true; render(); return; }
     var kt = e.target.closest("[data-ktodos]");
     if (kt) { fco.todos = !fco.todos; render(); return; }
     var kd = e.target.closest("[data-kdia]");
     if (kd) { fco.dia = +kd.getAttribute("data-kdia"); render(); return; }
     var tb = e.target.closest("[data-turno]");
     if (tb) { trocaTurno(+tb.dataset.turno); return; }
+    var hb = e.target.closest("[data-hora]");
+    if (hb) { trocaHora(+hb.dataset.hora); return; }
     if (e.target.closest("[data-top5]")) { trocaTop5(); return; }
     var apl = e.target.closest("[data-aploc]");
     if (apl && apm.mapa) { var x = apm.locs[+apl.dataset.aploc]; apm.mapa.setView([x.lat, x.lon], 13); apm.marcas[+apl.dataset.aploc].openPopup(); return; }
@@ -2037,6 +2054,8 @@ window.iniciarPainel = function (D) {
   painel.addEventListener("keydown", function (e) {
     var ka = e.target.closest && e.target.closest("article[data-tipo]");
     if (ka && e.target === ka && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); trocaTipo(ka.dataset.tipo); return; }
+    var hk = e.target.closest && e.target.closest("[data-hora]");
+    if (hk && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); trocaHora(+hk.dataset.hora); return; }
     var lt = e.target.closest && e.target.closest("li[data-turno]");
     if (lt && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); trocaTurno(+lt.dataset.turno); return; }
     var g = e.target.closest && e.target.closest("g[data-set]");
