@@ -41,8 +41,15 @@
         return [["Alertas (Historico_Alertas)", n > 0, n ? n + " arquivos, o mais recente de " + ult.split("-").reverse().join("/") : ""]];
       },
       confere: async function (h) { for await (var e of h.values()) if (/^Historico_Alertas_.*\.csv$/i.test(e.name)) return true; return false; },
-      erro: 'Essa pasta não tem os arquivos Historico_Alertas. Escolha a pasta "COA - BASE DE DADOS MONITORAMENTO COMPORTAMENTAL".' }
+      erro: 'Essa pasta não tem os arquivos Historico_Alertas. Escolha a pasta "COA - BASE DE DADOS MONITORAMENTO COMPORTAMENTAL".' },
+    // Opcional (20/11/2026): só leitura da planilha de pendências da Automação; nada é gravado nela.
+    pend: { rotulo: "Pendências", nome: "Pendências Automação", opcional: true,
+      usa: "Pendências em campo (card da Conectividade e aba PENDÊNCIAS da status_frotas); só leitura",
+      itens: async function (h) { var f = await planPend(h); return [["PENDENCIAS DE CAMPO", !!f, f ? f.name : ""]]; },
+      confere: function (h) { return planPend(h); },
+      erro: 'Essa pasta não tem a planilha "PENDENCIAS DE CAMPO". Escolha a pasta "Pendências Automação".' }
   };
+  async function planPend(h) { var a = null; for await (var e of h.values()) if (e.kind === "file" && /^PENDENCIAS DE CAMPO.*\.xlsx$/i.test(nfc(e.name)) && !/^~\$/.test(e.name) && (!a || e.name > a.name)) a = e; return a; }
   var COLS_COMP = ["PLACA", "PREFIXO", "GRUPO", "TIPO", "LIMIAR", "EXCESSO", "DATA", "HORA", "RÓTULO", "ALERTA DESCONSIDERADO",
     "LATITUDE", "LONGITUDE", "CERCA ELETRÔNICA", "LOGRADOURO", "CIDADE", "PROCESSO", "GERENCIA", "GERÊNCIA", "ULTIMO_COMENTARIO"];
   var COLS_PERM = ["PLACA", "PREFIXO", "TIPO", "ALERTA DESCONSIDERADO", "DATA", "HORA", "PONTO_REFERENCIA", "CERCA ELETRÔNICA",
@@ -106,7 +113,9 @@
     return { st: p === "granted" ? "ok" : "permissao", h: h };
   }
   function mostrarPastas() {
-    Promise.all(Object.keys(PASTAS).map(estado)).then(function (es) {
+    var ts = Object.keys(PASTAS);
+    Promise.all(ts.map(estado)).then(function (es) {
+      es = es.filter(function (e, i) { return !PASTAS[ts[i]].opcional || e.st === "ok"; });
       var ok = es.filter(function (e) { return e.st === "ok"; }).length;
       pastaEl.hidden = false; pastaEl.innerHTML = "";
       var b = document.createElement("button"); b.type = "button";
@@ -144,7 +153,7 @@
         card.innerHTML = '<div class="pp-lin"><div><b class="pp-rot"></b><small class="pp-usa"></small></div><span class="pp-chip ' + chip[1] + '">' + chip[0] + "</span></div>" +
           '<div class="pp-cam"><span>Pasta:</span> <code></code></div><ul class="pp-itens"></ul><div class="pp-acoes"></div>';
         card.querySelector(".pp-rot").textContent = P.rotulo;
-        card.querySelector(".pp-usa").textContent = "Usada em: " + P.usa;
+        card.querySelector(".pp-usa").textContent = "Usada em: " + P.usa + (P.opcional ? " (opcional)" : "");
         if (e.h) card.querySelector("code").textContent = e.h.name;
         else card.querySelector(".pp-cam").innerHTML = '<span>Selecione a pasta:</span> <b class="pp-dica"></b>', card.querySelector(".pp-dica").textContent = P.nome;
         if (e.st === "ok") {
@@ -231,7 +240,7 @@
     });
     var out = {};
     for (var a of abas) {
-      var nome = Object.keys(folhas).find(function (k) { return k === chave(a) || k.indexOf(chave(a)) === 0; });
+      var nome = Object.keys(folhas).find(function (k) { return k === chave(a); }) || Object.keys(folhas).find(function (k) { return k.indexOf(chave(a)) === 0; });
       if (!nome) throw new Error("A planilha não tem a aba " + a);
       var xml = await z.file(folhas[nome]).async("string"), linhas = [];
       var reRow = /<row [^>]*?r="(\d+)"[^>]*?(?:\/>|>([\s\S]*?)<\/row>)/g, m;
@@ -266,6 +275,24 @@
       return [Math.floor(s / 3600), Math.floor(s / 60) % 60, s % 60].map(function (x) { return (x < 10 ? "0" : "") + x; }).join(":");
     }
     return v == null ? "" : String(v).trim();
+  }
+
+  // ---------- Pendências da Automação (espelho na status_frotas) ----------
+  async function pendencias(arq) {
+    var L = (await lerXlsx(arq, ["PENDENCIAS_CAMPO"]))["PENDENCIAS_CAMPO"], hi = -1, cab = [];
+    for (var i = 0; i < Math.min(L.length, 15); i++) {
+      var c = (L[i] || []).map(function (x) { return chave(x == null ? "" : String(x)); });
+      if (c.indexOf("CLASSE") >= 0 && c.indexOf("STATUS") >= 0) { hi = i; cab = c; break; }
+    }
+    if (hi < 0) throw new Error("A planilha de pendências não tem as colunas CLASSE e STATUS na aba PENDENCIAS_CAMPO.");
+    var ix = function (n) { return cab.indexOf(n); };
+    var I = { d: ix("DATA"), h: ix("HORA"), f: ix("FROTA"), e: ix("EQUIPAMENTO"), fr: ix("FRENTE"), o: ix("OCORRÊNCIA"), c: ix("CLASSE"), s: ix("STATUS"), ob: ix("OBSERVAÇÕES"), lo: ix("LOCALIDADE ATUAL") };
+    var g = function (r, k) { return I[k] >= 0 && r[I[k]] != null ? r[I[k]] : ""; };
+    return L.slice(hi + 1).filter(function (r) { return r && chave(String(g(r, "c"))) === "TRIMBLE" && chave(String(g(r, "s"))) === "PENDENTE"; }).map(function (r) {
+      var f = g(r, "f"); f = typeof f === "number" ? String(Math.round(f)) : String(f).trim();
+      return { d: dataIso(g(r, "d")), h: horaTxt(g(r, "h")).slice(0, 5), f: f, equip: String(g(r, "e")).trim(), frente: String(g(r, "fr")).trim(),
+        oc: String(g(r, "o")).trim(), obs: String(g(r, "ob")).trim(), local: String(g(r, "lo")).trim() };
+    });
   }
 
   // ---------- Comportamental ----------
@@ -489,11 +516,21 @@
       var Ll = await lerCsv(loc), sl = selecionar(Ll, COLS_LOC);
       pedido.conectividade = { nome: loc.name, mod: loc.lastModified, h: sl.h, r: Ll.slice(1).map(function (y) { return sl.ix.map(function (i) { return y[i] == null ? "" : y[i]; }); }) };
     } else loc = null;
+    // Pendências da Automação (opcional): só as de classe TRIMBLE com status Pendente; sem o EXECUTOR (nome de pessoa).
+    var ep = await estado("pend");
+    if (ep.st === "ok") {
+      var pa = await planPend(ep.h);
+      if (pa && (pa = await pa.getFile()).lastModified !== ind.pendencias) {
+        msg("Lendo as pendências da Automação…");
+        pedido.pendencias = { nome: pa.name, mod: pa.lastModified, linhas: await pendencias(pa) };
+        feito.push("Pendências (" + pedido.pendencias.linhas.length + ")");
+      }
+    }
     var stf = await filho(comp, "status_frotas.xlsx", false);
     if (stf) {
       stf = await stf.getFile();
       var sha = await sha256(stf);
-      if (pedido.conectividade || (stf.lastModified !== ind.status_frotas && (ind.status_frotas_sha || []).indexOf(sha) < 0)) {
+      if (pedido.conectividade || pedido.pendencias || (stf.lastModified !== ind.status_frotas && (ind.status_frotas_sha || []).indexOf(sha) < 0)) {
         msg("Lendo a status_frotas…");
         pedido.status_frotas = { mod: stf.lastModified, b64: await b64(stf) };
         feito.push("Conectividade");
@@ -517,7 +554,7 @@
   }
 
   // Usado só nos testes automáticos (ferramentas não chamam a rede).
-  window.__painelTeste = { comportamental: comportamental, alertas: alertas, boletim: boletim, carregarRegras: carregarRegras,
+  window.__painelTeste = { pendencias: pendencias, comportamental: comportamental, alertas: alertas, boletim: boletim, carregarRegras: carregarRegras,
     enviar: enviar, indice: indice, gravarStatus: gravarStatus, sha256: sha256,
     csv: async function (f) { var L = await lerCsv(f), x = /^Localizacao/i.test(f.name) ? selecionar(L, COLS_LOC) : null;
       return x ? { h: x.h, r: L.slice(1).map(function (y) { return x.ix.map(function (i) { return y[i] == null ? "" : y[i]; }); }) } : { h: L[0], r: L.slice(1) }; }, acompanhar: acompanhar, token: function (t) { token = t; st = document.createElement("p"); } };

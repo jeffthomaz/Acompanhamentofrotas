@@ -94,7 +94,8 @@ def conectividade_e_cameras(P, base, dados, proc):
             feito.append("Conectividade")
             # Refaz a status_frotas (equipamentos em manutenção, parados e offline há 2 dias ou mais, mantendo o que
             # a equipe marcou); o navegador de quem clicou grava de volta na pasta dele ao fim da atualização.
-            conectividade.planilha(dados, st)
+            pc = os.path.join(base, "pendencias_campo.json")
+            conectividade.planilha(dados, st, pend=json.load(open(pc, encoding="utf-8"))["linhas"] if os.path.exists(pc) else None)
             import shutil
             shutil.copyfile(st, os.path.join(base, "status_frotas.xlsx"))
             # Assinaturas para o navegador saber que a planilha não mudou (a lida e a refeita).
@@ -118,6 +119,14 @@ def main(pedido, base):
     proc_c = os.path.join(base, "entrada_processados.json")
     proc = json.load(open(proc_c, encoding="utf-8")) if os.path.exists(proc_c) else {"processados": []}
     feito = []
+    if P.get("pendencias"):
+        # Pendências da Automação (classe TRIMBLE, status Pendente), só leitura: espelho na aba PENDÊNCIAS da
+        # status_frotas e número do card "Pendências em campo" da Conectividade (20/11/2026).
+        print("== Pendências da Automação: %d" % len(P["pendencias"]["linhas"]))
+        json.dump({"nome": P["pendencias"]["nome"], "mod": P["pendencias"]["mod"], "linhas": P["pendencias"]["linhas"]},
+                  open(os.path.join(base, "pendencias_campo.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+        ind["pendencias"] = P["pendencias"]["mod"]
+        feito.append("Pendências")
     if P.get("conectividade") or P.get("status_frotas") or P.get("cameras"):
         print("== Conectividade e Câmeras")
         feito += conectividade_e_cameras(P, base, dados, proc)
@@ -146,6 +155,11 @@ def main(pedido, base):
     ind["status_frotas_sha"] = proc.get("status_frotas_sha", [])
     # Mostrado no topo do painel para todos ("Última atualização: … por …"), dentro dos dados criptografados.
     D = json.load(open(dados, encoding="utf-8"))
+    pc = os.path.join(base, "pendencias_campo.json")
+    if os.path.exists(pc) and "conectividade" in D:
+        lp = json.load(open(pc, encoding="utf-8"))["linhas"]
+        D["conectividade"]["pendCampo"] = len(lp)
+        D["conectividade"]["pendCampoLista"] = [{k: l.get(k, "") for k in ("f", "d", "equip", "oc")} for l in lp]
     D["atualizacao"] = {"quando": datetime.now().strftime("%d/%m/%Y %H:%M"), "quem": P.get("quem", ""), "feito": feito}
     json.dump(D, open(dados, "w", encoding="utf-8"), ensure_ascii=False)
     ind["atualizado"] = datetime.now().strftime("%Y-%m-%d %H:%M")

@@ -252,7 +252,7 @@ def montar(base, planilha, destino):
         print("AVISO:", a)
 
 
-def planilha(destino, caminho):
+def planilha(destino, caminho, pend=None):
     """Refaz status_frotas.xlsx com o status de cada equipamento na última atualização, para o usuário conferir.
 
     Colunas: FROTA, STATUS, DIAS OFFLINE, RESPONSÁVEL, OBSERVAÇÃO. Entram os equipamentos em manutenção,
@@ -319,6 +319,33 @@ def planilha(destino, caminho):
     dv.add("B2:B1000"); ws.add_data_validation(dv)
     ws.freeze_panes = "A2"
     ws.auto_filter.ref = "A1:E%d" % max(len(lst) + 1, 1)
+    if pend is not None:
+        # Espelho da planilha PENDENCIAS DE CAMPO (Automação): classe TRIMBLE com status Pendente. Refeita a cada atualização.
+        if "PENDÊNCIAS" in wb.sheetnames:
+            del wb["PENDÊNCIAS"]
+        wp = wb.create_sheet("PENDÊNCIAS", 1)
+        cab = ["DATA", "HORA", "FROTA", "EQUIPAMENTO", "FRENTE", "OCORRÊNCIA", "OBSERVAÇÕES", "LOCALIDADE ATUAL"]
+        for i, t in enumerate(cab):
+            cel = wp.cell(1, 1 + i, t); cel.font = hf; cel.fill = hfill; cel.alignment = Alignment(vertical="center")
+        from datetime import date
+        for k, l in enumerate(sorted(pend, key=lambda x: (x.get("d", ""), x.get("h", ""))), start=2):
+            d = l.get("d") or ""
+            try:
+                dv_ = date(int(d[:4]), int(d[5:7]), int(d[8:10]))
+            except ValueError:
+                dv_ = d
+            f = str(l.get("f") or "")
+            vals = [dv_, l.get("h", ""), int(f) if f.isdigit() else f, l.get("equip", ""), l.get("frente", ""), l.get("oc", ""), l.get("obs", ""), l.get("local", "")]
+            for i, v in enumerate(vals):
+                wp.cell(k, 1 + i, v if v != "" else None)
+            wp.cell(k, 1).number_format = "DD/MM/YYYY"
+        for col, w in zip("ABCDEFGH", [12, 8, 9, 24, 26, 48, 40, 20]):
+            wp.column_dimensions[col].width = w
+        wp.freeze_panes = "A2"
+        wp.auto_filter.ref = "A1:H%d" % max(len(pend) + 1, 1)
+        n = len(pend) + 3
+        wp.cell(n, 1, "Espelho da planilha PENDENCIAS DE CAMPO (Pendências Automação): classe TRIMBLE com status Pendente. "
+                       "Não edite aqui; mude na planilha original. Refeito a cada atualização do painel.").font = Font(italic=True, color="666666")
     if "COMO USAR" in wb.sheetnames:
         cu = wb["COMO USAR"]
         cu.delete_rows(1, cu.max_row)
@@ -331,7 +358,9 @@ def planilha(destino, caminho):
                   "  OFFLINE: só a situação que o painel mostrou; não muda nada.",
                   "DIAS OFFLINE e RESPONSÁVEL: informação do painel.",
                   "OBSERVAÇÃO: opcional (ex.: oficina, entressafra). Não coloque nome de pessoas. Fica guardada.",
-                  "", "O painel lê esta planilha e a refaz nas atualizações das 11h, 13h e 14h (dias úteis)."]:
+                  "Aba PENDÊNCIAS: espelho das pendências TRIMBLE com status Pendente da planilha PENDENCIAS DE CAMPO",
+                  "(Pendências Automação). Não edite lá; mude na planilha original. Refeita a cada atualização.",
+                  "", "O painel lê esta planilha e a refaz a cada atualização pelo botão Atualizar dados."]:
             cu.append([t])
     wb.save(caminho)
     from collections import Counter
