@@ -303,7 +303,10 @@ rect.seg.c-vel{fill:var(--c-vel)}rect.seg.c-celular{fill:var(--c-celular)}rect.s
 .pills button{font:inherit;font-size:.85rem;font-weight:600;padding:.42rem .9rem;border:1px solid var(--line);border-radius:999px;background:var(--card);color:var(--ink);cursor:pointer}
 .pills button[aria-pressed=true]{background:var(--maq);border-color:var(--maq);color:var(--maq-ink)}
 .mapa-g{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr);gap:1rem;align-items:start}
-.mapa-lado{display:grid;gap:1rem}
+.mapa-lado{display:grid;gap:1rem}.mapa-esq{display:grid;gap:1rem;min-width:0}
+.longas-2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:1.5rem}
+@media (max-width:700px){.longas-2{grid-template-columns:minmax(0,1fr)}}
+.mapa-lado .rolagem.alta{max-height:calc(min(560px,70vh) + 22rem)}
 @media (max-width:980px){.mapa-g{grid-template-columns:minmax(0,1fr)}}
 .mapa-card{padding:.5rem}
 .mapa{height:min(560px,70vh);min-height:340px;border-radius:8px;background:var(--soft);position:relative;z-index:0}
@@ -635,7 +638,7 @@ rect.seg.c-vel{fill:var(--c-vel)}rect.seg.c-celular{fill:var(--c-celular)}rect.s
 </style>
 </head><body>
 <header class="band"><div class="band-in gut">
-  <img class="logo" src="logo-branco.png?v=202611200752" alt="Bioenergética Aroeira" width="67" height="92">
+  <img class="logo" src="logo-branco.png?v=202611200757" alt="Bioenergética Aroeira" width="67" height="92">
   <div><h1>MONITORAMENTO COMPORTAMENTAL</h1><p class="per" id="periodo"></p></div>
   <div class="quem" id="quem" hidden><span><b id="quem-nome"></b><small id="quem-escopo"></small></span><button type="button" id="atualizar" hidden>Atualizar dados</button><button type="button" id="sair">Sair</button></div>
   <p class="atu-ult" id="atualizado" hidden></p>
@@ -667,9 +670,9 @@ rect.seg.c-vel{fill:var(--c-vel)}rect.seg.c-celular{fill:var(--c-celular)}rect.s
 </div>
 <footer class="foot gut">Bioenergética Aroeira S/A, Tupaciguara/MG. <a href="https://www.bioaroeira.com.br" target="_blank" rel="noopener">www.bioaroeira.com.br</a></footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" defer></script>
-<script src="acesso.js?v=202611200752"></script>
-<script src="app.js?v=202611200752"></script>
-<script src="jszip.min.js?v=202611200752"></script>
-<script src="painel-atualizar.js?v=202611200752"></script>
-<script src="login.js?v=202611200752"></script>
+<script src="acesso.js?v=202611200757"></script>
+<script src="app.js?v=202611200757"></script>
+<script src="jszip.min.js?v=202611200757"></script>
+<script src="painel-atualizar.js?v=202611200757"></script>
+<script src="login.js?v=202611200757"></script>
 </body></html>

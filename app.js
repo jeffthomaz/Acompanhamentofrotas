@@ -664,16 +664,17 @@ window.iniciarPainel = function (D) {
         '</span><div class="bb"><div class="ff" style="width:' + (x.n / mx * 100).toFixed(1) + "%;--i:" + k + '"></div></div></button>';
     }).join("") + "</div></section>";
 
-    var longas = ev.slice().sort(function (a, b) { return b[3] - a[3]; }).slice(0, 8);
-    var tabela = longas.length ? '<section class="card"><h3>Permanências mais longas</h3><ul class="longas">' + longas.map(function (e) {
+    // Permanências mais longas embaixo do mapa, na largura dele, em duas colunas (20/11/2026).
+    var longas = ev.slice().sort(function (a, b) { return b[3] - a[3]; }).slice(0, 12);
+    var tabela = longas.length ? '<section class="card longas-card"><h3>Permanências mais longas</h3><ul class="longas longas-2">' + longas.map(function (e) {
       return "<li><span><b>" + esc(e[0]) + "</b> em " + esc(P.locais[e[4]].nome) + "<small>" + dataBR(e[5]) + " às " + e[6] + " · " + esc(V[e[0]].processo) + "</small></span><strong>" + hmin(e[3]) + "</strong></li>";
     }).join("") + "</ul></section>" : "";
 
     pm.ultimo = { ev: ev, locais: locais };
     return filtros + '<div class="head"><p class="lead">' + lead + "</p></div>" +
-      '<div class="mapa-g"><section class="card mapa-card"><div id="mapa" class="mapa" role="region" aria-label="Mapa de calor das permanências"><p class="mapa-msg">Carregando mapa…</p></div>' +
-      '<div class="escala"><span>Menos</span><i></i><span>Mais ' + (pm.medida === "tempo" ? "tempo parado" : "permanências") + "</span></div></section>" +
-      '<div class="mapa-lado">' + ranking + tabela + "</div></div>";
+      '<div class="mapa-g"><div class="mapa-esq"><section class="card mapa-card"><div id="mapa" class="mapa" role="region" aria-label="Mapa de calor das permanências"><p class="mapa-msg">Carregando mapa…</p></div>' +
+      '<div class="escala"><span>Menos</span><i></i><span>Mais ' + (pm.medida === "tempo" ? "tempo parado" : "permanências") + "</span></div></section>" + tabela + "</div>" +
+      '<div class="mapa-lado">' + ranking + "</div></div>";
   }
 
   // Camada de calor simples (canvas), sem plugin.
