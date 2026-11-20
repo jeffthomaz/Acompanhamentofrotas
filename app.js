@@ -535,6 +535,16 @@ window.iniciarPainel = function (D) {
     if (kds && kds.length && kds.length <= 31) {
       var ks2 = kds.length === 1 ? [] : kds.slice();
       if (kds.length === 1) for (var q2 = Math.max(0, kds[0] - 6); q2 <= kds[0]; q2++) ks2.push(q2);
+      if (ks2.length > 14) {
+        // Períodos longos (ex.: "Últimas 4 semanas"): uma barra por semana de 7 dias, contando para trás a partir do último dia (20/11/2026).
+        var fimMs = new Date(fO.ate + "T12:00:00").getTime(), blocos = [];
+        ks2.forEach(function (q) { var j = Math.floor(Math.round((fimMs - new Date(U[q] + "T12:00:00").getTime()) / 864e5) / 7); (blocos[j] = blocos[j] || []).push(q); });
+        serie = blocos.filter(Boolean).reverse().map(function (qs) {
+          var so = function (arr) { return sum(qs, function (q) { return (arr || [])[q] || 0; }); };
+          var a = sum(vs, function (v) { return so(v.dl); }), b = sum(vs, function (v) { return so(v.do); });
+          return { r: dd(U[qs[0]]) + " a " + dd(U[qs[qs.length - 1]]), h: b, p: a ? b / a * 100 : 0, parcial: false, vo: function (v) { return so(v.do); }, vl: function (v) { return so(v.dl); } };
+        });
+      } else
       serie = ks2.map(function (q) { var a = sum(vs, function (v) { return (v.dl || [])[q] || 0; }), b = sum(vs, function (v) { return (v.do || [])[q] || 0; }); return { r: dd(U[q]), h: b, p: a ? b / a * 100 : 0, vo: function (v) { return (v.do || [])[q] || 0; }, vl: function (v) { return (v.dl || [])[q] || 0; } }; });
     } else {
       // Semana incompleta (a última, se os dados ainda não chegaram ao domingo) fica marcada com * e fora da comparação.
