@@ -1,0 +1,6 @@
+{
+  "_comentario": "Frotas inativas: saem da Conectividade (frota atual), mas o histórico continua no Comportamental, Motor ocioso e Permanência. Aplicado em gerar_acesso.py (remover_inativas). Para tirar de tudo, use frotas_excluidas.json.",
+  "frotas": [
+    "961315"
+  ]
+}

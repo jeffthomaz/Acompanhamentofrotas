@@ -493,6 +493,19 @@ def remover_locais(D):
     P["eventos"] = [e for e in P["eventos"] if e[4] not in ix]
 
 
+def remover_inativas(D):
+    """Tira da Conectividade (frota atual) as frotas de ferramentas/frotas_inativas.json; o histórico das outras abas fica."""
+    caminho = os.path.join(os.path.dirname(os.path.abspath(__file__)), "frotas_inativas.json")
+    if not os.path.exists(caminho) or "conectividade" not in D:
+        return
+    fora = {norm(f).upper() for f in json.load(open(caminho, encoding="utf-8"))["frotas"]}
+    sai = lambda f: norm(f).upper() in fora
+    K = D["conectividade"]
+    for k in ("frotas", "hist", "atual"):
+        K[k] = {f: v for f, v in K[k].items() if not sai(f)}
+    K["pendencias"] = [p for p in K.get("pendencias", []) if not sai(p["f"])]
+
+
 def preparar(fonte):
     D = json.load(open(fonte, encoding="utf-8"))
     unificar_processos(D)
@@ -504,6 +517,7 @@ def preparar(fonte):
     if feitos:
         print("%d frota(s) sem processo completadas pelo processo de outra aba" % len(feitos))
     remover_excluidas(D)
+    remover_inativas(D)
     remover_locais(D)
     tiradas = remover_ocorrencias(D)
     if tiradas:
