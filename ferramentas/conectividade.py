@@ -154,7 +154,9 @@ def ler_planilha(caminho):
     STATUS em branco ou OFFLINE não muda nada (é só a situação que o painel mostrou). Sem coluna DESDE,
     a data em que o status passou a valer é guardada pelo painel na base (ver montar).
     """
-    ws = openpyxl.load_workbook(caminho, data_only=True).worksheets[0]
+    wb = openpyxl.load_workbook(caminho, data_only=True)
+    # Aba STATUS pelo nome (20/11/2026: com as abas COMO USAR/PENDÊNCIAS a primeira aba deixou de ser a STATUS).
+    ws = next((w for w in wb.worksheets if str(w.title).strip().upper() == "STATUS"), wb.worksheets[0])
     linhas = list(ws.iter_rows(values_only=True))
     cab = [str(c or "").strip().upper() for c in (linhas[0] if linhas else [])]
     col = lambda nome: cab.index(nome) if nome in cab else None
@@ -268,6 +270,8 @@ def planilha(destino, caminho, pend=None):
     aqui = os.path.dirname(os.path.abspath(__file__))
     fora_c = os.path.join(aqui, "frotas_excluidas.json")
     fora = {f.strip().upper() for f in ler_json(fora_c)["frotas"]} if os.path.exists(fora_c) else set()
+    ina_c = os.path.join(aqui, "frotas_inativas.json")  # inativas também saem da planilha (20/11/2026)
+    fora |= {f.strip().upper() for f in ler_json(ina_c)["frotas"]} if os.path.exists(ina_c) else set()
     wb = openpyxl.load_workbook(caminho)
     ws = wb["STATUS"] if "STATUS" in wb.sheetnames else wb.worksheets[0]
     linhas = list(ws.iter_rows(values_only=True))
