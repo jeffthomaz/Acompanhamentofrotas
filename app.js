@@ -1077,7 +1077,7 @@ window.iniciarPainel = function (D) {
 
     var kpis = '<div class="kpis kpis5 kpis-st">' + ST.map(function (s) {
       var n = cont[s.l], pc = total ? n / total * 100 : 0;
-      return '<article class="kpi c-' + s.id + ((fco.st || "O") === s.l ? " sel" : "") + '" data-kst="' + s.l + '" role="button" tabindex="0" aria-pressed="' + ((fco.st || "O") === s.l) + '" title="Clique para ver a lista desses equipamentos"><div class="kh">' + ico(s.icone) + '<span class="kl">' + s.nome + '</span></div><strong class="kv">' + num(n, 0) + '</strong>' +
+      return '<article class="kpi c-' + s.id + (fco.st === s.l ? " sel" : "") + '" data-kst="' + s.l + '" role="button" tabindex="0" aria-pressed="' + (fco.st === s.l) + '" title="' + (fco.st === s.l ? "Clique de novo para voltar à lista de offline" : "Clique para ver a lista desses equipamentos") + '"><div class="kh">' + ico(s.icone) + '<span class="kl">' + s.nome + '</span></div><strong class="kv">' + num(n, 0) + '</strong>' +
         '<span class="kbar" aria-hidden="true"><i style="width:' + pc.toFixed(1) + '%"></i></span><span class="ks">' + (total ? num(pc, 1) + "% da frota" : "&nbsp;") + "</span></article>";
     }).join("") + '<article class="kpi c-pen"><div class="kh">' + ico("M12 3l9 16H3zM12 10v4M12 17h.01") + '<span class="kl">Pendências</span></div><strong class="kv">' + num(nPend, 0) + '</strong><span class="kbar vazio" aria-hidden="true"></span><span class="ks">em campo</span></article></div>';
 
@@ -1111,7 +1111,7 @@ window.iniciarPainel = function (D) {
       return { f: x.f, dias: stSel === "O" && a ? a.dias : dS, ult: a ? a.ult : "", man: a && a.manual && a.manual.desde ? a.manual.desde : "" };
     }).sort(function (a, b) { return a.dias - b.dias || a.f.localeCompare(b.f); });
     var expl = { O: "do que está há menos dias sem comunicar para o que está há mais", C: "do que está há menos dias conectado para o que está há mais", M: "do que está há menos dias em manutenção para o que está há mais", P: "do que está há menos dias parado para o que está há mais" }[stSel];
-    var tab = '<section class="card tab-card"><h3>Equipamentos ' + (stSel === "O" ? "offline" : stSel === "C" ? "conectados" : stSel === "M" ? "em manutenção" : "parados") + ' <span class="cnt' + (stSel === "O" ? " off" : "") + '">' + sem.length + '</span></h3><p class="cs">Em ' + dbr(K.dias[di]) + ", " + expl + ". Clique nos cards de cima para trocar o status.</p>" +
+    var tab = '<section class="card tab-card"><h3>Equipamentos ' + (stSel === "O" ? "offline" : stSel === "C" ? "conectados" : stSel === "M" ? "em manutenção" : "parados") + ' <span class="cnt' + (stSel === "O" ? " off" : "") + '">' + sem.length + '</span></h3><p class="cs">Em ' + dbr(K.dias[di]) + ", " + expl + ". " + (fco.st ? "Clique de novo no card para voltar aos offline." : "Clique num card de status para ver os equipamentos dele.") + "</p>" +
       (sem.length ? '<div class="scroll rolagem alta"><table class="tb tb-k tb-off"><thead><tr><th scope="col">Frota</th><th scope="col">Processo</th><th scope="col" class="r" title="Dias seguidos nesse status">Dias</th>' + (ehHoje ? '<th scope="col">Última conexão</th>' : "") + "</tr></thead><tbody>" + sem.map(function (x) {
         var v = F[x.f];
         return '<tr><th scope="row" title="' + esc([v.placa, v.grupo].filter(Boolean).join(" · ")) + '">' + esc(x.f) + (v.placa ? " <small>" + esc(v.placa) + "</small>" : "") + "</th><td title=\"" + esc(v.processo) + "\">" + esc(v.processo) + '</td><td class="r"><span class="b ' + B_ST[stSel] + '"' + (x.man ? ' title="Na planilha desde ' + esc(x.man) + '"' : "") + ">" + num(x.dias, 0) + "</span></td>" +
@@ -2038,7 +2038,7 @@ window.iniciarPainel = function (D) {
     var tb = e.target.closest("[data-turno]");
     if (tb) { trocaTurno(+tb.dataset.turno); return; }
     var ks = e.target.closest("[data-kst]");
-    if (ks) { fco.st = ks.dataset.kst; render(); return; }
+    if (ks) { fco.st = fco.st === ks.dataset.kst ? "" : ks.dataset.kst; render(); return; }
     var hb = e.target.closest("[data-hora]");
     if (hb) { trocaHora(+hb.dataset.hora); return; }
     if (e.target.closest("[data-top5]")) { trocaTop5(); return; }
@@ -2088,7 +2088,7 @@ window.iniciarPainel = function (D) {
     var hk = e.target.closest && e.target.closest("[data-hora]");
     if (hk && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); trocaHora(+hk.dataset.hora); return; }
     var kk = e.target.closest && e.target.closest("[data-kst]");
-    if (kk && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); fco.st = kk.dataset.kst; render(); return; }
+    if (kk && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); fco.st = fco.st === kk.dataset.kst ? "" : kk.dataset.kst; render(); return; }
     var lt = e.target.closest && e.target.closest("li[data-turno]");
     if (lt && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); trocaTurno(+lt.dataset.turno); return; }
     var g = e.target.closest && e.target.closest("g[data-set]");
