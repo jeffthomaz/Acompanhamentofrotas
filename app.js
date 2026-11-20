@@ -505,9 +505,10 @@ window.iniciarPainel = function (D) {
       (fil_.processo || hierAtiva() || stO.p !== stO.padrao ? '<button type="button" class="limpar" data-limpar="1">Limpar filtros</button>' : "") +
       '<p class="ctx">' + rows.length + " " + plural(rows.length, "veículo leve", "veículos leves") + ", " + (kds ? (fO.de === fO.ate ? "em " : "de ") + perTexto(fO) : esc(m.periodo)) + "</p></div>";
 
-    var lead = (kds ? (fO.de === fO.ate ? "Em " : "De ") + perTexto(fO) + ", os" : "Os") + " veículos ficaram <b>" + num(pct, 1) + "%</b> do tempo de motor ligado parados, <b>" + horas(oc) + "</b> de " + horas(li) + ". " +
-      (acima.length ? "<b>" + acima.length + "</b> " + plural(acima.length, "veículo passou", "veículos passaram") + " da meta de " + meta + "%, e o <b>" + esc(acima[0].v.id) + "</b> lidera com " + num(acima[0].pct, 1) + "%."
-                    : "Todos os veículos estão dentro da meta de " + meta + "%.");
+    // Resumo do período: saiu do topo e foi para os Insights (20/11/2026).
+    var insResumo = '<li><span class="mo-ii">%</span><span>' + (kds ? (fO.de === fO.ate ? "Em " : "De ") + perTexto(fO) + ", os" : "Os") + " veículos ficaram <b>" + num(pct, 1) + "%</b> do tempo de motor ligado parados, <b>" + horas(oc) + "</b> de " + horas(li) + ".</span></li>" +
+      '<li><span class="mo-ii">' + (acima.length ? "⚑" : "✓") + "</span><span>" + (acima.length ? "<b>" + acima.length + "</b> " + plural(acima.length, "veículo passou", "veículos passaram") + " da meta de " + meta + "%, e o <b>" + esc(acima[0].v.id) + "</b> lidera com " + num(acima[0].pct, 1) + "%."
+                    : "Todos os veículos estão dentro da meta de " + meta + "%.") + "</span></li>";
 
     function quadro(lista, chave, clicavel) {
       var maxP = Math.max.apply(null, [meta].concat(lista.map(function (r) { return r.pct; }))) * 1.12, mkPos = (meta / maxP * 100).toFixed(1);
@@ -643,14 +644,14 @@ window.iniciarPainel = function (D) {
       '<div class="mo-g2"><section class="card mo-card"><h3><span class="mo-ic">●</span> Por processo</h3><div class="mo-ctx">' + rosc + '<ul class="mo-cl">' + donut.map(function (x, i) {
         return '<li><i style="background:' + CORD[i] + '"></i><span>' + esc(x.nome) + "</span><b>" + num(totD ? x.h / totD * 100 : 0, 1) + "%</b></li>";
       }).join("") + "</ul></div></section>" +
-      '<section class="card mo-card"><h3><span class="mo-ic">💡</span> Insights</h3><ul class="mo-ins">' +
+      '<section class="card mo-card"><h3><span class="mo-ic">💡</span> Insights</h3><ul class="mo-ins">' + insResumo +
         (varH !== null ? '<li><span class="mo-ii">' + (varH > 0 ? "↗" : "↘") + "</span><span>O tempo de motor ocioso " + (varH > 0 ? "aumentou" : "diminuiu") + " <b>" + num(Math.abs(varH), 0) + "%</b> na semana de " + sU.r + " em relação à de " + sA.r + ".</span></li>" : "") +
         '<li><span class="mo-ii">⛽</span><span>Isso representa um consumo estimado de <b>' + num(litros, 0) + " litros</b> de etanol no período.</span></li>" +
         '<li><span class="mo-ii">$</span><span>O custo estimado é de <b>R$ ' + num(custo, 2) + "</b> no período.</span></li>" +
         '</ul><p class="mo-nota">Estimativa: ' + num(LH, 2) + " L por hora ociosa e R$ " + num(PRECO, 2) + " por litro de etanol (média da região de Minas).</p></section>" +
       // "Ações recomendadas" saiu (20/11/2026): fica só o quadro dos veículos menos usados.
       '<section class="card mo-card"><h3><span class="mo-ic">⏱</span> Veículos menos usados</h3>' + menosUsados + "</section></div>";
-    return filtros + '<div class="head"><p class="lead">' + lead + "</p></div>" + painelMO + secoes; // sem a área "Atualizar a aba Motor ocioso" (pedido em 20/11/2026: a atualização é pelo botão Atualizar dados)
+    return filtros + painelMO + secoes; // sem a área "Atualizar a aba Motor ocioso" (pedido em 20/11/2026: a atualização é pelo botão Atualizar dados)
   }
 
   // ---------- Permanência: mapa de calor (dados reais da tabela Ocorrências do Power BI) ----------
