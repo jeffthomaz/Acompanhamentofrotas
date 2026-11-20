@@ -321,9 +321,15 @@ def planilha(destino, caminho, pend=None):
     ws.auto_filter.ref = "A1:E%d" % max(len(lst) + 1, 1)
     if pend is not None:
         # Espelho da planilha PENDENCIAS DE CAMPO (Automação): classe TRIMBLE com status Pendente. Refeita a cada atualização.
-        if "PENDÊNCIAS" in wb.sheetnames:
-            del wb["PENDÊNCIAS"]
-        wp = wb.create_sheet("PENDÊNCIAS", 1)
+        # O Excel não diferencia maiúsculas ("Pendências" = "PENDÊNCIAS"): tira qualquer aba de pendências antiga,
+        # inclusive cópias "PENDÊNCIAS1" deixadas por versões anteriores, e recria uma só, logo depois da STATUS.
+        import re as _re, unicodedata as _ud
+        def _sem_acento(t):
+            return "".join(ch for ch in _ud.normalize("NFD", t) if _ud.category(ch) != "Mn").upper().strip()
+        for nm in list(wb.sheetnames):
+            if _re.fullmatch(r"PENDENCIAS\d*", _sem_acento(nm)):
+                del wb[nm]
+        wp = wb.create_sheet("PENDÊNCIAS", wb.sheetnames.index(ws.title) + 1)
         cab = ["DATA", "HORA", "FROTA", "EQUIPAMENTO", "FRENTE", "OCORRÊNCIA", "OBSERVAÇÕES", "LOCALIDADE ATUAL"]
         for i, t in enumerate(cab):
             cel = wp.cell(1, 1 + i, t); cel.font = hf; cel.fill = hfill; cel.alignment = Alignment(vertical="center")
