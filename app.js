@@ -557,7 +557,7 @@ window.iniciarPainel = function (D) {
         return { r: w + (parc ? "*" : ""), faixa: w + " a " + dd(parc ? ultDia : fimTxt), h: b, p: a ? b / a * 100 : 0, parcial: parc, vo: function (v) { return v.ocioso[k] || 0; }, vl: function (v) { return v.ligado[k] || 0; } };
       }).slice(-12);
     }
-    var LH = m.consumoLh || 0.66, PRECO = m.precoLitro || 5;
+    var LH = m.consumoLh || 0.66, PRECO = m.precoLitro || 4; // etanol, média da região de Minas (informada em 20/11/2026)
     // Clique numa barra: o Top 5 passa a mostrar as frotas mais ociosas daquele dia/semana (20/11/2026).
     var xSel = serie.filter(function (x) { return x.r === moSel; })[0] || null; if (!xSel) moSel = null;
     var baseTop = xSel ? rows.map(function (r) { var o = xSel.vo(r.v), l = xSel.vl(r.v); return { v: r.v, oc: o, li: l, pct: l ? o / l * 100 : 0 }; }).filter(function (r) { return r.oc > 0; }) : rows;
@@ -611,9 +611,9 @@ window.iniciarPainel = function (D) {
       }).join("") + "</ul></div></section>" +
       '<section class="card mo-card"><h3><span class="mo-ic">💡</span> Insights</h3><ul class="mo-ins">' +
         (varH !== null ? '<li><span class="mo-ii">' + (varH > 0 ? "↗" : "↘") + "</span><span>O tempo de motor ocioso " + (varH > 0 ? "aumentou" : "diminuiu") + " <b>" + num(Math.abs(varH), 0) + "%</b> na semana de " + sU.r + " em relação à de " + sA.r + ".</span></li>" : "") +
-        '<li><span class="mo-ii">⛽</span><span>Isso representa um consumo estimado de <b>' + num(litros, 0) + " litros</b> de combustível no período.</span></li>" +
+        '<li><span class="mo-ii">⛽</span><span>Isso representa um consumo estimado de <b>' + num(litros, 0) + " litros</b> de etanol no período.</span></li>" +
         '<li><span class="mo-ii">$</span><span>O custo estimado é de <b>R$ ' + num(custo, 2) + "</b> no período.</span></li>" +
-        '</ul><p class="mo-nota">Estimativa: ' + num(LH, 2) + " L por hora ociosa e R$ " + num(PRECO, 2) + " por litro.</p></section>" +
+        '</ul><p class="mo-nota">Estimativa: ' + num(LH, 2) + " L por hora ociosa e R$ " + num(PRECO, 2) + " por litro de etanol (média da região de Minas).</p></section>" +
       // "Ações recomendadas" saiu (20/11/2026): fica só o quadro dos veículos menos usados.
       '<section class="card mo-card"><h3><span class="mo-ic">⏱</span> Veículos menos usados</h3>' + menosUsados + "</section></div>";
     return filtros + '<div class="head"><p class="lead">' + lead + "</p></div>" + painelMO + secoes; // sem a área "Atualizar a aba Motor ocioso" (pedido em 20/11/2026: a atualização é pelo botão Atualizar dados)
