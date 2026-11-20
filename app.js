@@ -576,8 +576,8 @@ window.iniciarPainel = function (D) {
       var mxP = Math.max(meta * 1.4, Math.max.apply(null, [0].concat(serie.map(function (x) { return x.p; }))) * 1.25), pP = mxP > 40 ? 10 : 5, topoP = Math.ceil(mxP / pP) * pP;
       var bw = iw / n, sv = '<svg viewBox="0 0 ' + W + " " + H + '" class="mo-combo" role="img" aria-label="Horas de motor ocioso e percentual por período">';
       for (var g = 0; g <= topoH; g += passo) { var y = pt + ih - g / topoH * ih; sv += '<line x1="' + pl + '" x2="' + (W - pr) + '" y1="' + y + '" y2="' + y + '" class="gl"/><text x="' + (pl - 8) + '" y="' + (y + 4) + '" text-anchor="end" class="ax">' + num(g, 0) + " h</text>"; }
-      for (var gp = 0; gp <= topoP; gp += pP) { var yp = pt + ih - gp / topoP * ih; sv += '<text x="' + (W - pr + 8) + '" y="' + (yp + 4) + '" class="ax">' + gp + "%</text>"; }
-      var ym = pt + ih - meta / topoP * ih; sv += '<line x1="' + pl + '" x2="' + (W - pr) + '" y1="' + ym + '" y2="' + ym + '" class="mo-meta"/><text x="' + (W - pr - 4) + '" y="' + (ym - 6) + '" text-anchor="end" class="mo-metat">meta ' + meta + "%</text>";
+      for (var gp = 0; gp <= topoP; gp += pP) { var yp = pt + ih - gp / topoP * ih; sv += '<text x="' + (W - pr + 8) + '" y="' + (yp + 4) + '" class="ax axp">' + gp + "%</text>"; }
+      var ym = pt + ih - meta / topoP * ih; sv += '<line x1="' + pl + '" x2="' + (W - pr) + '" y1="' + ym + '" y2="' + ym + '" class="mo-meta"/><text x="' + (W - pr - 4) + '" y="' + (ym - 6) + '" text-anchor="end" class="mo-metat">meta ' + meta + "% (escala da direita)</text>";
       var pts = [];
       serie.forEach(function (x, i) {
         var bh = x.h / topoH * ih, bx = pl + i * bw + bw * .2, cx = pl + i * bw + bw / 2, py = pt + ih - x.p / topoP * ih;
