@@ -1077,7 +1077,7 @@ window.iniciarPainel = function (D) {
 
     var kpis = '<div class="kpis kpis5 kpis-st">' + ST.map(function (s) {
       var n = cont[s.l], pc = total ? n / total * 100 : 0;
-      return '<article class="kpi c-' + s.id + '"><div class="kh">' + ico(s.icone) + '<span class="kl">' + s.nome + '</span></div><strong class="kv">' + num(n, 0) + '</strong>' +
+      return '<article class="kpi c-' + s.id + ((fco.st || "O") === s.l ? " sel" : "") + '" data-kst="' + s.l + '" role="button" tabindex="0" aria-pressed="' + ((fco.st || "O") === s.l) + '" title="Clique para ver a lista desses equipamentos"><div class="kh">' + ico(s.icone) + '<span class="kl">' + s.nome + '</span></div><strong class="kv">' + num(n, 0) + '</strong>' +
         '<span class="kbar" aria-hidden="true"><i style="width:' + pc.toFixed(1) + '%"></i></span><span class="ks">' + (total ? num(pc, 1) + "% da frota" : "&nbsp;") + "</span></article>";
     }).join("") + '<article class="kpi c-pen"><div class="kh">' + ico("M12 3l9 16H3zM12 10v4M12 17h.01") + '<span class="kl">Pendências</span></div><strong class="kv">' + num(nPend, 0) + '</strong><span class="kbar vazio" aria-hidden="true"></span><span class="ks">em campo</span></article></div>';
 
@@ -1102,18 +1102,21 @@ window.iniciarPainel = function (D) {
     });
     var evol = '<section class="card"><h3>Conexão por dia</h3><p class="cs">Veículos conectados e offline em cada dia do período. Clique num ponto para ver o dia.</p>' + linhaDias(serie.slice(k0, k1 + 1), K.dias.slice(k0, k1 + 1), di - k0, k0) + "</section>";
 
-    // Equipamentos offline no dia, do que tem menos dias para o que tem mais.
-    var sem = linhasDia.filter(function (x) { return x.s === "O"; }).map(function (x) {
-      var a = ehHoje ? K.atual[x.f] : null, h = K.hist[x.f], diasOff = 0;
-      for (var k = di; k >= 0 && h[k] === "O"; k--) diasOff++;
-      return { f: x.f, dias: a ? a.dias : diasOff, ult: a ? a.ult : "" };
+    // Lista de equipamentos do status escolhido nos cards (padrão: offline; 20/11/2026), do que tem menos dias no status para o que tem mais.
+    var stSel = fco.st || "O", stObj = ST.filter(function (x) { return x.l === stSel; })[0];
+    var B_ST = { O: "critico", C: "bom", M: "man", P: "atencao" };
+    var sem = linhasDia.filter(function (x) { return x.s === stSel; }).map(function (x) {
+      var a = ehHoje ? K.atual[x.f] : null, h = K.hist[x.f], dS = 0;
+      for (var k = di; k >= 0 && letraSt(h[k]) === stSel; k--) dS++;
+      return { f: x.f, dias: stSel === "O" && a ? a.dias : dS, ult: a ? a.ult : "", man: a && a.manual && a.manual.desde ? a.manual.desde : "" };
     }).sort(function (a, b) { return a.dias - b.dias || a.f.localeCompare(b.f); });
-    var tab = '<section class="card tab-card"><h3>Equipamentos offline <span class="cnt off">' + sem.length + '</span></h3><p class="cs">Em ' + dbr(K.dias[di]) + ", do que está há menos dias sem comunicar para o que está há mais.</p>" +
-      (sem.length ? '<div class="scroll rolagem alta"><table class="tb tb-k tb-off"><thead><tr><th scope="col">Frota</th><th scope="col">Processo</th><th scope="col" class="r">Dias</th>' + (ehHoje ? '<th scope="col">Última conexão</th>' : "") + "</tr></thead><tbody>" + sem.map(function (x) {
+    var expl = { O: "do que está há menos dias sem comunicar para o que está há mais", C: "do que está há menos dias conectado para o que está há mais", M: "do que está há menos dias em manutenção para o que está há mais", P: "do que está há menos dias parado para o que está há mais" }[stSel];
+    var tab = '<section class="card tab-card"><h3>Equipamentos ' + (stSel === "O" ? "offline" : stSel === "C" ? "conectados" : stSel === "M" ? "em manutenção" : "parados") + ' <span class="cnt' + (stSel === "O" ? " off" : "") + '">' + sem.length + '</span></h3><p class="cs">Em ' + dbr(K.dias[di]) + ", " + expl + ". Clique nos cards de cima para trocar o status.</p>" +
+      (sem.length ? '<div class="scroll rolagem alta"><table class="tb tb-k tb-off"><thead><tr><th scope="col">Frota</th><th scope="col">Processo</th><th scope="col" class="r" title="Dias seguidos nesse status">Dias</th>' + (ehHoje ? '<th scope="col">Última conexão</th>' : "") + "</tr></thead><tbody>" + sem.map(function (x) {
         var v = F[x.f];
-        return '<tr><th scope="row" title="' + esc([v.placa, v.grupo].filter(Boolean).join(" · ")) + '">' + esc(x.f) + (v.placa ? " <small>" + esc(v.placa) + "</small>" : "") + "</th><td title=\"" + esc(v.processo) + "\">" + esc(v.processo) + '</td><td class="r"><span class="b critico">' + num(x.dias, 0) + "</span></td>" +
+        return '<tr><th scope="row" title="' + esc([v.placa, v.grupo].filter(Boolean).join(" · ")) + '">' + esc(x.f) + (v.placa ? " <small>" + esc(v.placa) + "</small>" : "") + "</th><td title=\"" + esc(v.processo) + "\">" + esc(v.processo) + '</td><td class="r"><span class="b ' + B_ST[stSel] + '"' + (x.man ? ' title="Na planilha desde ' + esc(x.man) + '"' : "") + ">" + num(x.dias, 0) + "</span></td>" +
           (ehHoje ? "<td>" + (x.ult ? esc(x.ult.slice(8, 10) + "/" + x.ult.slice(5, 7) + " " + x.ult.slice(11)) : "") + "</td>" : "") + "</tr>";
-      }).join("") + "</tbody></table></div>" : '<p class="cs">Nenhum equipamento offline nesse dia.</p>') + "</section>";
+      }).join("") + "</tbody></table></div>" : '<p class="cs">Nenhum equipamento ' + esc(stObj.um.toLowerCase()) + " nesse dia.</p>") + "</section>";
 
     // Status por processo: colunas empilhadas (para cima). Clique para filtrar.
     var porP = {};
@@ -2034,6 +2037,8 @@ window.iniciarPainel = function (D) {
     if (kd) { fco.dia = +kd.getAttribute("data-kdia"); render(); return; }
     var tb = e.target.closest("[data-turno]");
     if (tb) { trocaTurno(+tb.dataset.turno); return; }
+    var ks = e.target.closest("[data-kst]");
+    if (ks) { fco.st = ks.dataset.kst; render(); return; }
     var hb = e.target.closest("[data-hora]");
     if (hb) { trocaHora(+hb.dataset.hora); return; }
     if (e.target.closest("[data-top5]")) { trocaTop5(); return; }
@@ -2082,6 +2087,8 @@ window.iniciarPainel = function (D) {
     if (ka && e.target === ka && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); trocaTipo(ka.dataset.tipo); return; }
     var hk = e.target.closest && e.target.closest("[data-hora]");
     if (hk && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); trocaHora(+hk.dataset.hora); return; }
+    var kk = e.target.closest && e.target.closest("[data-kst]");
+    if (kk && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); fco.st = kk.dataset.kst; render(); return; }
     var lt = e.target.closest && e.target.closest("li[data-turno]");
     if (lt && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); trocaTurno(+lt.dataset.turno); return; }
     var g = e.target.closest && e.target.closest("g[data-set]");
