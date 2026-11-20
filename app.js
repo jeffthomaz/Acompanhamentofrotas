@@ -542,10 +542,10 @@ window.iniciarPainel = function (D) {
         serie = blocos.filter(Boolean).reverse().map(function (qs) {
           var so = function (arr) { return sum(qs, function (q) { return (arr || [])[q] || 0; }); };
           var a = sum(vs, function (v) { return so(v.dl); }), b = sum(vs, function (v) { return so(v.do); });
-          return { r: dd(U[qs[0]]) + " a " + dd(U[qs[qs.length - 1]]), h: b, p: a ? b / a * 100 : 0, parcial: false, vo: function (v) { return so(v.do); }, vl: function (v) { return so(v.dl); } };
+          return { r: dd(U[qs[0]]) + " a " + dd(U[qs[qs.length - 1]]), h: b, l: a, p: a ? b / a * 100 : 0, parcial: false, vo: function (v) { return so(v.do); }, vl: function (v) { return so(v.dl); } };
         });
       } else
-      serie = ks2.map(function (q) { var a = sum(vs, function (v) { return (v.dl || [])[q] || 0; }), b = sum(vs, function (v) { return (v.do || [])[q] || 0; }); return { r: dd(U[q]), h: b, p: a ? b / a * 100 : 0, vo: function (v) { return (v.do || [])[q] || 0; }, vl: function (v) { return (v.dl || [])[q] || 0; } }; });
+      serie = ks2.map(function (q) { var a = sum(vs, function (v) { return (v.dl || [])[q] || 0; }), b = sum(vs, function (v) { return (v.do || [])[q] || 0; }); return { r: dd(U[q]), h: b, l: a, p: a ? b / a * 100 : 0, vo: function (v) { return (v.do || [])[q] || 0; }, vl: function (v) { return (v.dl || [])[q] || 0; } }; });
     } else {
       // Semana incompleta (a última, se os dados ainda não chegaram ao domingo) fica marcada com * e fora da comparação.
       var ultDia = (m.diasIncluidos || []).slice().sort().pop() || "", i0s = new Date((m.inicioSemana || "2026-01-01") + "T00:00:00");
@@ -554,7 +554,7 @@ window.iniciarPainel = function (D) {
         var fimS = new Date(i0s); fimS.setDate(fimS.getDate() + 7 * k + 6);
         var fimTxt = fimS.getFullYear() + "-" + ("0" + (fimS.getMonth() + 1)).slice(-2) + "-" + ("0" + fimS.getDate()).slice(-2);
         var parc = !!ultDia && fimTxt > ultDia;
-        return { r: w + (parc ? "*" : ""), faixa: w + " a " + dd(parc ? ultDia : fimTxt), h: b, p: a ? b / a * 100 : 0, parcial: parc, vo: function (v) { return v.ocioso[k] || 0; }, vl: function (v) { return v.ligado[k] || 0; } };
+        return { r: w + (parc ? "*" : ""), faixa: w + " a " + dd(parc ? ultDia : fimTxt), h: b, l: a, p: a ? b / a * 100 : 0, parcial: parc, vo: function (v) { return v.ocioso[k] || 0; }, vl: function (v) { return v.ligado[k] || 0; } };
       }).slice(-12);
     }
     var LH = m.consumoLh || 0.66, PRECO = m.precoLitro || 4; // etanol, média da região de Minas (informada em 20/11/2026)
@@ -572,17 +572,17 @@ window.iniciarPainel = function (D) {
     var litros = oc * LH, custo = litros * PRECO;
     var combo = (function () {
       var W = 900, H = 300, pl = 54, pr = 46, pt = 34, pb = 30, iw = W - pl - pr, ih = H - pt - pb, n = serie.length || 1;
-      var mxH = Math.max.apply(null, [1].concat(serie.map(function (x) { return x.h; }))), passo = [10, 20, 25, 50, 100, 200, 250, 500, 1000].filter(function (p) { return mxH / p <= 6; })[0] || 2000, topoH = Math.ceil(mxH * 1.12 / passo) * passo;
+      var mxH = Math.max.apply(null, [1].concat(serie.map(function (x) { return x.l; }))), passo = [10, 20, 25, 50, 100, 200, 250, 500, 1000].filter(function (p) { return mxH / p <= 6; })[0] || 2000, topoH = Math.ceil(mxH * 1.12 / passo) * passo;
       var mxP = Math.max(meta * 1.4, Math.max.apply(null, [0].concat(serie.map(function (x) { return x.p; }))) * 1.25), pP = mxP > 40 ? 10 : 5, topoP = Math.ceil(mxP / pP) * pP;
-      var bw = iw / n, sv = '<svg viewBox="0 0 ' + W + " " + H + '" class="mo-combo" role="img" aria-label="Horas de motor ocioso e percentual por período">';
+      var bw = iw / n, sv = '<svg viewBox="0 0 ' + W + " " + H + '" class="mo-combo" role="img" aria-label="Horas de ignição ligada e percentual de motor ocioso por período">';
       for (var g = 0; g <= topoH; g += passo) { var y = pt + ih - g / topoH * ih; sv += '<line x1="' + pl + '" x2="' + (W - pr) + '" y1="' + y + '" y2="' + y + '" class="gl"/><text x="' + (pl - 8) + '" y="' + (y + 4) + '" text-anchor="end" class="ax">' + num(g, 0) + " h</text>"; }
       for (var gp = 0; gp <= topoP; gp += pP) { var yp = pt + ih - gp / topoP * ih; sv += '<text x="' + (W - pr + 8) + '" y="' + (yp + 4) + '" class="ax axp">' + gp + "%</text>"; }
       var ym = pt + ih - meta / topoP * ih; sv += '<line x1="' + pl + '" x2="' + (W - pr) + '" y1="' + ym + '" y2="' + ym + '" class="mo-meta"/><text x="' + (W - pr - 4) + '" y="' + (ym - 6) + '" text-anchor="end" class="mo-metat">meta ' + meta + "% (escala da direita)</text>";
       var pts = [];
       serie.forEach(function (x, i) {
-        var bh = x.h / topoH * ih, bx = pl + i * bw + bw * .2, cx = pl + i * bw + bw / 2, py = pt + ih - x.p / topoP * ih;
-        sv += '<g class="mo-col' + (x.r === moSel ? " sel" : moSel ? " fora" : "") + '" data-mobar="' + esc(x.r) + '" role="button" tabindex="0" aria-pressed="' + (x.r === moSel) + '"><rect x="' + (pl + i * bw).toFixed(1) + '" y="' + pt + '" width="' + bw.toFixed(1) + '" height="' + ih + '" class="mo-hit"/><rect x="' + bx.toFixed(1) + '" y="' + (pt + ih - bh).toFixed(1) + '" width="' + (bw * .6).toFixed(1) + '" height="' + bh.toFixed(1) + '" rx="3" class="mo-bar' + (x.p > meta ? " acima" : "") + '"><title>' + x.r + ": " + horas(x.h) + " · clique para ver as frotas no Top 5</title></rect></g>" +
-          '<text x="' + cx.toFixed(1) + '" y="' + (pt + ih - bh - 8).toFixed(1) + '" text-anchor="middle" class="mo-bl">' + horas(x.h) + "</text>" +
+        var bh = x.l / topoH * ih, bx = pl + i * bw + bw * .2, cx = pl + i * bw + bw / 2, py = pt + ih - x.p / topoP * ih;
+        sv += '<g class="mo-col' + (x.r === moSel ? " sel" : moSel ? " fora" : "") + '" data-mobar="' + esc(x.r) + '" role="button" tabindex="0" aria-pressed="' + (x.r === moSel) + '"><rect x="' + (pl + i * bw).toFixed(1) + '" y="' + pt + '" width="' + bw.toFixed(1) + '" height="' + ih + '" class="mo-hit"/><rect x="' + bx.toFixed(1) + '" y="' + (pt + ih - bh).toFixed(1) + '" width="' + (bw * .6).toFixed(1) + '" height="' + bh.toFixed(1) + '" rx="3" class="mo-bar' + (x.p > meta ? " acima" : "") + '"><title>' + x.r + ": ignição ligada " + horas(x.l) + ", motor ocioso " + horas(x.h) + " (" + num(x.p, 1) + "%) · clique para ver as frotas no Top 5</title></rect></g>" +
+          '<text x="' + cx.toFixed(1) + '" y="' + (pt + ih - bh - 8).toFixed(1) + '" text-anchor="middle" class="mo-bl">' + horas(x.l) + "</text>" +
           '<text x="' + cx.toFixed(1) + '" y="' + (H - 8) + '" text-anchor="middle" class="ax">' + x.r + "</text>";
         pts.push([cx, py, x.p]);
       });
@@ -602,7 +602,7 @@ window.iniciarPainel = function (D) {
       return "<li><span>Frota <b>" + esc(r.v.id) + "</b><small>" + esc(r.v.processo || "") + "</small></span><strong>" + horas(r.li) + "</strong></li>";
     }).join("") + "</ol></div>" : "";
     var piorProc = lpP[0];
-    var painelMO = '<div class="mo-g1"><section class="card mo-card"><div class="mo-h"><h3><span class="mo-ic">▮▮</span> Evolução do motor ocioso</h3><ul class="mo-leg"><li><i class="b"></i>Tempo ocioso (h)</li><li><i class="b r"></i>Acima da meta</li><li><i class="l"></i>Percentual (%)</li></ul></div>' + combo + (kds ? "" : '<p class="mo-nota">Cada barra representa uma semana, de segunda a domingo (o rótulo é o primeiro dia da semana).</p>') + '<p class="mo-nota">Clique numa barra para ver no Top 5 as frotas mais ociosas ' + (serie.length && serie[0].parcial === undefined ? "do dia" : "da semana") + ".</p></section>" +
+    var painelMO = '<div class="mo-g1"><section class="card mo-card"><div class="mo-h"><h3><span class="mo-ic">▮▮</span> Evolução do motor ocioso</h3><ul class="mo-leg"><li><i class="b"></i>Ignição ligada (h)</li><li><i class="b r"></i>Acima da meta</li><li><i class="l"></i>% motor ocioso</li></ul></div>' + combo + (kds ? "" : '<p class="mo-nota">Cada barra representa uma semana, de segunda a domingo (o rótulo é o primeiro dia da semana).</p>') + '<p class="mo-nota">Clique numa barra para ver no Top 5 as frotas mais ociosas ' + (serie.length && serie[0].parcial === undefined ? "do dia" : "da semana") + ".</p></section>" +
       '<section class="card mo-card"><div class="longas-h"><h3>Top 5 veículos' + (xSel ? " · " + (xSel.parcial === undefined ? "dia " : "semana de ") + esc(xSel.r.replace("*", "")) : "") + "</h3>" + (xSel ? '<button type="button" class="limpar" data-mobar-todos="1">Ver período todo</button>' : "") + '</div><ol class="mo-top">' + (top5.length ? "" : "<li><span></span><span>Nenhuma frota com motor ocioso nesse período.</span></li>") + top5.map(function (r, i) {
         return '<li><span class="mo-n">' + (i + 1) + '</span><span class="mo-f">Frota ' + esc(r.v.id) + '</span><span class="mo-pr" title="' + esc(r.v.processo || "") + '">' + esc((r.v.processo || "—").toLowerCase()) + '</span><span class="mo-b"><i style="width:' + (r.oc / mxT * 100).toFixed(1) + '%"></i></span><span class="mo-hh">' + horas(r.oc) + '</span><strong class="' + (r.pct > meta ? "acima" : "") + '">' + num(r.pct, 1) + "%</strong></li>";
       }).join("") + '</ol><p class="mo-nota">Horas ociosas ' + (xSel ? (xSel.parcial === undefined ? "no dia <b>" + esc(xSel.r) + "</b>" : "de <b>" + esc(xSel.faixa || xSel.r) + "</b>") : "de <b>" + (kds ? dd(fO.de) + " a " + dd(fO.ate) : esc((m.periodo || "").replace(/\/2026/g, ""))) + "</b>") + ' e % do tempo de motor ligado (vermelho acima da meta de ' + meta + "%).</p></section></div>" +
