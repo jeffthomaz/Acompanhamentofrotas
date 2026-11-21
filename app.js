@@ -738,7 +738,16 @@ window.iniciarPainel = function (D) {
     if (pm.localSel !== null && pm.localSel !== undefined && !porLocal[pm.localSel]) pm.localSel = null;
     var tabela = longasHtml(ev, P, V);
     pm.ultimo = { ev: ev, locais: locais };
-    return filtros + '<div class="head"><p class="lead">' + lead + "</p></div>" +
+    // Resumo em cards, no estilo da Conectividade (21/11/2026); o texto corrido continua no "lead" para leitores de tela.
+    var kc = function (cls, icone, rot, val, sub, extra) { return '<article class="kpi ' + cls + (extra || "") + '"><div class="kh">' + ico(icone) + '<span class="kl">' + rot + '</span></div><strong class="kv">' + val + '</strong><span class="ks">' + sub + "</span></article>"; };
+    var kpisPm = ev.length ? '<div class="kpis kpis5 kpis-st kpis-pm" role="group" aria-label="Resumo das permanências">' +
+      kc("c-pm1", "M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11zM12 10h.01", "Permanências", num(ev.length, 0), !F.f.todo ? perTexto(F.f) : "no período todo") +
+      kc("c-pm2", "M3 13l2-6h14l2 6v5H3zM7 18v2M17 18v2M6.5 14h.01M17.5 14h.01", "Frotas", num(nFrotas, 0), "com permanência") +
+      kc("c-pm3", "M12 7v5l3 2M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z", "Tempo parado", hmin(totMin), "somando todas") +
+      kc("c-pm4", "M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3zM9 3v15M15 6v15", "Locais", num(locais.length, 0), plural(locais.length, "local", "locais") + " com parada") +
+      (topo ? kc("c-pm5", "M3 9l2-5h14l2 5M4 9v11h16V9M3 9h18M9 20v-6h6v6", pm.medida === "tempo" ? "Mais tempo parado" : "Mais permanências", esc(topo.nome), pm.medida === "tempo" ? hmin(topoX.min) + " parados" : topoX.n + " " + plural(topoX.n, "vez", "vezes"), " kpi-nome") : "") +
+      '</div><p class="sr-only">' + lead + "</p>" : '<div class="head"><p class="lead">' + lead + "</p></div>";
+    return filtros + kpisPm +
       '<div class="mapa-g"><div class="mapa-esq"><section class="card mapa-card"><div id="mapa" class="mapa" role="region" aria-label="Mapa de calor das permanências"><p class="mapa-msg">Carregando mapa…</p></div>' +
       '<div class="escala"><span>Menos</span><i></i><span>Mais ' + (pm.medida === "tempo" ? "tempo parado" : "permanências") + "</span></div></section>" + tabela + "</div>" +
       '<div class="mapa-lado">' + ranking + "</div></div>";
