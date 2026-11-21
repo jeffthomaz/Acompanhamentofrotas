@@ -666,7 +666,7 @@ window.iniciarPainel = function (D) {
     if (fil_.processo && processos.indexOf(fil_.processo) < 0) fil_.processo = "";
     var hP = hier(Object.keys(V).filter(function (f) { return !fil_.processo || V[f].processo === fil_.processo; }), function (f) { return V[f]; }, "p");
     var frotasProc = hP.itens.sort();
-    pm.frotas = pm.frotas.filter(function (f) { return frotasProc.indexOf(f) >= 0; });
+    pm.frotas = []; // filtro de frotas retirado da Permanência (21/11/2026)
     var sel = pm.frotas.length ? pm.frotas : frotasProc, set = {};
     sel.forEach(function (f) { set[f] = 1; });
     var diasEv = unicos(P.eventos.map(function (e) { return e[5]; })).sort();
@@ -705,16 +705,10 @@ window.iniciarPainel = function (D) {
     var totMin = sum(ev, function (e) { return e[3]; });
     var nFrotas = Object.keys(ev.reduce(function (o, e) { o[e[0]] = 1; return o; }, {})).length;
 
-    var listaFrotas = F.frotasProc.map(function (f) {
-      var v = V[f], on = !pm.frotas.length || pm.frotas.indexOf(f) >= 0;
-      return '<label class="chk"><input type="checkbox" data-frota="' + esc(f) + '"' + (pm.frotas.length && on ? " checked" : "") + "><span><b>" + esc(f) + "</b> " + esc([v.placa, fil_.processo ? v.responsavel : v.processo].filter(Boolean).join(" · ")) + "</span></label>";
-    }).join("");
-    var rotFrotas = pm.frotas.length ? pm.frotas.length + " de " + F.frotasProc.length + " selecionadas" : "Todas (" + F.frotasProc.length + ")";
     var filtros = '<div class="filtros"><label>Processo<select data-fil="processo" id="p-processo">' + opcoes(F.processos, fil_.processo, D.escopo && D.escopo !== "todos" ? "Todos os meus processos" : "Todos os processos") + "</select></label>" + F.hierHtml +
-      '<div class="campo"><span class="rot">Frotas</span><details class="frotas" id="p-frotas"' + (pm.abertoFrotas ? " open" : "") + '><summary>' + rotFrotas + '</summary><div class="fl-acoes"><button type="button" data-frotas="todas">Marcar todas</button><button type="button" data-frotas="limpar">Ver todas sem filtro</button></div><div class="fl-lista">' + listaFrotas + "</div></details></div>" +
       (F.diasEv.length ? perControle("permanencia", F.st, F.diasEv, F.f) : "") +
       '<div class="campo"><span class="rot">Calor por</span><div class="pills" role="group" aria-label="Medida do mapa de calor"><button type="button" data-medida="tempo" aria-pressed="' + (pm.medida === "tempo") + '">Tempo parado</button><button type="button" data-medida="vezes" aria-pressed="' + (pm.medida === "vezes") + '">Nº de permanências</button></div></div>' +
-      (fil_.processo || hierAtiva() || pm.frotas.length || F.st.p !== F.st.padrao ? '<button type="button" class="limpar" data-limpar="1">Limpar filtros</button>' : "") + "</div>";
+      (fil_.processo || hierAtiva() || F.st.p !== F.st.padrao ? '<button type="button" class="limpar" data-limpar="1">Limpar filtros</button>' : "") + "</div>";
 
     // Nas observações, só estabelecimentos (posto, padaria, restaurante...), nunca cercas com nome de colaborador.
     var topoX = locais.filter(function (x) { return P.locais[x.i].tipo === "estabelecimento"; })[0];
