@@ -498,12 +498,14 @@ window.iniciarPainel = function (D) {
       return a ? b / a * 100 : 0;
     });
     var acima = rows.filter(function (r) { return r.pct > meta; }).sort(function (a, b) { return b.pct - a.pct; });
+    // Ativos e inativos (ferramentas/frotas_ativas.json, marcado no gerar_acesso.py), em qualquer período (22/11/2026).
+    var nIna = rows.filter(function (r) { return r.v.inativa; }).length, nAtv = rows.length - nIna;
 
     var filtros = '<div class="filtros"><label>Processo<select data-fil="processo" id="o-processo">' + opcoes(processos, fil_.processo, D.escopo && D.escopo !== "todos" ? "Todos os meus processos" : "Todos os processos") + "</select></label>" +
       hO.html +
       (diasOp.length ? perControle("motor-ocioso", stO, diasOp, fO) : "") +
       (fil_.processo || hierAtiva() || stO.p !== stO.padrao ? '<button type="button" class="limpar" data-limpar="1">Limpar filtros</button>' : "") +
-      '<p class="ctx">' + rows.length + " " + plural(rows.length, "veículo leve", "veículos leves") + ", " + (kds ? (fO.de === fO.ate ? "em " : "de ") + perTexto(fO) : esc(m.periodo)) + "</p></div>";
+      '<p class="ctx">' + rows.length + " " + plural(rows.length, "veículo leve", "veículos leves") + " (" + nAtv + " " + plural(nAtv, "ativo", "ativos") + ", " + nIna + " " + plural(nIna, "inativo", "inativos") + "), " + (kds ? (fO.de === fO.ate ? "em " : "de ") + perTexto(fO) : esc(m.periodo)) + "</p></div>";
 
     // Resumo do período: saiu do topo e foi para os Insights (20/11/2026).
     var insResumo = '<li><span class="mo-ii">%</span><span>' + (kds ? (fO.de === fO.ate ? "Em " : "De ") + perTexto(fO) + ", os" : "Os") + " veículos ficaram <b>" + num(pct, 1) + "%</b> do tempo de motor ligado parados, <b>" + horas(oc) + "</b> de " + horas(li) + ".</span></li>" +

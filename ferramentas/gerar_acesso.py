@@ -493,6 +493,20 @@ def remover_locais(D):
     P["eventos"] = [e for e in P["eventos"] if e[4] not in ix]
 
 
+def marcar_ativas(D):
+    """Marca no Motor ocioso as frotas inativas (inativa: 1) pela ferramentas/frotas_ativas.json, para o painel
+    mostrar quantos veículos ativos e inativos há em qualquer período (22/11/2026). Frota fora da lista conta como ativa."""
+    caminho = os.path.join(os.path.dirname(os.path.abspath(__file__)), "frotas_ativas.json")
+    if not os.path.exists(caminho) or "motorOcioso" not in D:
+        return
+    A = {norm(f).upper(): v for f, v in json.load(open(caminho, encoding="utf-8"))["frotas"].items()}
+    for v in D["motorOcioso"].get("veiculos", []):
+        if A.get(norm(v.get("id", "")).upper()) is False:
+            v["inativa"] = 1
+        else:
+            v.pop("inativa", None)
+
+
 def remover_inativas(D):
     """Tira da Conectividade (frota atual) as frotas de ferramentas/frotas_inativas.json; o histórico das outras abas fica."""
     caminho = os.path.join(os.path.dirname(os.path.abspath(__file__)), "frotas_inativas.json")
@@ -518,6 +532,7 @@ def preparar(fonte):
         print("%d frota(s) sem processo completadas pelo processo de outra aba" % len(feitos))
     remover_excluidas(D)
     remover_inativas(D)
+    marcar_ativas(D)
     remover_locais(D)
     tiradas = remover_ocorrencias(D)
     if tiradas:

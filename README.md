@@ -36,6 +36,13 @@ Atualizar usuários ou dados:
 
     python ferramentas/gerar_acesso.py cadastros.xlsx dados-fonte.json acesso.js
 
+## Frotas ativas e inativas no Motor ocioso
+
+Desde 22/11/2026 a aba Motor ocioso mostra, em qualquer filtro de período, processo ou hierarquia, quantos dos
+veículos leves estão ativos e quantos inativos (ex.: "155 veículos leves (139 ativos, 16 inativos)"). A fonte é
+`ferramentas/frotas_ativas.json` (SIM/NÃO da tabela unificada, corrigida pelo usuário); `gerar_acesso.py` marca
+`inativa: 1` nos veículos com NÃO. Frota fora da lista conta como ativa.
+
 ## Frotas excluídas
 
 `ferramentas/frotas_excluidas.json` lista as frotas que ficam fora de todas as abas (inativas ou
