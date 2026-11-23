@@ -94,6 +94,7 @@ def recorte(D, procs):
             M = C["mapa"]
             ok = {i for i, g in enumerate(M["grupos"]) if chave_proc(g[1]) in procs}
             M["pts"] = [e for e in M["pts"] if e[2] in ok]
+        C.pop("diverg", None)  # divergências ocorrências × tratativas: só no escopo "todos"
         if not C["ev"]:
             d.pop("comportamento")
     if "motorOcioso" in d:

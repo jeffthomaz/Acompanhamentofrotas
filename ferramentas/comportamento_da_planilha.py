@@ -143,6 +143,7 @@ def com_tratativas(leves, pesadas, T):
             return int(h[:2]) * 60 + int(h[3:5])
         except (TypeError, ValueError):
             return None
+    div = divergencias(leves + pesadas, trat, ini, tipo_id)
     fora = lambda r: r["d"] >= ini and tipo_id(r) in tt
     tiradas = sum(1 for r in leves + pesadas if fora(r))
     leves, pesadas = [r for r in leves if not fora(r)], [r for r in pesadas if not fora(r)]
@@ -163,7 +164,40 @@ def com_tratativas(leves, pesadas, T):
         (leves if t["o"] == "Leve" else pesadas).append(r)
     print("tratativas: %d ocorrência(s) de celular/cinto/distração/faixa/cigarro das ocorrências trocadas por %d tratativa(s) (desde %s)"
           % (tiradas, len(trat), ini))
-    return leves, pesadas
+    return leves, pesadas, div
+
+
+def divergencias(rows, trat, ini, tipo_id):
+    """Incoerências entre ocorrências e tratativas (pedido do usuário em 23/11/2026):
+    - ocorrência de celular, sem cinto, cigarro ou faixa (último comentário) sem tratativa;
+    - tratativa (qualquer dos 5 tipos) sem ocorrência equivalente.
+    Casa por frota e tipo, com até 1 dia de diferença (turno C passa da meia-noite).
+    Ocorrências tiradas a pedido do usuário (ocorrencias_excluidas.json) não entram."""
+    from datetime import date as _d
+    aqui = os.path.dirname(os.path.abspath(__file__))
+    exc = set()
+    ce = os.path.join(aqui, "ocorrencias_excluidas.json")
+    if os.path.exists(ce):
+        exc = {(str(o["frota"]), o["data"], o["tipo"]) for o in json.load(open(ce, encoding="utf-8")).get("ocorrencias", [])}
+    alvo = {"celular", "cinto", "cigarro", "faixa"}
+    oc = [(str(r["f"]), r["d"], tipo_id(r), r.get("hs") or "") for r in rows if r["d"] >= ini and tipo_id(r) in TRAT_TIPOS]
+    tr = [(t["f"], t["d"], t["t"], (t.get("h") or "")[:8]) for t in trat]
+    dd = lambda a, b: abs((_d.fromisoformat(a) - _d.fromisoformat(b)).days)
+    livre = list(range(len(tr)))
+    sem_trat = []
+    for f, d, t, h in sorted(oc, key=lambda x: (x[1], x[3])):
+        k = next((i for i in livre if tr[i][0] == f and tr[i][2] == t and dd(tr[i][1], d) <= 1), None)
+        if k is not None:
+            livre.remove(k)
+        elif t in alvo and (f, d, t) not in exc:
+            sem_trat.append({"f": f, "d": d, "h": h[:5], "t": t})
+    usados_oc = {}
+    for f, d, t, h in oc:
+        usados_oc.setdefault((f, t), []).append(d)
+    sem_oc = [{"f": tr[i][0], "d": tr[i][1], "h": tr[i][3][:5], "t": tr[i][2]} for i in livre
+              if not any(dd(x, tr[i][1]) <= 1 for x in usados_oc.get((tr[i][0], tr[i][2]), []))]
+    print("divergências: %d ocorrência(s) sem tratativa, %d tratativa(s) sem ocorrência" % (len(sem_trat), len(sem_oc)))
+    return {"ini": ini, "ocSemTrat": sem_trat, "tratSemOc": sorted(sem_oc, key=lambda x: (x["d"], x["h"]))}
 
 
 def processar(wb, destino, trat=None):
@@ -181,10 +215,15 @@ def processar(wb, destino, trat=None):
         vistos.add(k); return True
     leves, pesadas = [r for r in leves if unico(r)], [r for r in pesadas if unico(r)]
     print("%d linha(s) repetida(s) tirada(s)" % len(rep))
+    div = None
     if trat and trat.get("linhas"):
-        leves, pesadas = com_tratativas(leves, pesadas, trat)
+        leves, pesadas, div = com_tratativas(leves, pesadas, trat)
     print("planilha: %d linhas de frota leve, %d de frota pesada" % (len(leves), len(pesadas)))
     montar(leves, pesadas, base, destino, manter_faixa=False)
+    if div is not None:
+        D = json.load(open(destino, encoding="utf-8"))
+        D["comportamento"]["diverg"] = div
+        json.dump(D, open(destino, "w", encoding="utf-8"), ensure_ascii=False)
 
 
 if __name__ == "__main__":
