@@ -1,0 +1,11 @@
+{
+  "_obs": "Divergências ocorrências × tratativas já conferidas pelo usuário: não aparecem mais no quadro. tipo = celular, cinto, cigarro, faixa, distracao.",
+  "divergencias": [
+    {
+      "frota": "40863",
+      "data": "2026-08-19",
+      "tipo": "celular",
+      "motivo": "duas ocorrências do mesmo colaborador, uma tratativa só (conferido pelo usuário em 23/11/2026)"
+    }
+  ]
+}

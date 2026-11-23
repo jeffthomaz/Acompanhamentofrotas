@@ -179,6 +179,9 @@ def divergencias(rows, trat, ini, tipo_id):
     ce = os.path.join(aqui, "ocorrencias_excluidas.json")
     if os.path.exists(ce):
         exc = {(str(o["frota"]), o["data"], o["tipo"]) for o in json.load(open(ce, encoding="utf-8")).get("ocorrencias", [])}
+    ca = os.path.join(aqui, "divergencias_aceitas.json")  # já conferidas pelo usuário
+    if os.path.exists(ca):
+        exc |= {(str(o["frota"]), o["data"], o["tipo"]) for o in json.load(open(ca, encoding="utf-8")).get("divergencias", [])}
     alvo = {"celular", "cinto", "cigarro", "faixa"}
     oc = [(str(r["f"]), r["d"], tipo_id(r), r.get("hs") or "") for r in rows if r["d"] >= ini and tipo_id(r) in TRAT_TIPOS]
     tr = [(t["f"], t["d"], t["t"], (t.get("h") or "")[:8]) for t in trat]
@@ -195,7 +198,8 @@ def divergencias(rows, trat, ini, tipo_id):
     for f, d, t, h in oc:
         usados_oc.setdefault((f, t), []).append(d)
     sem_oc = [{"f": tr[i][0], "d": tr[i][1], "h": tr[i][3][:5], "t": tr[i][2]} for i in livre
-              if not any(dd(x, tr[i][1]) <= 1 for x in usados_oc.get((tr[i][0], tr[i][2]), []))]
+              if not any(dd(x, tr[i][1]) <= 1 for x in usados_oc.get((tr[i][0], tr[i][2]), []))
+              and (tr[i][0], tr[i][1], tr[i][2]) not in exc]
     print("divergências: %d ocorrência(s) sem tratativa, %d tratativa(s) sem ocorrência" % (len(sem_trat), len(sem_oc)))
     return {"ini": ini, "ocSemTrat": sem_trat, "tratSemOc": sorted(sem_oc, key=lambda x: (x["d"], x["h"]))}
 
