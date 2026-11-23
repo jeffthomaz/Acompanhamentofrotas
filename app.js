@@ -2246,6 +2246,7 @@ window.iniciarPainel = function (D) {
     dl.addEventListener("close", function () { urls.forEach(URL.revokeObjectURL); dl.remove(); });
     dl.showModal();
   }
-  if (btFotos) { btFotos.hidden = false; btFotos.onclick = tirarFotos; }
+  var FOTOS_LIGADO = false; // desabilitado a pedido do usuário em 23/11/2026; para voltar, trocar para true
+  if (btFotos) { btFotos.hidden = !FOTOS_LIGADO; if (FOTOS_LIGADO) btFotos.onclick = tirarFotos; }
   render();
 };
