@@ -561,11 +561,19 @@ def marcar_apresentacao(usuarios):
     except (OSError, ValueError, KeyError):
         logins = []
     ids = {id_usuario(l) for l in logins}
+    # dv=1: vê o quadro de divergências ocorrências × tratativas (ferramentas/divergencias_usuarios.json, 23/11/2026)
+    try:
+        dvl = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "divergencias_usuarios.json"), encoding="utf-8"))["usuarios"]
+    except (OSError, ValueError, KeyError):
+        dvl = []
+    dvs = {id_usuario(l) for l in dvl}
     out = {}
     for uid, u in usuarios.items():
-        u = {k: v for k, v in u.items() if k != "ap"}
+        u = {k: v for k, v in u.items() if k not in ("ap", "dv")}
         if uid in ids:
             u["ap"] = 1
+        if uid in dvs:
+            u["dv"] = 1
         out[uid] = u
     return out
 
