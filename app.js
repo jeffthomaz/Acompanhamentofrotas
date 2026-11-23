@@ -558,7 +558,7 @@ window.iniciarPainel = function (D) {
           var pal = String(x.nome).split(/\s+/).map(function (w) { return /^(SESMT|CCT|TI|RH)$/.test(w) ? w : w.toLowerCase(); }), lin = [], cur = "";
           pal.forEach(function (w) { if (cur && (cur + " " + w).length > 14) { lin.push(cur); cur = w; } else cur = cur ? cur + " " + w : w; }); if (cur) lin.push(cur);
           lin = lin.slice(0, 3);
-          sv += '<g class="mo-col' + (fil_.processo ? (fil_.processo === x.nome ? " sel" : " fora") : "") + '" data-set="processo:' + esc(x.nome) + '" role="button" tabindex="0" aria-pressed="' + (fil_.processo === x.nome) + '"><rect x="' + (pl + i * bw).toFixed(1) + '" y="' + pt + '" width="' + bw.toFixed(1) + '" height="' + (H - pt) + '" class="mo-hit"/>' +
+          sv += '<g class="mo-col' + (fil_.processo ? (fil_.processo === x.nome ? " sel" : " fora") : "") + '" data-set="processo:' + esc(x.nome) + '" role="button" tabindex="0" aria-pressed="' + (fil_.processo === x.nome) + '"><rect x="' + (pl + i * bw).toFixed(1) + '" y="' + pt + '" width="' + bw.toFixed(1) + '" height="' + (H - pt) + '" class="mo-hit" fill="#000" fill-opacity="0"/>' +
             '<rect x="' + (cx - bw * .3).toFixed(1) + '" y="' + (pt + ih - bh).toFixed(1) + '" width="' + (bw * .6).toFixed(1) + '" height="' + Math.max(bh, 1).toFixed(1) + '" rx="3" class="mo-bar' + (over ? " acima" : "") + '"><title>' + esc(x.nome) + ": " + num(x.pct, 1) + "% · " + horas(x.oc) + " ociosas de " + horas(x.li) + " de ignição · " + x.n + " " + plural(x.n, "veículo", "veículos") + " · clique para ver os veículos</title></rect>" +
             '<text x="' + cx.toFixed(1) + '" y="' + (pt + ih - bh - 8).toFixed(1) + '" text-anchor="middle" class="mo-bl' + (over ? " acima" : "") + '">' + num(x.pct, 1) + "%</text>" +
             lin.map(function (t, j) { return '<text x="' + cx.toFixed(1) + '" y="' + (pt + ih + 16 + j * 13) + '" text-anchor="middle" class="ax mo-pn">' + esc(t) + "</text>"; }).join("") +
@@ -635,7 +635,7 @@ window.iniciarPainel = function (D) {
       var pts = [];
       serie.forEach(function (x, i) {
         var bh = x.l / topoH * ih, bx = pl + i * bw + bw * .2, cx = pl + i * bw + bw / 2, py = pt + ih - x.p / topoP * ih;
-        sv += '<g class="mo-col' + (x.r === moSel ? " sel" : moSel ? " fora" : "") + '" data-mobar="' + esc(x.r) + '" role="button" tabindex="0" aria-pressed="' + (x.r === moSel) + '"><rect x="' + (pl + i * bw).toFixed(1) + '" y="' + pt + '" width="' + bw.toFixed(1) + '" height="' + ih + '" class="mo-hit"/><rect x="' + bx.toFixed(1) + '" y="' + (pt + ih - bh).toFixed(1) + '" width="' + (bw * .6).toFixed(1) + '" height="' + bh.toFixed(1) + '" rx="3" class="mo-bar' + (x.p > meta ? " acima" : "") + '"><title>' + x.r + ": ignição ligada " + horas(x.l) + ", motor ocioso " + horas(x.h) + " (" + num(x.p, 1) + "%) · clique para ver as frotas no Top 5</title></rect></g>" +
+        sv += '<g class="mo-col' + (x.r === moSel ? " sel" : moSel ? " fora" : "") + '" data-mobar="' + esc(x.r) + '" role="button" tabindex="0" aria-pressed="' + (x.r === moSel) + '"><rect x="' + (pl + i * bw).toFixed(1) + '" y="' + pt + '" width="' + bw.toFixed(1) + '" height="' + ih + '" class="mo-hit" fill="#000" fill-opacity="0"/><rect x="' + bx.toFixed(1) + '" y="' + (pt + ih - bh).toFixed(1) + '" width="' + (bw * .6).toFixed(1) + '" height="' + bh.toFixed(1) + '" rx="3" class="mo-bar' + (x.p > meta ? " acima" : "") + '"><title>' + x.r + ": ignição ligada " + horas(x.l) + ", motor ocioso " + horas(x.h) + " (" + num(x.p, 1) + "%) · clique para ver as frotas no Top 5</title></rect></g>" +
           '<text x="' + cx.toFixed(1) + '" y="' + (pt + ih - bh - 8).toFixed(1) + '" text-anchor="middle" class="mo-bl">' + horas(x.l) + "</text>" +
           '<text x="' + cx.toFixed(1) + '" y="' + (H - 8) + '" text-anchor="middle" class="ax">' + x.r + "</text>";
         pts.push([cx, py, x.p]);
@@ -1373,7 +1373,7 @@ window.iniciarPainel = function (D) {
       if (v === null) s += '<rect class="rz-nd" x="' + x.toFixed(1) + '" y="' + (base - 2) + '" width="' + w.toFixed(1) + '" height="2" rx="1"/>';
       else { var h = Math.max(v / mx * (base - 4), v > 0 ? 3 : 1); s += '<rect class="rz-col' + (i === vals.length - 1 ? " ult" : "") + '" x="' + x.toFixed(1) + '" y="' + (base - h).toFixed(1) + '" width="' + w.toFixed(1) + '" height="' + h.toFixed(1) + '" rx="2"/>'; }
       s += '<text class="tl" x="' + cx + '" y="' + (H - 6) + '" text-anchor="middle">' + diaSem(dias[i]) + "</text>" +
-        '<rect class="rz-hit" x="' + (i * bw).toFixed(1) + '" y="0" width="' + bw.toFixed(1) + '" height="' + H + '"><title>' + esc(dica) + "</title></rect>";
+        '<rect class="rz-hit" fill="#000" fill-opacity="0" x="' + (i * bw).toFixed(1) + '" y="0" width="' + bw.toFixed(1) + '" height="' + H + '"><title>' + esc(dica) + "</title></rect>";
     });
     return s + "</svg>";
   }
@@ -1637,7 +1637,7 @@ window.iniciarPainel = function (D) {
           if (hh) g += '<rect class="rz-hbar' + (ePico[h] ? " pico" : "") + hSel + '" x="' + (x + bw * .14).toFixed(1) + '" y="' + (base - hh).toFixed(1) + '" width="' + (bw * .72).toFixed(1) + '" height="' + hh.toFixed(1) + '" rx="2"/>';
           if (ePico[h]) g += '<text class="rz-hv" x="' + (x + bw / 2).toFixed(1) + '" y="' + (base - hh - 5).toFixed(1) + '" text-anchor="middle">' + num(v, 0) + "</text>";
           if (h % 3 === 0) g += '<text class="tl" x="' + (x + bw / 2).toFixed(1) + '" y="' + (base + 14) + '" text-anchor="middle">' + pad(h) + "h</text>";
-          g += '<rect class="rz-hit" data-hora="' + h + '" role="button" tabindex="0" aria-pressed="' + !!(fil_.horas && fil_.horas[h]) + '" x="' + x.toFixed(1) + '" y="0" width="' + bw.toFixed(1) + '" height="' + (base + 4) + '"><title>' + esc(faixaH(h) + ": " + num(v, 0) + " " + plural(v, "ocorrência", "ocorrências") + (fil_.horas && fil_.horas[h] ? " · clique para tirar o filtro" : " · clique para filtrar por essa hora")) + "</title></rect>";
+          g += '<rect class="rz-hit" fill="#000" fill-opacity="0" data-hora="' + h + '" role="button" tabindex="0" aria-pressed="' + !!(fil_.horas && fil_.horas[h]) + '" x="' + x.toFixed(1) + '" y="0" width="' + bw.toFixed(1) + '" height="' + (base + 4) + '"><title>' + esc(faixaH(h) + ": " + num(v, 0) + " " + plural(v, "ocorrência", "ocorrências") + (fil_.horas && fil_.horas[h] ? " · clique para tirar o filtro" : " · clique para filtrar por essa hora")) + "</title></rect>";
         });
         g += '<line class="rz-hax" x1="' + pl + '" x2="' + (W - pr) + '" y1="' + base + '" y2="' + base + '"/></svg>';
         var lp = '<ol class="rz-pic">' + picos.map(function (x, i) {
@@ -2128,5 +2128,60 @@ window.iniciarPainel = function (D) {
     if (dz && previa[dz.dataset.desfazer]) { D[dz.dataset.desfazer] = previa[dz.dataset.desfazer].original; delete previa[dz.dataset.desfazer]; fco.dia = -1; render(); }
   });
   window.addEventListener("hashchange", render);
+
+  // ---------- Fotos dos painéis (23/11/2026) ----------
+  // Passa por cada aba com os filtros atuais, tira uma foto (PNG) de cada uma e baixa tudo num .zip.
+  var btFotos = document.getElementById("fotos");
+  function espera(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+  async function esperaMapas() {
+    for (var i = 0; i < 40; i++) { // até ~6 s para os mapas carregarem
+      var pend = painel.querySelectorAll(".leaflet-tile:not(.leaflet-tile-loaded)").length;
+      if (!pend) break;
+      await espera(150);
+    }
+    await espera(400);
+  }
+  // A captura não leva o CSS das classes dos gráficos (SVG): copia cor, traço e fonte de cada elemento para atributos.
+  // A aba é redesenhada depois da foto, então nada disso fica na tela.
+  function fixarSvg(raiz) {
+    var P = ["fill", "fill-opacity", "stroke", "stroke-width", "stroke-dasharray", "stroke-opacity", "opacity", "font-size", "font-weight", "font-family", "text-anchor", "dominant-baseline", "paint-order", "stroke-linejoin", "stroke-linecap"];
+    raiz.querySelectorAll("svg *").forEach(function (el) {
+      if (el.closest(".leaflet-container")) return;
+      var cs = getComputedStyle(el);
+      P.forEach(function (p) { var v = cs.getPropertyValue(p); if (v) el.setAttribute(p, v); });
+      if (cs.display === "none") el.setAttribute("display", "none");
+    });
+  }
+  async function tirarFotos() {
+    if (!window.htmlToImage || !window.JSZip) { alert("Não foi possível carregar a ferramenta de fotos. Atualize a página (Ctrl+F5) e tente de novo."); return; }
+    var orig = atual(), abas = ABAS.filter(function (a) { return a.id !== "apresentacao"; }), zip = new JSZip();
+    var agora = new Date(), p2 = function (n) { return (n < 10 ? "0" : "") + n; };
+    var carimbo = p2(agora.getDate()) + "-" + p2(agora.getMonth() + 1) + "-" + agora.getFullYear() + " " + p2(agora.getHours()) + "h" + p2(agora.getMinutes());
+    btFotos.disabled = true; document.body.classList.add("tirando-fotos");
+    var alvo = document.getElementById("captura") || document.body, ok = 0, falhas = [];
+    try {
+      for (var i = 0; i < abas.length; i++) {
+        btFotos.textContent = "Tirando fotos… " + (i + 1) + "/" + abas.length;
+        if (atual() !== abas[i].id) { location.hash = abas[i].id; await espera(350); } else render();
+        await esperaMapas();
+        fixarSvg(painel);
+        try {
+          var url = await window.htmlToImage.toPng(alvo, { pixelRatio: 1.5, backgroundColor: getComputedStyle(document.body).backgroundColor || "#eef0ec",
+            filter: function (n) { return !(n.id === "fotos" || n.id === "acesso" || (n.classList && n.classList.contains("leaflet-control-container"))); } });
+          zip.file(p2(i + 1) + " - " + abas[i].nome + ".png", url.split(",")[1], { base64: true }); ok++;
+        } catch (err) { falhas.push(abas[i].nome); console.error("foto " + abas[i].nome, err); }
+      }
+      if (ok) {
+        var blob = await zip.generateAsync({ type: "blob" }), a = document.createElement("a");
+        a.href = URL.createObjectURL(blob); a.download = "Painel monitoramento - fotos " + carimbo + ".zip";
+        document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 2000);
+      }
+      if (falhas.length) alert("Não consegui tirar a foto de: " + falhas.join(", ") + ". As outras foram baixadas.");
+    } finally {
+      if (atual() !== orig) location.hash = orig; else render();
+      btFotos.disabled = false; btFotos.textContent = "📷 Fotos dos painéis"; document.body.classList.remove("tirando-fotos");
+    }
+  }
+  if (btFotos) { btFotos.hidden = false; btFotos.onclick = tirarFotos; }
   render();
 };
