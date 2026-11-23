@@ -35,7 +35,7 @@ def escrever_csv(caminho, h, linhas):
         w.writerows(linhas)
 
 
-def comportamento(P, dados):
+def comportamento(P, dados, trat=None):
     wb = openpyxl.Workbook()
     wb.remove(wb.active)
     for nome, aba in P["abas"].items():
@@ -52,7 +52,7 @@ def comportamento(P, dados):
     ws.append(["PREFIXO", "", "", "PROCESSO"])
     for f, p in P["base"]:
         ws.append([f, "", "", p])
-    comportamento_da_planilha.processar(wb, dados)
+    comportamento_da_planilha.processar(wb, dados, trat=trat)
 
 
 def permanencia(P, dados):
@@ -131,9 +131,15 @@ def main(pedido, base):
         print("== Conectividade e Câmeras")
         feito += conectividade_e_cameras(P, base, dados, proc)
         json.dump(proc, open(proc_c, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+    tc = os.path.join(base, "tratativas.json")
+    if P.get("tratativas"):
+        # Tratativas (Notificação das Ocorrências, 23/11/2026): fonte de celular, sem cinto, distração, faixa e cigarro.
+        print("== Tratativas: %d" % len(P["tratativas"]["linhas"]))
+        json.dump(P["tratativas"], open(tc, "w", encoding="utf-8"), ensure_ascii=False, indent=0)
+        ind["tratativas"] = P["tratativas"]["arquivo"]
     if P.get("comportamento"):
         print("== Comportamental")
-        comportamento(P["comportamento"], dados)
+        comportamento(P["comportamento"], dados, trat=json.load(open(tc, encoding="utf-8")) if os.path.exists(tc) else None)
         ind["comportamento"] = P["comportamento"]["arquivo"]
         feito.append("Comportamental")
     if P.get("permanencia") and P["permanencia"]["arquivos"]:

@@ -18,6 +18,7 @@
   //   comp:    "SAFRA 2026 MONIT COMPORTAMENTAL" (planilha Nova e a subpasta EXPORTAR PASTAS)
   //   alertas: "COA - BASE DE DADOS MONITORAMENTO COMPORTAMENTAL" (CSVs Historico_Alertas)
   var NOVA = "Ocorrências monitoramento comportamental Nova..xlsx", EXPORT = "EXPORTAR PASTAS";
+  var TRAT = "Notificação das Ocorrências..xlsm"; // tratativas (23/11/2026): celular, sem cinto, distração, faixa e cigarro vêm daqui
   var PASTAS = {
     comp: { rotulo: "Comportamental", nome: "SAFRA 2026 MONIT COMPORTAMENTAL",
       usa: "Comportamental, Conectividade, Câmeras e Motor ocioso",
@@ -295,6 +296,36 @@
     });
   }
 
+  // ---------- Tratativas (Notificação das Ocorrências) ----------
+  // Só data, hora, frota, processo, tipo e coordenadas; sem colaborador, chapa, função ou gestor.
+  function tipoTrat(o) {
+    var u = chave(o == null ? "" : String(o));
+    return u.indexOf("CELULAR") >= 0 ? "celular" : u.indexOf("CINTO") >= 0 ? "cinto" : u.indexOf("DISTRA") >= 0 ? "distracao"
+      : u.indexOf("ULTRAPASSAGEM") >= 0 || u.indexOf("FAIXA") >= 0 ? "faixa" : u.indexOf("CIGARRO") >= 0 ? "cigarro" : "";
+  }
+  async function tratativas(arq) {
+    var L = await lerXlsx(arq, ["Frota Leve", "Frota Pesada"]), out = [], ini = "";
+    for (var nome of ["Frota Leve", "Frota Pesada"]) {
+      var linhas = L[nome] || [], hi = -1, cab = [];
+      for (var i = 0; i < Math.min(linhas.length, 6); i++) {
+        var c = (linhas[i] || []).map(function (x) { return chave(x == null ? "" : String(x)); });
+        if (c.indexOf("FROTA") >= 0 && c.indexOf("DATA") >= 0) { hi = i; cab = c; break; }
+      }
+      if (hi < 0) throw new Error("A aba " + nome + " da Notificação das Ocorrências não tem as colunas Data e Frota.");
+      var ix = function (n) { return cab.indexOf(n); }, I = { d: ix("DATA"), h: ix("HORA"), f: ix("FROTA"), p: ix("PROCESSO"), o: ix("OCORRÊNCIA"), la: ix("LAT"), lo: ix("LONG") };
+      for (var k = hi + 1; k < linhas.length; k++) {
+        var x = linhas[k]; if (!x || x[I.f] == null || x[I.d] == null) continue;
+        var di_ = dataIso(x[I.d]); if (di_ && (!ini || di_ < ini)) ini = di_; // início da planilha (qualquer tipo)
+        var t = tipoTrat(x[I.o]); if (!t) continue;
+        var f = x[I.f]; f = typeof f === "number" ? String(Math.round(f)) : String(f).trim();
+        var num_ = function (v) { var n = typeof v === "number" ? v : parseFloat(String(v == null ? "" : v).replace(",", ".")); return isFinite(n) && n !== 0 ? n : null; };
+        out.push({ o: nome === "Frota Leve" ? "Leve" : "Pesada", f: f, d: dataIso(x[I.d]), h: horaTxt(x[I.h]), t: t,
+          proc: I.p >= 0 && x[I.p] != null ? String(x[I.p]).trim() : "", lat: I.la >= 0 ? num_(x[I.la]) : null, lon: I.lo >= 0 ? num_(x[I.lo]) : null });
+      }
+    }
+    return { ini: ini, linhas: out.filter(function (r) { return r.d; }) };
+  }
+
   // ---------- Comportamental ----------
   async function comportamental(arq) {
     var L = await lerXlsx(arq, ["Frota Leve", "Frota Pesada", "BASE DE INFORMAÇÃO"]);
@@ -472,11 +503,19 @@
     var nova = await filho(comp, NOVA, false);
     if (!nova) throw new Error('Não achei a planilha "' + NOVA + '" na pasta do Comportamental.');
     var fn = await nova.getFile(), ic = ind.comportamento || {};
-    if (fn.size !== ic.tam || fn.lastModified !== ic.mod) {
+    var trh = await filho(comp, TRAT, false), ft = trh ? await trh.getFile() : null, it = ind.tratativas || {};
+    var trMudou = !!ft && (ft.size !== it.tam || ft.lastModified !== it.mod);
+    if (fn.size !== ic.tam || fn.lastModified !== ic.mod || trMudou) {
       msg("Lendo a planilha do Comportamental (pode levar 1 minuto)…");
       var C = await comportamental(fn);
       C.arquivo = { nome: fn.name, tam: fn.size, mod: fn.lastModified };
       pedido.comportamento = C; feito.push("Comportamental");
+      if (trMudou) {
+        msg("Lendo as tratativas (Notificação das Ocorrências)…");
+        var TR = await tratativas(ft);
+        pedido.tratativas = { arquivo: { nome: ft.name, tam: ft.size, mod: ft.lastModified }, ini: TR.ini, linhas: TR.linhas };
+        feito.push("Tratativas (" + pedido.tratativas.linhas.length + ")");
+      }
     }
 
     var dirA = alert;
@@ -554,7 +593,7 @@
   }
 
   // Usado só nos testes automáticos (ferramentas não chamam a rede).
-  window.__painelTeste = { pendencias: pendencias, comportamental: comportamental, alertas: alertas, boletim: boletim, carregarRegras: carregarRegras,
+  window.__painelTeste = { tratativas: tratativas, pendencias: pendencias, comportamental: comportamental, alertas: alertas, boletim: boletim, carregarRegras: carregarRegras,
     enviar: enviar, indice: indice, gravarStatus: gravarStatus, sha256: sha256,
     csv: async function (f) { var L = await lerCsv(f), x = /^Localizacao/i.test(f.name) ? selecionar(L, COLS_LOC) : null;
       return x ? { h: x.h, r: L.slice(1).map(function (y) { return x.ix.map(function (i) { return y[i] == null ? "" : y[i]; }); }) } : { h: L[0], r: L.slice(1) }; }, acompanhar: acompanhar, token: function (t) { token = t; st = document.createElement("p"); } };

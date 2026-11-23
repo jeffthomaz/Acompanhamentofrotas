@@ -121,7 +121,52 @@ def main(planilha, destino):
     processar(openpyxl.load_workbook(planilha, read_only=True, data_only=True), destino)
 
 
-def processar(wb, destino):
+TRAT_TIPOS = {"celular": "MANUSEIO_CELULAR", "cinto": "SEM_CINTO", "distracao": "DISTRACAO_MOTORISTA",
+              "faixa": "ULTRAPASSAGEM_FAIXA_CONTINUA", "cigarro": "USO_CIGARRO"}
+
+
+def com_tratativas(leves, pesadas, T):
+    """A partir do 1º dia das tratativas, celular, sem cinto, distração, faixa e cigarro vêm só delas (evita duplicidade;
+    pedido do usuário em 23/11/2026). Excesso de velocidade, fadiga e bocejo continuam das ocorrências.
+    Coordenadas, placa, grupo e gerência vêm da ocorrência equivalente (mesma frota, dia e tipo, hora mais próxima)."""
+    from comportamento_do_powerbi import tipo_id
+    trat = T["linhas"]
+    ini = T.get("ini") or min(t["d"] for t in trat)  # início da planilha de tratativas (qualquer tipo)
+    tt = set(TRAT_TIPOS)
+    idx = {}
+    for r in leves + pesadas:
+        t = tipo_id(r)
+        if t in tt:
+            idx.setdefault((str(r["f"]), r["d"], t), []).append(r)
+    def mins(h):
+        try:
+            return int(h[:2]) * 60 + int(h[3:5])
+        except (TypeError, ValueError):
+            return None
+    fora = lambda r: r["d"] >= ini and tipo_id(r) in tt
+    tiradas = sum(1 for r in leves + pesadas if fora(r))
+    leves, pesadas = [r for r in leves if not fora(r)], [r for r in pesadas if not fora(r)]
+    usados = set()
+    for t in trat:
+        cands = [x for x in idx.get((t["f"], t["d"], t["t"]), []) if id(x) not in usados]
+        hm = mins(t.get("h") or "")
+        par = min(cands, key=lambda x: abs((mins(x["hs"]) or 0) - (hm or 0))) if cands else None
+        if par is not None:
+            usados.add(id(par))
+        hs = (t.get("h") or "")[:8]
+        tu = turno(hs) if hs else None
+        r = {"f": t["f"], "placa": par["placa"] if par else "", "grupo": par["grupo"] if par else "", "tipo": TRAT_TIPOS[t["t"]],
+             "lim": "", "exc": "", "d": t["d"], "hs": hs, "turno": tu, "hora": int(hs[:2]) if tu is not None else None,
+             "proc": t.get("proc") or (par["proc"] if par else None), "ger": par["ger"] if par else "", "rot": None, "desc": None,
+             "lat": t.get("lat") or (par["lat"] if par else None), "lon": t.get("lon") or (par["lon"] if par else None),
+             "loc": par["loc"] if par else None}
+        (leves if t["o"] == "Leve" else pesadas).append(r)
+    print("tratativas: %d ocorrência(s) de celular/cinto/distração/faixa/cigarro das ocorrências trocadas por %d tratativa(s) (desde %s)"
+          % (tiradas, len(trat), ini))
+    return leves, pesadas
+
+
+def processar(wb, destino, trat=None):
     """wb: a planilha aberta (ou montada em memória a partir dos dados limpos que o navegador envia)."""
     base_ws = next(ws for ws in wb.worksheets if ws.title.strip().upper().startswith("BASE DE INFORMA"))
     base = {txt(x[0]): nome_proc(x[3]) for x in base_ws.iter_rows(min_row=2, values_only=True) if x[0]}
@@ -136,6 +181,8 @@ def processar(wb, destino):
         vistos.add(k); return True
     leves, pesadas = [r for r in leves if unico(r)], [r for r in pesadas if unico(r)]
     print("%d linha(s) repetida(s) tirada(s)" % len(rep))
+    if trat and trat.get("linhas"):
+        leves, pesadas = com_tratativas(leves, pesadas, trat)
     print("planilha: %d linhas de frota leve, %d de frota pesada" % (len(leves), len(pesadas)))
     montar(leves, pesadas, base, destino, manter_faixa=False)
 
