@@ -2197,10 +2197,10 @@ window.iniciarPainel = function (D) {
     var podeComp = !!(navigator.canShare && navigator.canShare({ files: arquivos }));
     var podeCopiar = !!(navigator.clipboard && window.ClipboardItem);
     dl.innerHTML = '<div class="df-topo"><h2>Fotos dos painéis</h2><button type="button" class="df-x" aria-label="Fechar">✕</button></div>' +
-      '<p class="df-dica">' + (podeCopiar ? "Para mandar no WhatsApp Web: clique em <b>Copiar</b> numa foto, vá na conversa e aperte <b>Ctrl+V</b>; repita com as outras. " : "") +
+      '<p class="df-dica">' + (podeCopiar ? "Para mandar no WhatsApp Web: clique em <b>Copiar todas</b> (as fotos vão juntas numa imagem só) ou em <b>Copiar</b> numa foto, vá na conversa e aperte <b>Ctrl+V</b>. " : "") +
       (podeComp ? "Ou use <b>Compartilhar</b> para mandar todas de uma vez pelo menu do Windows/celular." : "") + "</p>" +
-      '<div class="df-acoes">' + (podeComp ? '<button type="button" class="df-comp">📤 Compartilhar todas</button>' : "") +
-      '<a class="df-wa" href="https://web.whatsapp.com/" target="_blank" rel="noopener">💬 Abrir WhatsApp Web</a><button type="button" class="df-baixar">⬇ Baixar todas</button></div>' +
+      '<div class="df-acoes">' + (podeCopiar ? '<button type="button" class="df-copiar-todas">📋 Copiar todas (numa imagem)</button>' : "") + (podeComp ? '<button type="button" class="df-comp">📤 Compartilhar todas</button>' : "") +
+      '<a class="df-wa" href="https://web.whatsapp.com/" target="_blank" rel="noopener">💬 Abrir WhatsApp Web</a><button type="button" class="df-baixar">⬇ Baixar todas (.zip)</button></div>' +
       '<div class="df-lista">' + fotos.map(function (f, i) {
         return '<figure><img alt="Foto ' + esc(f.titulo) + '" data-i="' + i + '"><figcaption><b>' + esc(f.titulo) + '</b>' +
           (podeCopiar ? '<button type="button" data-copiar="' + i + '">📋 Copiar</button>' : "") + '<button type="button" data-baixar="' + i + '">⬇ Baixar</button></figcaption></figure>';
@@ -2208,12 +2208,33 @@ window.iniciarPainel = function (D) {
     document.body.appendChild(dl);
     var urls = fotos.map(function (f) { return URL.createObjectURL(f.blob); });
     dl.querySelectorAll("img[data-i]").forEach(function (im) { im.src = urls[+im.dataset.i]; });
+    // Junta as fotos uma embaixo da outra numa imagem só (a área de transferência guarda uma imagem por vez).
+    function juntar() {
+      return Promise.all(urls.map(function (u) { return new Promise(function (ok, er) { var im = new Image(); im.onload = function () { ok(im); }; im.onerror = er; im.src = u; }); }))
+        .then(function (ims) {
+          var gap = 24, w = Math.max.apply(null, ims.map(function (i) { return i.naturalWidth; })), h = ims.reduce(function (a, i) { return a + i.naturalHeight; }, 0) + gap * (ims.length - 1);
+          var esc_ = Math.min(1, 16000 / h), c = document.createElement("canvas"); c.width = Math.round(w * esc_); c.height = Math.round(h * esc_);
+          var g = c.getContext("2d"); g.fillStyle = getComputedStyle(document.body).backgroundColor || "#eef0ec"; g.fillRect(0, 0, c.width, c.height);
+          var y = 0; ims.forEach(function (im) { g.drawImage(im, 0, y, im.naturalWidth * esc_, im.naturalHeight * esc_); y += (im.naturalHeight + gap) * esc_; });
+          return new Promise(function (ok) { c.toBlob(ok, "image/png"); });
+        });
+    }
     function baixar(i) { var a = document.createElement("a"); a.href = urls[i]; a.download = fotos[i].nome; document.body.appendChild(a); a.click(); a.remove(); }
     dl.addEventListener("click", async function (e) {
       var b = e.target.closest("button, a"); if (!b) return;
       if (b.classList.contains("df-x")) { dl.close(); return; }
-      if (b.classList.contains("df-baixar")) { for (var k = 0; k < fotos.length; k++) { baixar(k); await espera(300); } return; }
+      if (b.classList.contains("df-baixar")) { // um .zip só: o navegador costuma bloquear vários downloads seguidos
+        if (window.JSZip) { var z = new JSZip(); fotos.forEach(function (f) { z.file(f.nome, f.blob); }); var zb = await z.generateAsync({ type: "blob" }), za = document.createElement("a");
+          za.href = URL.createObjectURL(zb); za.download = "Painel monitoramento - fotos " + carimbo + ".zip"; document.body.appendChild(za); za.click(); setTimeout(function () { URL.revokeObjectURL(za.href); za.remove(); }, 2000); }
+        else for (var k = 0; k < fotos.length; k++) { baixar(k); await espera(600); }
+        return; }
       if (b.dataset.baixar) { baixar(+b.dataset.baixar); return; }
+      if (b.classList.contains("df-copiar-todas")) {
+        var t1 = b.textContent; b.textContent = "Juntando…";
+        try { await navigator.clipboard.write([new ClipboardItem({ "image/png": juntar() })]); b.textContent = "✓ Copiadas — cole com Ctrl+V"; }
+        catch (err) { console.error(err); b.textContent = "Não copiou — tente de novo"; }
+        setTimeout(function () { b.textContent = t1; }, 3000); return;
+      }
       if (b.classList.contains("df-comp")) { try { await navigator.share({ files: arquivos, title: "Painel de monitoramento " + carimbo }); } catch (err) {} return; }
       if (b.dataset.copiar) {
         var t0 = b.textContent;
