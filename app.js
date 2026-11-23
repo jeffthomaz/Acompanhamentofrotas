@@ -2177,7 +2177,7 @@ window.iniciarPainel = function (D) {
         await espera(150);
         fixarSvg(painel);
         try {
-          var blob = await window.htmlToImage.toBlob(painel, { pixelRatio: 2, backgroundColor: fundo,
+          var blob = await window.htmlToImage.toBlob(painel, { pixelRatio: 3, backgroundColor: fundo, // 3x: texto nítido mesmo depois da compressão do WhatsApp
             filter: function (n) { return !(n.classList && (n.classList.contains("leaflet-control-zoom") || n.classList.contains("leaflet-control-layers"))); } });
           fotos.push({ nome: F.nome + " " + carimbo + ".png", titulo: F.nome, blob: blob });
         } catch (err) { console.error("foto " + F.nome, err); }
@@ -2213,7 +2213,7 @@ window.iniciarPainel = function (D) {
       return Promise.all(urls.map(function (u) { return new Promise(function (ok, er) { var im = new Image(); im.onload = function () { ok(im); }; im.onerror = er; im.src = u; }); }))
         .then(function (ims) {
           var gap = 24, w = Math.max.apply(null, ims.map(function (i) { return i.naturalWidth; })), h = ims.reduce(function (a, i) { return a + i.naturalHeight; }, 0) + gap * (ims.length - 1);
-          var esc_ = Math.min(1, 16000 / h), c = document.createElement("canvas"); c.width = Math.round(w * esc_); c.height = Math.round(h * esc_);
+          var esc_ = Math.min(1, 30000 / h, 120e6 / (w * h)), c = document.createElement("canvas"); c.width = Math.round(w * esc_); c.height = Math.round(h * esc_);
           var g = c.getContext("2d"); g.fillStyle = getComputedStyle(document.body).backgroundColor || "#eef0ec"; g.fillRect(0, 0, c.width, c.height);
           var y = 0; ims.forEach(function (im) { g.drawImage(im, 0, y, im.naturalWidth * esc_, im.naturalHeight * esc_); y += (im.naturalHeight + gap) * esc_; });
           return new Promise(function (ok) { c.toBlob(ok, "image/png"); });
