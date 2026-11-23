@@ -2157,8 +2157,7 @@ window.iniciarPainel = function (D) {
   var FOTOS = [
     { id: "comportamento", nome: "Comportamental", keep: [".kpis", ".comp-hz"] },
     { id: "motor-ocioso", nome: "Motor ocioso", keep: [".mo-g1", ".mo-g2"] },
-    { id: "permanencia", nome: "Permanência", keep: [".mapa-g"] },
-    { id: "conectividade", nome: "Conectividade", keep: [".kpis", ".g2k"] }
+    { id: "permanencia", nome: "Permanência", keep: [".mapa-g"] }
   ];
   async function tirarFotos() {
     if (!window.htmlToImage) { alert("Não foi possível carregar a ferramenta de fotos. Atualize a página (Ctrl+F5) e tente de novo."); return; }
