@@ -88,7 +88,8 @@ window.iniciarPainel = function (D) {
     });
     return { itens: itens, html: html };
   }
-  function top5Aberto() { try { return localStorage.getItem("painel-top5") === "1"; } catch (e) { return !!fil_.top5; } }
+  var fotoModo = false; // durante as fotos o Top 5 fica sempre aberto
+  function top5Aberto() { if (fotoModo) return true; try { return localStorage.getItem("painel-top5") === "1"; } catch (e) { return !!fil_.top5; } }
   function trocaTop5() { var v = !top5Aberto(); fil_.top5 = v; try { localStorage.setItem("painel-top5", v ? "1" : "0"); } catch (e) {} render(); var b = document.querySelector("[data-top5]"); if (b) b.focus({ preventScroll: true }); }
   // Clique num card de tipo: sem filtro, fica só ele; senão soma/tira; sem nenhum, volta a todos.
   function trocaTipo(id) {
@@ -2152,35 +2153,78 @@ window.iniciarPainel = function (D) {
       if (cs.display === "none") el.setAttribute("display", "none");
     });
   }
+  // Recortes iguais aos exemplos do usuário (23/11/2026): só as partes principais de cada aba.
+  var FOTOS = [
+    { id: "comportamento", nome: "Comportamental", keep: [".kpis", ".comp-hz"] },
+    { id: "motor-ocioso", nome: "Motor ocioso", keep: [".mo-g1", ".mo-g2"] },
+    { id: "permanencia", nome: "Permanência", keep: [".mapa-g"] },
+    { id: "conectividade", nome: "Conectividade", keep: [".kpis", ".g2k"] }
+  ];
   async function tirarFotos() {
-    if (!window.htmlToImage || !window.JSZip) { alert("Não foi possível carregar a ferramenta de fotos. Atualize a página (Ctrl+F5) e tente de novo."); return; }
-    var orig = atual(), abas = ABAS.filter(function (a) { return a.id !== "apresentacao"; }), zip = new JSZip();
+    if (!window.htmlToImage) { alert("Não foi possível carregar a ferramenta de fotos. Atualize a página (Ctrl+F5) e tente de novo."); return; }
+    var orig = atual(), lista = FOTOS.filter(function (f) { return ABAS.some(function (a) { return a.id === f.id; }); }), fotos = [];
     var agora = new Date(), p2 = function (n) { return (n < 10 ? "0" : "") + n; };
     var carimbo = p2(agora.getDate()) + "-" + p2(agora.getMonth() + 1) + "-" + agora.getFullYear() + " " + p2(agora.getHours()) + "h" + p2(agora.getMinutes());
-    btFotos.disabled = true; document.body.classList.add("tirando-fotos");
-    var alvo = document.getElementById("captura") || document.body, ok = 0, falhas = [];
+    btFotos.disabled = true; document.body.classList.add("tirando-fotos"); fotoModo = true;
+    var fundo = getComputedStyle(document.body).backgroundColor || "#eef0ec";
     try {
-      for (var i = 0; i < abas.length; i++) {
-        btFotos.textContent = "Tirando fotos… " + (i + 1) + "/" + abas.length;
-        if (atual() !== abas[i].id) { location.hash = abas[i].id; await espera(350); } else render();
+      for (var i = 0; i < lista.length; i++) {
+        var F = lista[i];
+        btFotos.textContent = "Tirando fotos… " + (i + 1) + "/" + lista.length;
+        if (atual() !== F.id) { location.hash = F.id; await espera(350); } else render();
         await esperaMapas();
+        // Esconde de verdade o que não entra na foto (a aba é redesenhada depois).
+        Array.prototype.forEach.call(painel.children, function (n) { if (!F.keep.some(function (sel) { return n.matches(sel); })) n.style.display = "none"; });
+        await espera(150);
         fixarSvg(painel);
         try {
-          var url = await window.htmlToImage.toPng(alvo, { pixelRatio: 1.5, backgroundColor: getComputedStyle(document.body).backgroundColor || "#eef0ec",
-            filter: function (n) { return !(n.id === "fotos" || n.id === "acesso" || (n.classList && n.classList.contains("leaflet-control-container"))); } });
-          zip.file(p2(i + 1) + " - " + abas[i].nome + ".png", url.split(",")[1], { base64: true }); ok++;
-        } catch (err) { falhas.push(abas[i].nome); console.error("foto " + abas[i].nome, err); }
+          var blob = await window.htmlToImage.toBlob(painel, { pixelRatio: 2, backgroundColor: fundo,
+            filter: function (n) { return !(n.classList && (n.classList.contains("leaflet-control-zoom") || n.classList.contains("leaflet-control-layers"))); } });
+          fotos.push({ nome: F.nome + " " + carimbo + ".png", titulo: F.nome, blob: blob });
+        } catch (err) { console.error("foto " + F.nome, err); }
       }
-      if (ok) {
-        var blob = await zip.generateAsync({ type: "blob" }), a = document.createElement("a");
-        a.href = URL.createObjectURL(blob); a.download = "Painel monitoramento - fotos " + carimbo + ".zip";
-        document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 2000);
-      }
-      if (falhas.length) alert("Não consegui tirar a foto de: " + falhas.join(", ") + ". As outras foram baixadas.");
     } finally {
+      fotoModo = false;
       if (atual() !== orig) location.hash = orig; else render();
       btFotos.disabled = false; btFotos.textContent = "📷 Fotos dos painéis"; document.body.classList.remove("tirando-fotos");
     }
+    if (fotos.length) mostrarFotos(fotos, carimbo); else alert("Não consegui tirar as fotos. Tente de novo.");
+  }
+  // Janela com as fotos: copiar para colar no WhatsApp (Ctrl+V), compartilhar (menu do Windows/celular) ou baixar.
+  function mostrarFotos(fotos, carimbo) {
+    var velha = document.getElementById("dlg-fotos"); if (velha) velha.remove();
+    var dl = document.createElement("dialog"); dl.id = "dlg-fotos"; dl.className = "dlg-fotos";
+    var arquivos = fotos.map(function (f) { return new File([f.blob], f.nome, { type: "image/png" }); });
+    var podeComp = !!(navigator.canShare && navigator.canShare({ files: arquivos }));
+    var podeCopiar = !!(navigator.clipboard && window.ClipboardItem);
+    dl.innerHTML = '<div class="df-topo"><h2>Fotos dos painéis</h2><button type="button" class="df-x" aria-label="Fechar">✕</button></div>' +
+      '<p class="df-dica">' + (podeCopiar ? "Para mandar no WhatsApp Web: clique em <b>Copiar</b> numa foto, vá na conversa e aperte <b>Ctrl+V</b>; repita com as outras. " : "") +
+      (podeComp ? "Ou use <b>Compartilhar</b> para mandar todas de uma vez pelo menu do Windows/celular." : "") + "</p>" +
+      '<div class="df-acoes">' + (podeComp ? '<button type="button" class="df-comp">📤 Compartilhar todas</button>' : "") +
+      '<a class="df-wa" href="https://web.whatsapp.com/" target="_blank" rel="noopener">💬 Abrir WhatsApp Web</a><button type="button" class="df-baixar">⬇ Baixar todas</button></div>' +
+      '<div class="df-lista">' + fotos.map(function (f, i) {
+        return '<figure><img alt="Foto ' + esc(f.titulo) + '" data-i="' + i + '"><figcaption><b>' + esc(f.titulo) + '</b>' +
+          (podeCopiar ? '<button type="button" data-copiar="' + i + '">📋 Copiar</button>' : "") + '<button type="button" data-baixar="' + i + '">⬇ Baixar</button></figcaption></figure>';
+      }).join("") + "</div>";
+    document.body.appendChild(dl);
+    var urls = fotos.map(function (f) { return URL.createObjectURL(f.blob); });
+    dl.querySelectorAll("img[data-i]").forEach(function (im) { im.src = urls[+im.dataset.i]; });
+    function baixar(i) { var a = document.createElement("a"); a.href = urls[i]; a.download = fotos[i].nome; document.body.appendChild(a); a.click(); a.remove(); }
+    dl.addEventListener("click", async function (e) {
+      var b = e.target.closest("button, a"); if (!b) return;
+      if (b.classList.contains("df-x")) { dl.close(); return; }
+      if (b.classList.contains("df-baixar")) { for (var k = 0; k < fotos.length; k++) { baixar(k); await espera(300); } return; }
+      if (b.dataset.baixar) { baixar(+b.dataset.baixar); return; }
+      if (b.classList.contains("df-comp")) { try { await navigator.share({ files: arquivos, title: "Painel de monitoramento " + carimbo }); } catch (err) {} return; }
+      if (b.dataset.copiar) {
+        var t0 = b.textContent;
+        try { await navigator.clipboard.write([new ClipboardItem({ "image/png": fotos[+b.dataset.copiar].blob })]); b.textContent = "✓ Copiada"; }
+        catch (err) { b.textContent = "Não copiou"; }
+        setTimeout(function () { b.textContent = t0; }, 2000);
+      }
+    });
+    dl.addEventListener("close", function () { urls.forEach(URL.revokeObjectURL); dl.remove(); });
+    dl.showModal();
   }
   if (btFotos) { btFotos.hidden = false; btFotos.onclick = tirarFotos; }
   render();
