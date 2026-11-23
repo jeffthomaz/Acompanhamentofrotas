@@ -1,9 +1,13 @@
 {
-  "_obs": "Troca de responsável em todas as abas: quem aparece como 'de' vira o coordenador 'para'; 'gestor' preenche o gestor da frota quando ele não vier da planilha de hierarquia. Pedido em 19/11/2026.",
+  "_obs": "Troca de responsável em todas as abas: quem aparece como 'de' vira o coordenador 'para'; 'gestor' preenche o gestor da frota quando ele não vier da planilha de hierarquia. Pedido em 19/11/2026. Wilismar → gestor do coordenador Robson Machado (Indústria) em 23/11/2026.",
   "trocas": {
     "Cristiano Colucci": {
       "coordenador": "Jeanrrion Renan",
       "gestor": "Cristiano Colucci"
+    },
+    "Wilismar": {
+      "coordenador": "Robson Machado",
+      "gestor": "Wilismar"
     }
   }
 }
