@@ -1964,7 +1964,7 @@ window.iniciarPainel = function (D) {
       partes.push(bloco("bl-pp", BL_ICO.pp, "Permanência", '<p class="bl-frase">' + fraseP + '</p><div class="bl-duo">' + locaisH + longH + "</div>", pe.ate));
     }
 
-    var rodape = '<p class="bl-fim">Os responsáveis pelas frotas mais relevantes estão sendo notificados.</p>';
+    var rodape = ""; // frase final da mensagem retirada do Resumo a pedido do usuário (25/11/2026)
     return '<div class="bl">' + topo + (partes.length ? '<div class="bl-fio">' + partes.join("") + "</div>" + rodape : '<p class="cs">Ainda sem dados desta semana.</p>') + "</div>";
   }
 
