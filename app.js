@@ -2251,7 +2251,7 @@ window.iniciarPainel = function (D) {
     b.disabled = true; b.textContent = "Copiando…";
     try {
       fixarSvg(q);
-      var blob = window.htmlToImage.toBlob(q, { pixelRatio: 2, backgroundColor: getComputedStyle(q).backgroundColor || "#fff",
+      var blob = window.htmlToImage.toBlob(q, { pixelRatio: 3, backgroundColor: getComputedStyle(q).backgroundColor || "#fff", // 3x: nítido mesmo com a compressão do WhatsApp
         filter: function (n) { return !(n.classList && (n.classList.contains("bl-copiar") || n.classList.contains("limpar"))); } });
       await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
       b.textContent = "✓ Copiada — cole com Ctrl+V";
