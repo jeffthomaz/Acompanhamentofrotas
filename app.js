@@ -1989,7 +1989,7 @@ window.iniciarPainel = function (D) {
         "<li>" + (o.acima ? "<b>" + o.acima + "</b> " + plural(o.acima, "veículo acima", "veículos acima") + " da meta" : "Todos os veículos dentro da meta") + "</li></ul>";
       var t3o = o.rows.slice().sort(function (a, b) { return b.o - a.o; }).slice(0, 5);
       var top3o = '<div class="bl-top"><h4>Top 5 veículos</h4><ol>' + t3o.map(function (rw) {
-        return '<li><div><b>Frota ' + esc(rw.v.id) + "</b><span class=\"cap\">" + esc((rw.v.processo || "").toLowerCase()) + '</span></div><div class="bl-tq"><b>' + horas(rw.o) + "</b> ociosas" +
+        return '<li><div><b>Frota ' + esc(rw.v.id) + "</b><span class=\"cap\">" + esc((rw.v.processo || "").toLowerCase()) + '</span></div><div class="bl-tq"><b>' + horas(rw.o) + "</b> ociosas de " + horas(rw.l) + " de ignição" +
           '<span class="' + (rw.p > o.meta ? "acima" : "") + '">' + num(rw.p, 1) + "% do tempo ligado</span></div>" +
           // Barrinha do % ocioso (0 a 100%), com o traço da meta; vermelha acima da meta.
           '<div class="bl-tb bl-tbo" role="img" aria-label="' + num(rw.p, 1) + '% ocioso"><i class="' + (rw.p > o.meta ? "acima" : "") + '" style="width:' + Math.min(rw.p, 100).toFixed(1) + '%"></i><u style="left:' + o.meta + '%" title="meta ' + o.meta + '%"></u></div></li>';
