@@ -1517,9 +1517,9 @@ window.iniciarPainel = function (D) {
       valor: min >= 600 ? num(Math.round(min / 60), 0) + " h" : hmin(min), un: "parados em " + num(n, 0) + " " + plural(n, "permanência", "permanências"), delta: minA ? delta(min, minA) : '<span class="dl neutro">sem base</span>',
       graf: barras7(porDia, S.dias, hmin, "Tempo de permanência por dia"),
       diag: diag, alertas: al, top: top.slice(0, 5), locais: P.locais, vals: porDia, n: n, min: min,
-      longas: evS.sort(function (a, b) { return b[3] - a[3]; }).slice(0, 3),
+      longas: evS.sort(function (a, b) { return b[3] - a[3]; }).slice(0, 5),
       // Pontos de parada da mensagem semanal: só estabelecimentos, pelos que mais receberam paradas.
-      topEst: top.filter(function (x) { return P.locais[x.i].tipo === "estabelecimento"; }).sort(function (a, b) { return b.n - a.n || b.min - a.min; }).slice(0, 3),
+      topEst: top.filter(function (x) { return P.locais[x.i].tipo === "estabelecimento"; }).sort(function (a, b) { return b.n - a.n || b.min - a.min; }).slice(0, 5),
       obs: " em " + top.length + " " + plural(top.length, "local", "locais") + "." + (est ? " O estabelecimento com mais tempo parado é <b>" + esc(P.locais[est.i].nome) + "</b> (" + hmin(est.min) + " em " + est.n + " " + plural(est.n, "vez", "vezes") + ")." : "") };
   }
 
@@ -1890,7 +1890,7 @@ window.iniciarPainel = function (D) {
     }
     var partes = [];
 
-    // 🚦 Ocorrências: frase com a variação; à esquerda a rosca por tipo (% e quantidade), à direita o top 3 veículos.
+    // 🚦 Ocorrências: frase com a variação; à esquerda a rosca por tipo (% e quantidade), à direita o top 5 veículos.
     if (c && c.cur !== undefined) {
       var vt = varTxt(c.cur, c.ant), cats = c.cats.filter(function (x) { return x.n; });
       var frase = !c.cur ? "Nenhuma ocorrência na semana." : !vt ? "Primeira semana com dados para comparar."
@@ -1912,8 +1912,8 @@ window.iniciarPainel = function (D) {
           return '<li class="c-' + x.c.id + '"><i></i><span>' + esc(x.c.nome) + "</span><b>" + (pT < 1 ? "<1" : num(pT, 0)) + "%</b><em>" + num(x.n, 0) + "</em>" +
             '<small class="bl-v ' + (v ? v.cls : "") + '">' + vf + "</small></li>";
         }).join("") + "</ul>";
-        var top3 = Object.keys(c.porF).map(function (f) { return { f: f, n: c.porF[f] }; }).sort(function (a, b) { return b.n - a.n; }).slice(0, 3);
-        var t3 = '<div class="bl-top"><h4>Top 3 veículos</h4><ol>' + top3.map(function (x) {
+        var top3 = Object.keys(c.porF).map(function (f) { return { f: f, n: c.porF[f] }; }).sort(function (a, b) { return b.n - a.n; }).slice(0, 5);
+        var t3 = '<div class="bl-top"><h4>Top 5 veículos</h4><ol>' + top3.map(function (x) {
           var fr = c.frotas[x.f] || {}, pc = c.porFC[x.f] || [], mi = 0;
           pc.forEach(function (v, k) { if (v > pc[mi]) mi = k; });
           return '<li><div><b>Frota ' + esc(x.f) + "</b><span class=\"cap\">" + esc((fr.processo || "").toLowerCase()) + '</span></div><div class="bl-tq"><b>' + num(x.n, 0) + "</b> " + plural(x.n, "ocorrência", "ocorrências") +
@@ -1952,7 +1952,7 @@ window.iniciarPainel = function (D) {
       partes.push(bloco("bl-oc", BL_ICO.oc, "Ocorrências", corpoO, c.ate));
     }
 
-    // ⏱️ Motor ocioso: medidor com o % ocioso (meta e semana anterior) e, ao lado, o top 3 veículos por horas ociosas.
+    // ⏱️ Motor ocioso: medidor com o % ocioso (meta e semana anterior) e, ao lado, o top 5 veículos por horas ociosas.
     if (o && o.pct !== undefined && o.pct !== null) {
       var mx = Math.max(o.meta * 2, Math.ceil(Math.max(o.pct, o.pAnt || 0) / 5) * 5);
       var dif = o.pAnt !== null && o.pAnt !== undefined ? o.pct - o.pAnt : null;
@@ -1974,8 +1974,8 @@ window.iniciarPainel = function (D) {
       var fatos = '<ul class="bl-fatos bl-fatos-c"><li><b>' + horas(o.oc) + "</b> ociosas de " + horas(o.lc) + " de ignição</li>" +
         (dif !== null ? '<li><b class="' + (Math.abs(dif) < 0.05 ? "" : dif < 0 ? "caiu" : "subiu") + '">' + (Math.abs(dif) < 0.05 ? "igual" : (dif < 0 ? "↓ " : "↑ ") + num(Math.abs(dif), 1) + " p.p.") + "</b> sobre a semana anterior (" + num(o.pAnt, 1) + "%)</li>" : "") +
         "<li>" + (o.acima ? "<b>" + o.acima + "</b> " + plural(o.acima, "veículo acima", "veículos acima") + " da meta" : "Todos os veículos dentro da meta") + "</li></ul>";
-      var t3o = o.rows.slice().sort(function (a, b) { return b.o - a.o; }).slice(0, 3);
-      var top3o = '<div class="bl-top"><h4>Top 3 veículos</h4><ol>' + t3o.map(function (rw) {
+      var t3o = o.rows.slice().sort(function (a, b) { return b.o - a.o; }).slice(0, 5);
+      var top3o = '<div class="bl-top"><h4>Top 5 veículos</h4><ol>' + t3o.map(function (rw) {
         return '<li><div><b>Frota ' + esc(rw.v.id) + "</b><span class=\"cap\">" + esc((rw.v.processo || "").toLowerCase()) + '</span></div><div class="bl-tq"><b>' + horas(rw.o) + "</b> ociosas" +
           '<span class="' + (rw.p > o.meta ? "acima" : "") + '">' + num(rw.p, 1) + "% do tempo ligado</span></div>" +
           // Barrinha do % ocioso (0 a 100%), com o traço da meta; vermelha acima da meta.
@@ -1993,7 +1993,7 @@ window.iniciarPainel = function (D) {
           '<div class="bl-pv"><b>' + num(x.n, 0) + "</b> " + plural(x.n, "parada", "paradas") + '<span>média de <b>' + hmin(x.min / x.n) + "</b></span></div></li>";
       }).join("") + "</ol>" : '<p class="cs">Nenhuma parada em estabelecimento na semana.</p>') + "</div>";
       var VV = D.permanencia.veiculos;
-      var longH = '<div class="bl-top"><h4>Top 3 maiores permanências</h4>' + (pe.longas.length ? "<ol>" + pe.longas.map(function (e) {
+      var longH = '<div class="bl-top"><h4>Top 5 maiores permanências</h4>' + (pe.longas.length ? "<ol>" + pe.longas.map(function (e) {
         return '<li><div><b>Frota ' + esc(e[0]) + "</b><span><em class=\"cap\">" + esc(pe.locais[e[4]].nome.toLowerCase()) + "</em>, " + dd(e[5]) + (e[6] ? " às " + esc(e[6]) : "") + '</span></div><div class="bl-tq"><b>' + hmin(e[3]) + "</b>" +
           '<span class="cap">' + esc(((VV[e[0]] || {}).processo || "").toLowerCase()) + "</span></div></li>";
       }).join("") + "</ol>" : '<p class="cs">Nenhuma permanência na semana.</p>') + "</div>";
