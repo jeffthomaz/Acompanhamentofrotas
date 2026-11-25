@@ -1494,7 +1494,7 @@ window.iniciarPainel = function (D) {
     return { aba: "motor-ocioso", nome: "Motor ocioso", ini: S.ini, fim: S.fim, ate: ultD < S.fim ? ultD : null,
       valor: num(pct, 1) + "%", un: "do tempo ligado parado", delta: deltaPP(pct, pAnt),
       graf: barras7(cur.map(function (x) { return x ? x.o / x.l * 100 : null; }), S.dias, function (v) { return num(v, 1) + "%"; }, "Motor ocioso por dia"),
-      diag: diag, alertas: al, pct: pct, pAnt: pAnt, oc: oc, lc: lc, meta: meta, acima: acima.length, acimaL: acima.slice(0, 3), rows: rows,
+      diag: diag, alertas: al, pct: pct, pAnt: pAnt, oc: oc, lc: lc, meta: meta, acima: acima.length, acimaL: acima.slice(0, 3), rows: rows, porDia: cur,
       vals: cur.map(function (x) { return x ? x.o / x.l * 100 : null; }),
       procs: (function () {
         var o = {}; rows.forEach(function (r) { var p = o[r.v.processo] || (o[r.v.processo] = { nome: r.v.processo, l: 0, o: 0 }); p.l += r.l; p.o += r.o; });
@@ -1994,7 +1994,28 @@ window.iniciarPainel = function (D) {
           // Barrinha do % ocioso (0 a 100%), com o traço da meta; vermelha acima da meta.
           '<div class="bl-tb bl-tbo" role="img" aria-label="' + num(rw.p, 1) + '% ocioso"><i class="' + (rw.p > o.meta ? "acima" : "") + '" style="width:' + Math.min(rw.p, 100).toFixed(1) + '%"></i><u style="left:' + o.meta + '%" title="meta ' + o.meta + '%"></u></div></li>';
       }).join("") + "</ol></div>";
-      partes.push(bloco("bl-mo", BL_ICO.mo, "Motor ocioso", '<p class="bl-frase">' + fraseO + '</p><div class="bl-duo"><div class="bl-graf bl-graf-g">' + medidor + fatos + "</div>" + top3o + "</div>", o.ate));
+      // Ignição × ociosidade por dia da semana (25/11/2026): barras = horas de ignição, linha = % ocioso; barra vermelha acima da meta.
+      var W = 560, H = 210, x0 = 8, x1 = W - 62, y0 = 26, y1 = H - 40, nD = S.dias.length, bw = (x1 - x0) / nD;
+      var mxL = Math.max.apply(null, [1].concat(o.porDia.map(function (x) { return x ? x.l : 0; })));
+      var pcts = o.porDia.map(function (x) { return x && x.l ? x.o / x.l * 100 : null; });
+      var mxP = Math.max(o.meta * 1.6, Math.ceil(Math.max.apply(null, [0].concat(pcts.filter(function (v) { return v !== null; }))) / 5) * 5 + 5);
+      var yL = function (v) { return y1 - v / mxL * (y1 - y0); }, yP = function (v) { return y1 - v / mxP * (y1 - y0); };
+      var cx = function (i) { return x0 + bw * i + bw / 2; };
+      var barrasIO = o.porDia.map(function (x, i) {
+        var lab = '<text x="' + cx(i).toFixed(1) + '" y="' + (y1 + 16) + '" text-anchor="middle" class="bl-iod">' + diaSem(S.dias[i]) + '</text><text x="' + cx(i).toFixed(1) + '" y="' + (y1 + 30) + '" text-anchor="middle" class="bl-iod2">' + dd(S.dias[i]) + "</text>";
+        if (!x) return lab;
+        var ac = pcts[i] > o.meta;
+        return '<rect x="' + (cx(i) - bw * 0.32).toFixed(1) + '" y="' + yL(x.l).toFixed(1) + '" width="' + (bw * 0.64).toFixed(1) + '" height="' + (y1 - yL(x.l)).toFixed(1) + '" rx="3" class="mo-bar' + (ac ? " acima" : "") + '"><title>' + esc(dd(S.dias[i]) + ": " + horas(x.l) + " de ignição, " + horas(x.o) + " ociosas (" + num(pcts[i], 1) + "%)") + "</title></rect>" +
+          '<text x="' + cx(i).toFixed(1) + '" y="' + (yL(x.l) - 5).toFixed(1) + '" text-anchor="middle" class="bl-iov">' + num(x.l, 0) + "h</text>" + lab;
+      }).join("");
+      var ptsIO = pcts.map(function (v, i) { return v === null ? null : [cx(i), yP(v), v]; }).filter(Boolean);
+      var linhaIO = ptsIO.length ? '<polyline points="' + ptsIO.map(function (p) { return p[0].toFixed(1) + "," + p[1].toFixed(1); }).join(" ") + '" class="mo-line"/>' +
+        ptsIO.map(function (p) { return '<circle cx="' + p[0].toFixed(1) + '" cy="' + p[1].toFixed(1) + '" r="4" class="mo-pt"/><text x="' + p[0].toFixed(1) + '" y="' + (p[1] - 8).toFixed(1) + '" text-anchor="middle" class="bl-iop' + (p[2] > o.meta ? " acima" : "") + '">' + num(p[2], 1) + "%</text>"; }).join("") : "";
+      var grafIO = '<figure class="bl-io"><figcaption>Ignição × motor ocioso por dia</figcaption><svg viewBox="0 0 ' + W + " " + H + '" role="img" aria-label="Horas de ignição e % de motor ocioso por dia da semana">' +
+        '<line x1="' + x0 + '" x2="' + x1 + '" y1="' + yP(o.meta).toFixed(1) + '" y2="' + yP(o.meta).toFixed(1) + '" class="mo-meta"/><text x="' + (W - 2) + '" y="' + (yP(o.meta) + 4).toFixed(1) + '" text-anchor="end" class="mo-metat">meta ' + o.meta + "%</text>" +
+        '<line x1="' + x0 + '" x2="' + x1 + '" y1="' + y1 + '" y2="' + y1 + '" class="bl-iob"/>' + barrasIO + linhaIO + "</svg>" +
+        '<p class="bl-iol"><span><i class="bl-iq"></i>Horas de ignição</span><span><i class="bl-iq ac"></i>Dia acima da meta</span><span><i class="bl-il"></i>% ocioso</span></p></figure>';
+      partes.push(bloco("bl-mo", BL_ICO.mo, "Motor ocioso", '<p class="bl-frase">' + fraseO + '</p><div class="bl-duo"><div><div class="bl-graf bl-graf-g">' + medidor + fatos + "</div>" + grafIO + "</div>" + top3o + "</div>", o.ate));
     }
 
     // 📍 Permanência: os 3 estabelecimentos com mais paradas (média de tempo) e, ao lado, as 3 permanências mais longas da semana.
