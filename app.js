@@ -1899,8 +1899,10 @@ window.iniciarPainel = function (D) {
           (vt ? '<text x="60" y="57" text-anchor="middle" class="bl-rc1 ' + vt.cls + '">' + vt.t + '</text><text x="60" y="73" text-anchor="middle" class="bl-rc2">vs. anterior</text>' : "") + "</svg>";
         var leg = '<ul class="bl-leg2">' + cats.map(function (x) {
           var pT = x.n / c.cur * 100, v = varTxt(x.n, x.a);
+          var vf = !x.a ? "não teve na semana anterior" : v.cls === "igual" ? "igual à semana anterior"
+            : num(Math.abs((x.n - x.a) / x.a * 100), 0) + "% a " + (v.cls === "caiu" ? "menos" : "mais") + " que a semana anterior";
           return '<li class="c-' + x.c.id + '"><i></i><span>' + esc(x.c.nome) + "</span><b>" + (pT < 1 ? "<1" : num(pT, 0)) + "%</b><em>" + num(x.n, 0) + "</em>" +
-            '<small class="bl-v ' + (v ? v.cls : "") + '">' + (v ? v.t : "novo") + "</small></li>";
+            '<small class="bl-v ' + (v ? v.cls : "") + '">' + vf + "</small></li>";
         }).join("") + "</ul>";
         var top3 = Object.keys(c.porF).map(function (f) { return { f: f, n: c.porF[f] }; }).sort(function (a, b) { return b.n - a.n; }).slice(0, 3);
         var t3 = '<div class="bl-top"><h4>Top 3 veículos</h4><ol>' + top3.map(function (x) {
