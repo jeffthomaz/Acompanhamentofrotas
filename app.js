@@ -1885,8 +1885,11 @@ window.iniciarPainel = function (D) {
       '<button type="button" class="bl-copiar" data-copiar-resumo="1" title="Copia a imagem do resumo para colar (Ctrl+V) no WhatsApp ou no e-mail">📋 Copiar imagem</button></div></header>';
 
     function bloco(cls, icone, titulo, corpo, ate) {
+      // Cada seção tem o próprio botão de copiar: imagens menores saem mais nítidas no WhatsApp (25/11/2026).
+      // A semana (bl-so) só aparece na imagem da seção.
       return '<section class="bl-b ' + cls + '"><span class="bl-ic">' + ico(icone) + '</span><div class="bl-c"><h3>' + titulo +
-        (ate ? ' <small>dados até ' + dd(ate) + "</small>" : "") + "</h3>" + corpo + "</div></section>";
+        (ate ? ' <small>dados até ' + dd(ate) + "</small>" : "") + '<small class="bl-so">' + faixaExt(S.ini, S.fim) + "</small>" +
+        '<button type="button" class="bl-copiar bl-cs" data-copiar-resumo="' + cls + '" title="Copia só a imagem desta seção">📋 Copiar seção</button></h3>' + corpo + "</div></section>";
     }
     var partes = [];
 
@@ -2282,17 +2285,19 @@ window.iniciarPainel = function (D) {
   // Copiar a imagem do quadro do Resumo (25/11/2026): para colar com Ctrl+V no WhatsApp/e-mail.
   painel.addEventListener("click", async function (e) {
     var b = e.target.closest("[data-copiar-resumo]"); if (!b) return;
-    var q = painel.querySelector(".bl"); if (!q) return;
-    var t0 = "📋 Copiar imagem";
+    var sec = b.getAttribute("data-copiar-resumo") !== "1";
+    var q = sec ? b.closest(".bl-b") : painel.querySelector(".bl"); if (!q) return;
+    var t0 = b.textContent;
     if (!window.htmlToImage || !navigator.clipboard || !window.ClipboardItem) { b.textContent = "Este navegador não copia imagens"; setTimeout(function () { b.textContent = t0; }, 3000); return; }
     b.disabled = true; b.textContent = "Copiando…";
     try {
-      fixarSvg(q);
+      fixarSvg(q); if (sec) q.classList.add("bl-cap");
       var blob = window.htmlToImage.toBlob(q, { pixelRatio: 3, backgroundColor: getComputedStyle(q).backgroundColor || "#fff", // 3x: nítido mesmo com a compressão do WhatsApp
         filter: function (n) { return !(n.classList && (n.classList.contains("bl-copiar") || n.classList.contains("limpar"))); } });
       await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
       b.textContent = "✓ Copiada — cole com Ctrl+V";
     } catch (err) { console.error(err); b.textContent = "Não copiou — tente de novo"; }
+    q.classList.remove("bl-cap");
     setTimeout(function () { b.disabled = false; b.textContent = t0; }, 3000);
   });
   var FOTOS_LIGADO = false; // desabilitado a pedido do usuário em 23/11/2026; para voltar, trocar para true
