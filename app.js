@@ -1454,7 +1454,7 @@ window.iniciarPainel = function (D) {
     return { aba: "comportamento", nome: "Comportamental", ini: S.ini, fim: S.fim, ate: dFim < S.fim ? dFim : null,
       valor: num(cur, 0), un: plural(cur, "ocorrência", "ocorrências"), delta: ant ? delta(cur, ant) : '<span class="dl neutro">sem base</span>',
       graf: barras7(por, S.dias, function (v) { return num(v, 0) + " " + plural(v, "ocorrência", "ocorrências"); }, "Ocorrências por dia"),
-      diag: diag, alertas: al, cur: cur, ant: ant, tu: tu, tuA: tuA, tuC: tuC, hr: hr, hrC: hrC, vals: por, porDC: porDC, cats: cats, porP: porP, porF: porF, porFC: porFC, frotas: F,
+      diag: diag, alertas: al, cur: cur, ant: ant, tu: tu, tuA: tuA, tuC: tuC, hr: hr, hrC: hrC, vals: por, porDC: porDC, cats: cats, porP: porP, porF: porF, porFC: porFC, frotas: F, porT: porT, T: T,
       vel: ["vel1", "vel2", "vel3"].map(function (id) { var i = T.map(function (t) { return t.id; }).indexOf(id); return i >= 0 ? { nome: T[i].nome, n: porT[i] } : null; }).filter(Boolean) };
   }
 
@@ -1932,6 +1932,23 @@ window.iniciarPainel = function (D) {
         (nTr ? "<b>" + num(nTr, 0) + " " + plural(nTr, "ocorrência gerou", "ocorrências geraram") + " tratativa</b> nesta semana: " +
           tr.map(function (x) { return esc(x.c.nome.toLowerCase()) + " (" + num(x.n, 0) + ")"; }).join(", ") + "."
           : "<b>Nenhuma ocorrência gerou tratativa</b> nesta semana.") + "</span></p>";
+      // Mini painel no estilo dos cards da aba Comportamental: um card por tipo com o top 5 veículos da semana (25/11/2026).
+      var mini = '<div class="kpis com-top bl-kp">' + CATS.map(function (cc, ci) {
+        var x = c.cats.filter(function (y) { return y.c.id === cc.id; })[0] || { n: 0, a: 0 };
+        var ix = c.T.map(function (t, i) { return (t.grupo || t.id) === cc.id ? i : -1; }).filter(function (i) { return i >= 0; });
+        var det = '<span class="kp">' + (ix.length > 1 && cc.id !== "vel" ? ix.map(function (i) { return esc(c.T[i].nome) + " <b>" + num(c.porT[i], 0) + "</b>"; }).join(" · ") : "&nbsp;") + "</span>";
+        var cab = '<div class="kh">' + ico(cc.icone) + '<span class="kl">' + esc(cc.nome) + '</span></div><strong class="kv">' + num(x.n, 0) + "</strong>" + det +
+          (x.a ? delta(x.n, x.a) : '<span class="dl neutro">sem base</span>') + '<span class="ks">vs. semana anterior</span>';
+        var l = Object.keys(c.porFC).map(function (f) { return { f: f, n: c.porFC[f][ci] }; }).filter(function (y) { return y.n; })
+          .sort(function (a, b) { return b.n - a.n || a.f.localeCompare(b.f); }).slice(0, 5), mx5 = l.length ? l[0].n : 1;
+        var gav = '<div class="ktop"><h4>Top 5 veículos</h4>' + (l.length ? "<ol>" + l.map(function (y, i) {
+          var v = c.frotas[y.f] || {};
+          return '<li><div class="l1"><span>' + (i + 1) + "º <b>" + esc(y.f) + "</b></span><b>" + num(y.n, 0) + (x.n ? " <small>" + num(y.n / x.n * 100, 0) + "%</small>" : "") + "</b></div>" +
+            '<span class="pr">' + esc(v.processo || "") + '</span><div class="bb"><i style="width:' + (y.n / mx5 * 100).toFixed(1) + '%"></i></div></li>';
+        }).join("") + "</ol>" : '<p class="vz">Sem registros na semana.</p>') + "</div>";
+        return '<article class="kpi c-' + cc.id + '"><div class="khd">' + cab + "</div>" + gav + "</article>";
+      }).join("") + "</div>";
+      corpoO += mini;
       partes.push(bloco("bl-oc", BL_ICO.oc, "Ocorrências", corpoO, c.ate));
     }
 
