@@ -75,7 +75,7 @@ window.iniciarPainel = function (D) {
     var t2 = document.querySelector('[data-turno="' + ti + '"]'); if (t2) t2.focus({ preventScroll: true });
   }
   // Hierarquia (Gerente > Coordenador > Gestor > Líder), compartilhada por Comportamental, Motor ocioso e Permanência (19/11/2026).
-  var NIV_H = [["ger", "gerente", "Gerente", "Todos os gerentes"], ["resp", "responsavel", "Coordenador", "Todos os coordenadores"], ["gest", "gestor", "Gestor", "Todos os gestores"], ["lid", "lider", "Líder", "Todos os líderes"]];
+  var NIV_H = [["ger", "gerente", "Gerente", "Todos os gerentes"], ["resp", "responsavel", "Coordenador", "Todos os coordenadores"], ["gest", "gestor", "Gestor", "Todos os gestores"]]; // Líder saiu dos filtros a pedido (25/11/2026); h.lid fica sempre vazio.
   function hierAtiva() { var h = fil_.h || {}; return !!(h.ger || h.resp || h.gest || h.lid); }
   // itens: lista; reg(item) devolve o registro com gerente/responsavel/gestor/lider. Devolve os itens filtrados e o HTML dos 4 selects.
   function hier(itens, reg, pre) {
