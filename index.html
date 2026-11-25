@@ -681,12 +681,47 @@ rect.seg.c-vel{fill:var(--c-vel)}rect.seg.c-celular{fill:var(--c-celular)}rect.s
 .bl-pb{height:10px;border-radius:5px;background:color-mix(in srgb,var(--line) 70%,transparent);overflow:hidden}.bl-pb i{display:block;height:100%;background:#C9A47C;border-radius:5px}
 .bl-pv,.bl-pm{white-space:nowrap;font-size:.9rem;font-variant-numeric:tabular-nums}.bl-pv b{font-family:var(--display);font-size:1.25rem}.bl-pm{color:var(--muted)}.bl-pm b{color:var(--ink)}
 .bl-fim{margin:1.4rem 0 0 calc(52px + 1.4rem);padding-top:1rem;border-top:1px solid var(--line);font-size:.92rem;color:var(--muted)}
+.bl-duo{display:grid;grid-template-columns:minmax(0,620px) minmax(260px,380px);gap:1.2rem 3rem;align-items:start;justify-content:start}
+.bl-graf{display:flex;align-items:center;gap:1.4rem;min-width:0}
+.bl-rosca{flex:none;width:150px;height:150px}
+.bl-rosca circle{stroke:var(--cc)}
+.bl-rc1{font-family:var(--display);font-weight:800;font-size:17px;fill:var(--ink)}.bl-rc1.caiu{fill:var(--bom)}.bl-rc1.subiu{fill:var(--critico)}
+.bl-rc2{font-size:9px;fill:var(--muted)}
+.bl-leg2{list-style:none;margin:0;padding:0;display:grid;gap:.1rem;min-width:0}
+.bl-leg2 li{display:grid;grid-template-columns:10px minmax(9rem,1fr) 3rem 3.6rem 3.8rem;align-items:baseline;gap:.55rem;padding:.28rem 0;border-bottom:1px solid var(--line);font-size:.9rem}
+.bl-leg2 li:last-child{border-bottom:0}
+.bl-leg2 i{width:10px;height:10px;border-radius:3px;background:var(--cc);align-self:center}
+.bl-leg2 b{font-family:var(--display);font-size:1.05rem;text-align:right;font-variant-numeric:tabular-nums}
+.bl-leg2 em{font-style:normal;text-align:right;color:var(--muted);font-variant-numeric:tabular-nums}
+.bl-leg2 small{text-align:right;font-size:.78rem}
+.bl-top{border-left:3px solid var(--line);padding-left:1.2rem}
+.bl-top h4{margin:0 0 .35rem;font-size:.9rem;font-weight:600;color:var(--muted)}
+.bl-top ol{list-style:none;margin:0;padding:0;counter-reset:t3}
+.bl-top li{counter-increment:t3;display:grid;grid-template-columns:1.6rem minmax(0,1fr) auto;gap:.7rem;align-items:center;padding:.55rem 0;border-bottom:1px solid var(--line)}
+.bl-top li:last-child{border-bottom:0}
+.bl-top li::before{content:counter(t3) "º";font-family:var(--display);font-weight:800;font-size:1.2rem;color:var(--muted)}
+.bl-top li b{display:block;font-size:1rem}.bl-top li span{display:block;font-size:.78rem;color:var(--muted);text-transform:capitalize}
+.bl-top .bl-tq{text-align:right;font-size:.85rem;white-space:nowrap}.bl-top .bl-tq b{display:inline;font-family:var(--display);font-size:1.15rem}
+.bl-top .bl-tq span{text-transform:none}.bl-top .bl-tq span.acima{color:var(--critico);font-weight:600}
+.bl-graf-g{align-items:center}
+.bl-gauge{flex:none;width:230px;height:auto;overflow:visible}
+.bl-g0,.bl-gok,.bl-gru,.bl-gv{fill:none;stroke-width:16;stroke-linecap:butt}
+.bl-g0{stroke:color-mix(in srgb,var(--line) 70%,transparent)}.bl-gok{stroke:color-mix(in srgb,var(--folha) 22%,transparent)}.bl-gru{stroke:color-mix(in srgb,var(--critico) 18%,transparent)}
+.bl-gv{stroke:var(--folha)}.bl-gv.acima{stroke:var(--critico)}
+.bl-gm{stroke:var(--ink);stroke-width:2.5}
+.bl-ga{fill:var(--card);stroke:var(--ink);stroke-width:2}
+.bl-gp{stroke:var(--ink);stroke-width:3;stroke-linecap:round}.bl-gc{fill:var(--ink)}
+.bl-gt{font-family:var(--display);font-weight:800;font-size:26px;fill:var(--bom)}.bl-gt.acima{fill:var(--critico)}
+.bl-gl{font-size:9px;fill:var(--muted)}.bl-glm{font-weight:700;fill:var(--ink)}
+.bl-fatos-c{flex-direction:column;flex-wrap:nowrap;gap:.45rem}
+@media(max-width:1100px){.bl-duo{grid-template-columns:minmax(0,1fr)}.bl-top{border-left:0;padding-left:0;border-top:3px solid var(--line);padding-top:.6rem}}
+@media(max-width:760px){.bl-graf{flex-direction:column;align-items:flex-start}.bl-leg2 li{grid-template-columns:10px minmax(0,1fr) 2.6rem 3rem 3.4rem;font-size:.82rem}}
 @media(max-width:760px){.bl{padding:1.2rem 1rem}.bl-b{grid-template-columns:40px minmax(0,1fr);gap:.9rem}.bl-ic{width:40px;height:40px}.bl-ic .ic{width:20px;height:20px}.bl-fio::before{left:19px}
  .bl-pts li{grid-template-columns:1.8rem 1fr auto;row-gap:.35rem}.bl-pn,.bl-pb{grid-column:2/-1}.bl-pv{grid-column:2;white-space:nowrap}.bl-pm{grid-column:3;text-align:right}.bl-fim{margin-left:0}}
 </style>
 </head><body>
 <div id="captura"><header class="band"><div class="band-in gut">
-  <img class="logo" src="logo-branco.png?v=202611251120" alt="Bioenergética Aroeira" width="67" height="92">
+  <img class="logo" src="logo-branco.png?v=202611251140" alt="Bioenergética Aroeira" width="67" height="92">
   <div><h1>MONITORAMENTO COMPORTAMENTAL</h1><p class="per" id="periodo"></p></div>
   <div class="quem" id="quem" hidden><span><b id="quem-nome"></b><small id="quem-escopo"></small></span><button type="button" id="atualizar" hidden>Atualizar dados</button><button type="button" id="sair">Sair</button></div>
   <p class="atu-ult" id="atualizado" hidden></p>
@@ -720,10 +755,10 @@ rect.seg.c-vel{fill:var(--c-vel)}rect.seg.c-celular{fill:var(--c-celular)}rect.s
 </div><!-- /captura -->
 <footer class="foot gut">Bioenergética Aroeira S/A, Tupaciguara/MG. <a href="https://www.bioaroeira.com.br" target="_blank" rel="noopener">www.bioaroeira.com.br</a></footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" defer></script>
-<script src="acesso.js?v=202611251120"></script>
-<script src="app.js?v=202611251120"></script>
-<script src="html-to-image.min.js?v=202611251120"></script>
-<script src="jszip.min.js?v=202611251120"></script>
-<script src="painel-atualizar.js?v=202611251120"></script>
-<script src="login.js?v=202611251120"></script>
+<script src="acesso.js?v=202611251140"></script>
+<script src="app.js?v=202611251140"></script>
+<script src="html-to-image.min.js?v=202611251140"></script>
+<script src="jszip.min.js?v=202611251140"></script>
+<script src="painel-atualizar.js?v=202611251140"></script>
+<script src="login.js?v=202611251140"></script>
 </body></html>

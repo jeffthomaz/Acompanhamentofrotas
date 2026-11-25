@@ -1410,7 +1410,7 @@ window.iniciarPainel = function (D) {
     var por = S.dias.map(function (_, k) { return i0 + k <= fimC && i0 + k >= 0 ? 0 : null; });
     var okA = S.dias.map(function (_, k) { return por[k] !== null && a0 + k >= 0; });
     if (por.every(function (v) { return v === null; })) return semDados(S, "comportamento", "Comportamental", "ocorrências");
-    var cur = 0, ant = 0, porT = T.map(function () { return 0; }), porTA = porT.slice(), porP = {}, porF = {};
+    var cur = 0, ant = 0, porT = T.map(function () { return 0; }), porTA = porT.slice(), porP = {}, porF = {}, porFC = {};
     var ci = T.map(function (t) { var g = t.grupo || t.id; for (var j = 0; j < CATS.length; j++) if (CATS[j].id === g) return j; return -1; });
     var porDC = S.dias.map(function () { return CATS.map(function () { return 0; }); });
     // Turno pela hora da ocorrência (5º item do ev): 0 = A, 1 = B, 2 = C; sem o item = sem hora.
@@ -1428,6 +1428,7 @@ window.iniciarPainel = function (D) {
       if (!turnoOk(e) || !hOk) return;
       if (nk) {
         por[k] += e[3]; cur += e[3]; porT[e[1]] += e[3]; porP[f.processo] = (porP[f.processo] || 0) + e[3]; porF[e[2]] = (porF[e[2]] || 0) + e[3];
+        if (ci[e[1]] >= 0) { var pfc = porFC[e[2]] || (porFC[e[2]] = CATS.map(function () { return 0; })); pfc[ci[e[1]]] += e[3]; }
         porDC[k][ci[e[1]]] += e[3];
       }
       else if (q >= 0 && q < 7 && okA[q]) { ant += e[3]; porTA[e[1]] += e[3]; }
@@ -1451,7 +1452,7 @@ window.iniciarPainel = function (D) {
     return { aba: "comportamento", nome: "Comportamental", ini: S.ini, fim: S.fim, ate: dFim < S.fim ? dFim : null,
       valor: num(cur, 0), un: plural(cur, "ocorrência", "ocorrências"), delta: ant ? delta(cur, ant) : '<span class="dl neutro">sem base</span>',
       graf: barras7(por, S.dias, function (v) { return num(v, 0) + " " + plural(v, "ocorrência", "ocorrências"); }, "Ocorrências por dia"),
-      diag: diag, alertas: al, cur: cur, ant: ant, tu: tu, tuA: tuA, tuC: tuC, hr: hr, hrC: hrC, vals: por, porDC: porDC, cats: cats, porP: porP, porF: porF, frotas: F,
+      diag: diag, alertas: al, cur: cur, ant: ant, tu: tu, tuA: tuA, tuC: tuC, hr: hr, hrC: hrC, vals: por, porDC: porDC, cats: cats, porP: porP, porF: porF, porFC: porFC, frotas: F,
       vel: ["vel1", "vel2", "vel3"].map(function (id) { var i = T.map(function (t) { return t.id; }).indexOf(id); return i >= 0 ? { nome: T[i].nome, n: porT[i] } : null; }).filter(Boolean) };
   }
 
@@ -1880,40 +1881,66 @@ window.iniciarPainel = function (D) {
     }
     var partes = [];
 
-    // 🚦 Ocorrências: variação sobre a semana anterior e a fatia de cada tipo (sem o total, como na mensagem).
+    // 🚦 Ocorrências: frase com a variação; à esquerda a rosca por tipo (% e quantidade), à direita o top 3 veículos.
     if (c && c.cur !== undefined) {
-      var vt = varTxt(c.cur, c.ant), cats = c.cats.filter(function (x) { return x.n || x.a; });
+      var vt = varTxt(c.cur, c.ant), cats = c.cats.filter(function (x) { return x.n; });
       var frase = !c.cur ? "Nenhuma ocorrência na semana." : !vt ? "Primeira semana com dados para comparar."
         : vt.cls === "igual" ? "As ocorrências ficaram estáveis em relação à semana anterior."
         : "As ocorrências " + (vt.cls === "caiu" ? "caíram" : "subiram") + ' <b class="bl-n ' + vt.cls + '">' + num(Math.abs((c.cur - c.ant) / c.ant * 100), 0) + "%</b> em relação à semana anterior.";
-      var barra = c.cur ? '<div class="bl-prop" role="img" aria-label="' + esc(cats.filter(function (x) { return x.n; }).map(function (x) { return x.c.nome + " " + num(x.n / c.cur * 100, 0) + "%"; }).join(", ")) + '">' +
-        cats.filter(function (x) { return x.n; }).map(function (x) { return '<i class="c-' + x.c.id + '" style="flex:' + x.n + '"></i>'; }).join("") + "</div>" : "";
-      var tipos = '<ul class="bl-tipos">' + cats.map(function (x) {
-        var v = varTxt(x.n, x.a), pctT = c.cur ? x.n / c.cur * 100 : 0;
-        return '<li class="c-' + x.c.id + '"><span class="bl-tn"><i></i>' + esc(x.c.nome) + '</span><b>' + (pctT > 0 && pctT < 1 ? "<1" : num(pctT, 0)) + "%</b>" +
-          '<span class="bl-v ' + (v ? v.cls : "sem") + '">' + (v ? v.t : x.n ? "novo" : "") + "</span></li>";
-      }).join("") + "</ul>";
-      partes.push(bloco("bl-oc", BL_ICO.oc, "Ocorrências", '<p class="bl-frase">' + frase + "</p>" + barra + tipos +
-        '<p class="bl-nota">% de cada tipo nas ocorrências da semana; a seta compara com a semana anterior.</p>', c.ate));
+      var corpoO = '<p class="bl-frase">' + frase + "</p>";
+      if (c.cur) {
+        var R = 46, C0 = 2 * Math.PI * R, acc = 0;
+        var arcos = cats.map(function (x) {
+          var f = x.n / c.cur, seg = '<circle class="c-' + x.c.id + '" r="' + R + '" cx="60" cy="60" fill="none" stroke-width="22" stroke-dasharray="' + (f * C0).toFixed(2) + " " + C0.toFixed(2) + '" stroke-dashoffset="' + (-acc * C0).toFixed(2) + '" transform="rotate(-90 60 60)"><title>' + esc(x.c.nome + ": " + num(x.n, 0) + " (" + num(f * 100, 0) + "%)") + "</title></circle>";
+          acc += f; return seg;
+        }).join("");
+        var pizza = '<svg class="bl-rosca" viewBox="0 0 120 120" role="img" aria-label="' + esc(cats.map(function (x) { return x.c.nome + " " + num(x.n / c.cur * 100, 0) + "%"; }).join(", ")) + '">' + arcos +
+          (vt ? '<text x="60" y="57" text-anchor="middle" class="bl-rc1 ' + vt.cls + '">' + vt.t + '</text><text x="60" y="73" text-anchor="middle" class="bl-rc2">vs. anterior</text>' : "") + "</svg>";
+        var leg = '<ul class="bl-leg2">' + cats.map(function (x) {
+          var pT = x.n / c.cur * 100, v = varTxt(x.n, x.a);
+          return '<li class="c-' + x.c.id + '"><i></i><span>' + esc(x.c.nome) + "</span><b>" + (pT < 1 ? "<1" : num(pT, 0)) + "%</b><em>" + num(x.n, 0) + "</em>" +
+            '<small class="bl-v ' + (v ? v.cls : "") + '">' + (v ? v.t : "novo") + "</small></li>";
+        }).join("") + "</ul>";
+        var top3 = Object.keys(c.porF).map(function (f) { return { f: f, n: c.porF[f] }; }).sort(function (a, b) { return b.n - a.n; }).slice(0, 3);
+        var t3 = '<div class="bl-top"><h4>Top 3 veículos</h4><ol>' + top3.map(function (x) {
+          var fr = c.frotas[x.f] || {}, pc = c.porFC[x.f] || [], mi = 0;
+          pc.forEach(function (v, k) { if (v > pc[mi]) mi = k; });
+          return '<li><div><b>Frota ' + esc(x.f) + "</b><span>" + esc((fr.processo || "").toLowerCase()) + '</span></div><div class="bl-tq"><b>' + num(x.n, 0) + "</b> " + plural(x.n, "ocorrência", "ocorrências") +
+            "<span>" + (pc.length ? esc(CATS[mi].nome.toLowerCase()) + " " + num(pc[mi] / x.n * 100, 0) + "%" : "") + "</span></div></li>";
+        }).join("") + "</ol></div>";
+        corpoO += '<div class="bl-duo"><div class="bl-graf">' + pizza + leg + "</div>" + t3 + "</div>";
+      }
+      partes.push(bloco("bl-oc", BL_ICO.oc, "Ocorrências", corpoO, c.ate));
     }
 
-    // ⏱️ Motor ocioso: % do tempo ligado parado, contra a meta e a semana anterior.
+    // ⏱️ Motor ocioso: medidor com o % ocioso (meta e semana anterior) e, ao lado, o top 3 veículos por horas ociosas.
     if (o && o.pct !== undefined && o.pct !== null) {
-      var esc_ = Math.max(o.meta * 1.4, Math.ceil(Math.max(o.pct, o.pAnt || 0) / 5) * 5 + 5);
-      var pos = function (v) { return Math.min(100, v / esc_ * 100).toFixed(1) + "%"; };
+      var mx = Math.max(o.meta * 2, Math.ceil(Math.max(o.pct, o.pAnt || 0) / 5) * 5);
       var dif = o.pAnt !== null && o.pAnt !== undefined ? o.pct - o.pAnt : null;
       var fraseO = "Os veículos ficaram " + '<b class="bl-n ' + (o.pct > o.meta ? "subiu" : "caiu") + '">' + num(o.pct, 1) + "%</b> do tempo de motor ligado parados, " +
         (o.pct > o.meta ? "acima" : "abaixo") + " da meta de " + o.meta + "%.";
-      var regua = '<div class="bl-regua" role="img" aria-label="' + esc(num(o.pct, 1) + "% nesta semana" + (dif !== null ? ", " + num(o.pAnt, 1) + "% na anterior" : "") + ", meta " + o.meta + "%") + '">' +
-        '<div class="bl-trilho"><i class="bl-fill' + (o.pct > o.meta ? " acima" : "") + '" style="width:' + pos(o.pct) + '"></i>' +
-        '<span class="bl-meta" style="left:' + pos(o.meta) + '"><em>meta ' + o.meta + "%</em></span>" +
-        (dif !== null ? '<span class="bl-ant" style="left:' + pos(o.pAnt) + '" title="Semana anterior: ' + num(o.pAnt, 1) + '%"></span>' : "") + "</div>" +
-        '<div class="bl-esc"><span>0%</span>' + (dif !== null ? '<span class="bl-leg"><i></i>semana anterior</span>' : "") + "<span>" + num(esc_, 0) + "%</span></div></div>";
-      var fatos = '<ul class="bl-fatos"><li><b>' + horas(o.oc) + "</b> de motor ocioso em " + horas(o.lc) + " de ignição</li>" +
-        (dif !== null ? '<li><b class="' + (Math.abs(dif) < 0.05 ? "" : dif < 0 ? "caiu" : "subiu") + '">' + (Math.abs(dif) < 0.05 ? "igual" : (dif < 0 ? "↓ " : "↑ ") + num(Math.abs(dif), 1).replace(".", ",") + " p.p.") + "</b> sobre a semana anterior (" + num(o.pAnt, 1) + "%)</li>" : "") +
-        "<li>" + (o.acima ? "<b>" + o.acima + "</b> " + plural(o.acima, "veículo acima", "veículos acima") + " da meta" + (o.acimaL.length ? ": " + o.acimaL.map(function (r) { return "<b>" + esc(r.v.id) + "</b> " + num(r.p, 1) + "%"; }).join(", ") + (o.acima > o.acimaL.length ? "…" : "") : "")
-          : "Todos os veículos dentro da meta") + "</li></ul>";
-      partes.push(bloco("bl-mo", BL_ICO.mo, "Motor ocioso", '<p class="bl-frase">' + fraseO + "</p>" + regua + fatos, o.ate));
+      // Medidor semicircular: 0 a mx; verde até a meta, vermelho depois.
+      var ang = function (v) { return Math.PI * (1 - Math.min(v, mx) / mx); }, pt = function (v, rr) { return [(100 + rr * Math.cos(ang(v))).toFixed(2), (100 - rr * Math.sin(ang(v))).toFixed(2)]; };
+      var arco = function (a, b, rr) { var p1 = pt(a, rr), p2 = pt(b, rr); return "M" + p1[0] + " " + p1[1] + " A" + rr + " " + rr + " 0 0 1 " + p2[0] + " " + p2[1]; };
+      var ag = pt(o.pct, 56), mk = [pt(o.meta, 62), pt(o.meta, 90)];
+      var medidor = '<svg class="bl-gauge" viewBox="0 0 200 150" role="img" aria-label="' + esc(num(o.pct, 1) + "% de motor ocioso; meta " + o.meta + "%") + '">' +
+        '<path d="' + arco(0, mx, 76) + '" class="bl-g0"/><path d="' + arco(0, o.meta, 76) + '" class="bl-gok"/><path d="' + arco(o.meta, mx, 76) + '" class="bl-gru"/>' +
+        '<path d="' + arco(0, o.pct, 76) + '" class="bl-gv' + (o.pct > o.meta ? " acima" : "") + '"/>' +
+        '<line x1="' + mk[0][0] + '" y1="' + mk[0][1] + '" x2="' + mk[1][0] + '" y2="' + mk[1][1] + '" class="bl-gm"/>' +
+        (dif !== null ? '<circle cx="' + pt(o.pAnt, 76)[0] + '" cy="' + pt(o.pAnt, 76)[1] + '" r="5" class="bl-ga"><title>Semana anterior: ' + num(o.pAnt, 1) + "%</title></circle>" : "") +
+        '<line x1="100" y1="100" x2="' + ag[0] + '" y2="' + ag[1] + '" class="bl-gp"/><circle cx="100" cy="100" r="6" class="bl-gc"/>' +
+        '<text x="100" y="140" text-anchor="middle" class="bl-gt' + (o.pct > o.meta ? " acima" : "") + '">' + num(o.pct, 1) + "%</text>" +
+        '<text x="24" y="116" text-anchor="middle" class="bl-gl">0%</text><text x="176" y="116" text-anchor="middle" class="bl-gl">' + num(mx, 0) + "%</text>" +
+        '<text x="' + pt(o.meta, 104)[0] + '" y="' + pt(o.meta, 104)[1] + '" text-anchor="middle" class="bl-gl bl-glm">meta ' + o.meta + "%</text></svg>";
+      var fatos = '<ul class="bl-fatos bl-fatos-c"><li><b>' + horas(o.oc) + "</b> ociosas de " + horas(o.lc) + " de ignição</li>" +
+        (dif !== null ? '<li><b class="' + (Math.abs(dif) < 0.05 ? "" : dif < 0 ? "caiu" : "subiu") + '">' + (Math.abs(dif) < 0.05 ? "igual" : (dif < 0 ? "↓ " : "↑ ") + num(Math.abs(dif), 1) + " p.p.") + "</b> sobre a semana anterior (" + num(o.pAnt, 1) + "%)</li>" : "") +
+        "<li>" + (o.acima ? "<b>" + o.acima + "</b> " + plural(o.acima, "veículo acima", "veículos acima") + " da meta" : "Todos os veículos dentro da meta") + "</li></ul>";
+      var t3o = o.rows.slice().sort(function (a, b) { return b.o - a.o; }).slice(0, 3);
+      var top3o = '<div class="bl-top"><h4>Top 3 veículos</h4><ol>' + t3o.map(function (rw) {
+        return '<li><div><b>Frota ' + esc(rw.v.id) + "</b><span>" + esc((rw.v.processo || "").toLowerCase()) + '</span></div><div class="bl-tq"><b>' + horas(rw.o) + "</b> ociosas" +
+          '<span class="' + (rw.p > o.meta ? "acima" : "") + '">' + num(rw.p, 1) + "% do tempo ligado</span></div></li>";
+      }).join("") + "</ol></div>";
+      partes.push(bloco("bl-mo", BL_ICO.mo, "Motor ocioso", '<p class="bl-frase">' + fraseO + '</p><div class="bl-duo"><div class="bl-graf bl-graf-g">' + medidor + fatos + "</div>" + top3o + "</div>", o.ate));
     }
 
     // 📍 Principais pontos de parada: os 3 estabelecimentos com mais paradas, com a média de tempo.
