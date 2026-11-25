@@ -1917,7 +1917,10 @@ window.iniciarPainel = function (D) {
           var fr = c.frotas[x.f] || {}, pc = c.porFC[x.f] || [], mi = 0;
           pc.forEach(function (v, k) { if (v > pc[mi]) mi = k; });
           return '<li><div><b>Frota ' + esc(x.f) + "</b><span class=\"cap\">" + esc((fr.processo || "").toLowerCase()) + '</span></div><div class="bl-tq"><b>' + num(x.n, 0) + "</b> " + plural(x.n, "ocorrência", "ocorrências") +
-            "<span>" + (pc.length ? esc(CATS[mi].nome.toLowerCase()) + " " + num(pc[mi] / x.n * 100, 0) + "%" : "") + "</span></div></li>";
+            "<span>" + (pc.length ? esc(CATS[mi].nome.toLowerCase()) + " " + num(pc[mi] / x.n * 100, 0) + "%" : "") + "</span></div>" +
+            // Barrinha com a divisão das ocorrências da frota por tipo (mesmas cores da rosca).
+            '<div class="bl-tb" role="img" aria-label="' + esc(CATS.map(function (cc, k) { return pc[k] ? cc.nome + " " + num(pc[k] / x.n * 100, 0) + "%" : ""; }).filter(Boolean).join(", ")) + '">' +
+            CATS.map(function (cc, k) { return pc[k] ? '<i class="c-' + cc.id + '" style="width:' + (pc[k] / x.n * 100).toFixed(1) + '%" title="' + esc(cc.nome + ": " + num(pc[k], 0) + " (" + num(pc[k] / x.n * 100, 0) + "%)") + '"></i>' : ""; }).join("") + "</div></li>";
         }).join("") + "</ol></div>";
         corpoO += '<div class="bl-duo"><div class="bl-graf">' + pizza + leg + "</div>" + t3 + "</div>";
       }
@@ -1957,7 +1960,9 @@ window.iniciarPainel = function (D) {
       var t3o = o.rows.slice().sort(function (a, b) { return b.o - a.o; }).slice(0, 3);
       var top3o = '<div class="bl-top"><h4>Top 3 veículos</h4><ol>' + t3o.map(function (rw) {
         return '<li><div><b>Frota ' + esc(rw.v.id) + "</b><span class=\"cap\">" + esc((rw.v.processo || "").toLowerCase()) + '</span></div><div class="bl-tq"><b>' + horas(rw.o) + "</b> ociosas" +
-          '<span class="' + (rw.p > o.meta ? "acima" : "") + '">' + num(rw.p, 1) + "% do tempo ligado</span></div></li>";
+          '<span class="' + (rw.p > o.meta ? "acima" : "") + '">' + num(rw.p, 1) + "% do tempo ligado</span></div>" +
+          // Barrinha do % ocioso (0 a 100%), com o traço da meta; vermelha acima da meta.
+          '<div class="bl-tb bl-tbo" role="img" aria-label="' + num(rw.p, 1) + '% ocioso"><i class="' + (rw.p > o.meta ? "acima" : "") + '" style="width:' + Math.min(rw.p, 100).toFixed(1) + '%"></i><u style="left:' + o.meta + '%" title="meta ' + o.meta + '%"></u></div></li>';
       }).join("") + "</ol></div>";
       partes.push(bloco("bl-mo", BL_ICO.mo, "Motor ocioso", '<p class="bl-frase">' + fraseO + '</p><div class="bl-duo"><div class="bl-graf bl-graf-g">' + medidor + fatos + "</div>" + top3o + "</div>", o.ate));
     }
