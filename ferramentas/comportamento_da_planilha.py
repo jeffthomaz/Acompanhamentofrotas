@@ -197,11 +197,14 @@ def divergencias(rows, trat, ini, tipo_id):
     usados_oc = {}
     for f, d, t, h in oc:
         usados_oc.setdefault((f, t), []).append(d)
+    # A planilha de ocorrências é D-1 (25/11/2026): tratativa de depois do último dia que ela já tem ainda não pode
+    # ter a ocorrência equivalente; espera o dia seguinte em vez de virar divergência.
+    ult = max((r["d"] for r in rows), default="")
     sem_oc = [{"f": tr[i][0], "d": tr[i][1], "h": tr[i][3][:5], "t": tr[i][2]} for i in livre
-              if not any(dd(x, tr[i][1]) <= 1 for x in usados_oc.get((tr[i][0], tr[i][2]), []))
+              if tr[i][1] <= ult and not any(dd(x, tr[i][1]) <= 1 for x in usados_oc.get((tr[i][0], tr[i][2]), []))
               and (tr[i][0], tr[i][1], tr[i][2]) not in exc]
     print("divergências: %d ocorrência(s) sem tratativa, %d tratativa(s) sem ocorrência" % (len(sem_trat), len(sem_oc)))
-    return {"ini": ini, "ocSemTrat": sem_trat, "tratSemOc": sorted(sem_oc, key=lambda x: (x["d"], x["h"]))}
+    return {"ini": ini, "ult": ult, "ocSemTrat": sem_trat, "tratSemOc": sorted(sem_oc, key=lambda x: (x["d"], x["h"]))}
 
 
 def processar(wb, destino, trat=None):

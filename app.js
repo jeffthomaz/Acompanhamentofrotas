@@ -397,6 +397,12 @@ window.iniciarPainel = function (D) {
     // Evolução das ocorrências num bloco só, largura toda, logo abaixo de turnos/horas de pico (pedido em 17/11/2026).
     // Divergências ocorrências × tratativas (23/11/2026): só para jeffersonmelo e giovannatulio (flag dv).
     var DV = C.diverg, divHtml = "", dBr = function (x) { return x.slice(8, 10) + "/" + x.slice(5, 7) + "/" + x.slice(0, 4); };
+    // Planilha de ocorrências é D-1: tratativa depois do último dia dela ainda não conta como divergência (25/11/2026).
+    if (DV) {
+      var ultOc = DV.ult;
+      if (!ultOc) { var mxO = -1; C.ev.forEach(function (e) { var g = T[e[1]].grupo || T[e[1]].id; if ((g === "vel" || g === "fadiga") && e[0] > mxO) mxO = e[0]; }); ultOc = mxO >= 0 ? isoMais(C.inicio, mxO) : ""; }
+      if (ultOc) DV = { ini: DV.ini, ult: ultOc, ocSemTrat: DV.ocSemTrat, tratSemOc: DV.tratSemOc.filter(function (x) { return x.d <= ultOc; }) };
+    }
     if (window.painelDv && DV && (DV.ocSemTrat.length || DV.tratSemOc.length)) {
       var NTD = { celular: "Uso de celular", cinto: "Sem cinto", cigarro: "Uso de cigarro", faixa: "Ultrapassagem em faixa contínua", distracao: "Distração" };
       var lin = DV.ocSemTrat.map(function (x) { return [x, "Na planilha de ocorrências, sem tratativa"]; })
@@ -404,7 +410,7 @@ window.iniciarPainel = function (D) {
         .sort(function (a, b) { return a[0].d < b[0].d ? 1 : a[0].d > b[0].d ? -1 : 0; });
       divHtml = '<details class="card diverg"' + (DV.ocSemTrat.length ? " open" : "") + '><summary><span class="dv-ic" aria-hidden="true">!</span> <b>' + lin.length + " " + plural(lin.length, "divergência", "divergências") +
         "</b> entre ocorrências e tratativas" + (DV.ocSemTrat.length ? " · " + DV.ocSemTrat.length + " sem tratativa" : "") + '</summary><p class="cs">Desde ' + dBr(DV.ini) +
-        ". Celular, sem cinto, cigarro e ultrapassagem que estão na planilha de ocorrências sem tratativa, e tratativas sem ocorrência equivalente (mesma frota e tipo, até 1 dia de diferença). Visível só para Jefferson e Giovanna.</p>" +
+        ". Celular, sem cinto, cigarro e ultrapassagem que estão na planilha de ocorrências sem tratativa, e tratativas sem ocorrência equivalente (mesma frota e tipo, até 1 dia de diferença). Como a planilha de ocorrências é D-1, tratativas depois de " + dBr(DV.ult || DV.ini) + " só são conferidas quando ela tiver o dia. Visível só para Jefferson e Giovanna.</p>" +
         '<table class="tb"><thead><tr><th scope="col">Frota</th><th scope="col">Data</th><th scope="col">Hora</th><th scope="col">Tipo</th><th scope="col">Situação</th></tr></thead><tbody>' +
         lin.map(function (x) { var o = x[0]; return '<tr><th scope="row">' + esc(o.f) + "</th><td>" + dBr(o.d) + "</td><td>" + esc(o.h || "") + "</td><td>" + esc(NTD[o.t] || o.t) + '</td><td class="' + (x[1].indexOf("sem tratativa") >= 0 ? "dv-oc" : "dv-tr") + '">' + x[1] + "</td></tr>"; }).join("") + "</tbody></table></details>";
     }
