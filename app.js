@@ -1874,7 +1874,8 @@ window.iniciarPainel = function (D) {
     var topo = '<header class="bl-topo"><div><h2 class="bl-tit">Resumo da semana</h2>' +
       '<p class="bl-per"><b>' + faixaExt(S.ini, S.fim) + "</b>, comparada com " + faixaExt(S.ant[0], S.ant[6]) + ".</p></div>" +
       '<div class="filtros bl-fil"><label>Processo<select data-fil="processo" id="r-processo">' + opcoes(lista, fil_.processo, D.escopo && D.escopo !== "todos" ? "Todos os meus processos" : "Todos os processos") + "</select></label>" +
-      (fil_.processo || !todosTurnos() || fil_.horas ? '<button type="button" class="limpar" data-limpar="1">Limpar filtros</button>' : "") + "</div></header>";
+      (fil_.processo || !todosTurnos() || fil_.horas ? '<button type="button" class="limpar" data-limpar="1">Limpar filtros</button>' : "") +
+      '<button type="button" class="bl-copiar" data-copiar-resumo="1" title="Copia a imagem do resumo para colar (Ctrl+V) no WhatsApp ou no e-mail">📋 Copiar imagem</button></div></header>';
 
     function bloco(cls, icone, titulo, corpo, ate) {
       return '<section class="bl-b ' + cls + '"><span class="bl-ic">' + ico(icone) + '</span><div class="bl-c"><h3>' + titulo +
@@ -2241,6 +2242,22 @@ window.iniciarPainel = function (D) {
     dl.addEventListener("close", function () { urls.forEach(URL.revokeObjectURL); dl.remove(); });
     dl.showModal();
   }
+  // Copiar a imagem do quadro do Resumo (25/11/2026): para colar com Ctrl+V no WhatsApp/e-mail.
+  painel.addEventListener("click", async function (e) {
+    var b = e.target.closest("[data-copiar-resumo]"); if (!b) return;
+    var q = painel.querySelector(".bl"); if (!q) return;
+    var t0 = "📋 Copiar imagem";
+    if (!window.htmlToImage || !navigator.clipboard || !window.ClipboardItem) { b.textContent = "Este navegador não copia imagens"; setTimeout(function () { b.textContent = t0; }, 3000); return; }
+    b.disabled = true; b.textContent = "Copiando…";
+    try {
+      fixarSvg(q);
+      var blob = window.htmlToImage.toBlob(q, { pixelRatio: 2, backgroundColor: getComputedStyle(q).backgroundColor || "#fff",
+        filter: function (n) { return !(n.classList && (n.classList.contains("bl-copiar") || n.classList.contains("limpar"))); } });
+      await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+      b.textContent = "✓ Copiada — cole com Ctrl+V";
+    } catch (err) { console.error(err); b.textContent = "Não copiou — tente de novo"; }
+    setTimeout(function () { b.disabled = false; b.textContent = t0; }, 3000);
+  });
   var FOTOS_LIGADO = false; // desabilitado a pedido do usuário em 23/11/2026; para voltar, trocar para true
   if (btFotos) { btFotos.hidden = !FOTOS_LIGADO; if (FOTOS_LIGADO) btFotos.onclick = tirarFotos; }
   render();

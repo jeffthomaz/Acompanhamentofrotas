@@ -644,7 +644,7 @@ rect.seg.c-vel{fill:var(--c-vel)}rect.seg.c-celular{fill:var(--c-celular)}rect.s
 .bl-topo{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:1rem 2rem;padding-bottom:1.4rem;margin-bottom:1.6rem;border-bottom:2px solid var(--ink)}
 .bl-tit{font-family:var(--display);font-weight:800;font-size:clamp(1.9rem,3.2vw,2.6rem);line-height:1;letter-spacing:-.02em;margin:0}
 .bl-per{margin:.55rem 0 0;color:var(--muted);font-size:1rem}.bl-per b{color:var(--ink);font-weight:600}
-.bl-fil{margin:0;padding:0;background:none;border:0;box-shadow:none}
+.bl-fil{margin:0;padding:0;background:none;border:0;box-shadow:none;align-items:flex-end}.bl-copiar{border:1.5px solid #0F4A2A;background:#0F4A2A;color:#fff;border-radius:999px;padding:.5rem 1.1rem;font:inherit;font-weight:600;cursor:pointer;white-space:nowrap}.bl-copiar:hover{background:#1F6F3A}.bl-copiar:disabled{opacity:.8;cursor:progress}.bl-copiar:focus-visible{outline:3px solid var(--maq);outline-offset:2px}
 .bl-fio{position:relative}
 .bl-fio::before{content:"";position:absolute;left:25px;top:28px;bottom:28px;width:2px;background:repeating-linear-gradient(to bottom,var(--line) 0 6px,transparent 6px 11px)}
 .bl-b{position:relative;display:grid;grid-template-columns:52px minmax(0,1fr);gap:1.4rem;padding:0 0 2.2rem}
@@ -693,7 +693,7 @@ rect.seg.c-vel{fill:var(--c-vel)}rect.seg.c-celular{fill:var(--c-celular)}rect.s
 .bl-leg2 i{width:10px;height:10px;border-radius:3px;background:var(--cc);align-self:center}
 .bl-leg2 b{font-family:var(--display);font-size:1.05rem;text-align:right;font-variant-numeric:tabular-nums}
 .bl-leg2 em{font-style:normal;text-align:right;color:var(--muted);font-variant-numeric:tabular-nums}
-.bl-leg2 small.bl-v{grid-column:2/-1;text-align:left;font-size:.8rem;color:var(--muted)}
+.bl-leg2 small.bl-v{grid-column:2/-1;text-align:left;font-size:.8rem}.bl-leg2 small.bl-v.caiu{color:var(--bom)}.bl-leg2 small.bl-v.subiu{color:var(--critico)}
 .bl-top{border-left:3px solid var(--line);padding-left:1.2rem}
 .bl-top h4{margin:0 0 .35rem;font-size:.9rem;font-weight:600;color:var(--muted)}
 .bl-top ol{list-style:none;margin:0;padding:0;counter-reset:t3}
@@ -721,7 +721,7 @@ rect.seg.c-vel{fill:var(--c-vel)}rect.seg.c-celular{fill:var(--c-celular)}rect.s
 </style>
 </head><body>
 <div id="captura"><header class="band"><div class="band-in gut">
-  <img class="logo" src="logo-branco.png?v=202611251150" alt="Bioenergética Aroeira" width="67" height="92">
+  <img class="logo" src="logo-branco.png?v=202611251145" alt="Bioenergética Aroeira" width="67" height="92">
   <div><h1>MONITORAMENTO COMPORTAMENTAL</h1><p class="per" id="periodo"></p></div>
   <div class="quem" id="quem" hidden><span><b id="quem-nome"></b><small id="quem-escopo"></small></span><button type="button" id="atualizar" hidden>Atualizar dados</button><button type="button" id="sair">Sair</button></div>
   <p class="atu-ult" id="atualizado" hidden></p>
@@ -755,10 +755,10 @@ rect.seg.c-vel{fill:var(--c-vel)}rect.seg.c-celular{fill:var(--c-celular)}rect.s
 </div><!-- /captura -->
 <footer class="foot gut">Bioenergética Aroeira S/A, Tupaciguara/MG. <a href="https://www.bioaroeira.com.br" target="_blank" rel="noopener">www.bioaroeira.com.br</a></footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" defer></script>
-<script src="acesso.js?v=202611251150"></script>
-<script src="app.js?v=202611251150"></script>
-<script src="html-to-image.min.js?v=202611251150"></script>
-<script src="jszip.min.js?v=202611251150"></script>
-<script src="painel-atualizar.js?v=202611251150"></script>
-<script src="login.js?v=202611251150"></script>
+<script src="acesso.js?v=202611251145"></script>
+<script src="app.js?v=202611251145"></script>
+<script src="html-to-image.min.js?v=202611251145"></script>
+<script src="jszip.min.js?v=202611251145"></script>
+<script src="painel-atualizar.js?v=202611251145"></script>
+<script src="login.js?v=202611251145"></script>
 </body></html>
