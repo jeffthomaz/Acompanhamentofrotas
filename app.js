@@ -1362,6 +1362,8 @@ window.iniciarPainel = function (D) {
   function isoMais(s, n) { var d = new Date(s + "T12:00:00"); d.setDate(d.getDate() + n); return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); }
   function diaSem(s) { return SEMANA[new Date(s + "T12:00:00").getDay()]; }
   function noProc(p) { return !fil_.processo || p === fil_.processo; }
+  // Gerente/Coordenador/Gestor escolhidos (mesmo filtro das abas) também valem no Resumo (25/11/2026).
+  function hierOk(r) { var h = fil_.h; if (!h) return true; r = r || {}; for (var i = 0; i < NIV_H.length; i++) if (h[NIV_H[i][0]] && r[NIV_H[i][1]] !== h[NIV_H[i][0]]) return false; return true; }
 
   // Colunas dos 7 dias; null = dia sem dados. O último dia fica em amarelo.
   function barras7(vals, dias, fmt, rotulo) {
@@ -1419,7 +1421,7 @@ window.iniciarPainel = function (D) {
     var hr = [], hrC = [];
     for (var h0 = 0; h0 < 24; h0++) { hr.push(0); hrC.push(CATS.map(function () { return 0; })); }
     C.ev.forEach(function (e) {
-      var f = F[e[2]]; if (!f || !noProc(f.processo) || e[0] > fimC || ci[e[1]] < 0) return; // só tipos com card
+      var f = F[e[2]]; if (!f || !noProc(f.processo) || !hierOk(f) || e[0] > fimC || ci[e[1]] < 0) return; // só tipos com card
       var k = e[0] - i0, q = e[0] - a0, t0 = e.length > 4 ? e[4] : 3, nk = k >= 0 && k < 7 && por[k] !== null;
       // Quadros de turno: todos os turnos (são eles que filtram); o resto, só os turnos escolhidos.
       var hOk = horaOk(e);
@@ -1458,7 +1460,7 @@ window.iniciarPainel = function (D) {
 
   function rzOcioso(S) {
     var M = D.motorOcioso; if (!M || !M.ultDias) return null;
-    var U = M.ultDias, meta = M.metaPct, vs = M.veiculos.filter(function (v) { return noProc(v.processo) && v.dl; });
+    var U = M.ultDias, meta = M.metaPct, vs = M.veiculos.filter(function (v) { return noProc(v.processo) && hierOk(v) && v.dl; });
     function tot(d) {
       var k = U.indexOf(d); if (k < 0) return null;
       var l = sum(vs, function (v) { return v.dl[k] || 0; }); return l ? { k: k, l: l, o: sum(vs, function (v) { return v.do[k] || 0; }) } : null;
@@ -1497,7 +1499,7 @@ window.iniciarPainel = function (D) {
     if (porDia[0] === null) return semDados(S, "permanencia", "Permanência", "parados");
     var loc = {}, n = 0, min = 0, minA = 0, evS = [];
     P.eventos.forEach(function (e) {
-      var v = V[e[0]]; if (!v || !noProc(v.processo)) return;
+      var v = V[e[0]]; if (!v || !noProc(v.processo) || !hierOk(v)) return;
       var k = S.dias.indexOf(e[5]), q = S.ant.indexOf(e[5]);
       if (k >= 0 && porDia[k] !== null) {
         n++; min += e[3]; porDia[k] += e[3]; evS.push(e);
@@ -1871,10 +1873,15 @@ window.iniciarPainel = function (D) {
     });
     ((D.motorOcioso || {}).veiculos || []).forEach(function (v) { procs[v.processo] = 1; });
     var lista = unicos(Object.keys(procs));
+    // Gerente/Coordenador/Gestor: opções tiradas das três bases, já respeitando o processo.
+    var regs = [];
+    [["comportamento", "frotas"], ["permanencia", "veiculos"]].forEach(function (b) { var x = (D[b[0]] || {})[b[1]] || {}; Object.keys(x).forEach(function (f) { regs.push(x[f]); }); });
+    ((D.motorOcioso || {}).veiculos || []).forEach(function (v) { regs.push(v); });
+    var hR = hier(regs.filter(function (r) { return noProc(r.processo); }), function (r) { return r; }, "r");
     var topo = '<header class="bl-topo"><div><h2 class="bl-tit">Resumo da semana</h2>' +
       '<p class="bl-per"><b>' + faixaExt(S.ini, S.fim) + "</b>, comparada com " + faixaExt(S.ant[0], S.ant[6]) + ".</p></div>" +
-      '<div class="filtros bl-fil"><label>Processo<select data-fil="processo" id="r-processo">' + opcoes(lista, fil_.processo, D.escopo && D.escopo !== "todos" ? "Todos os meus processos" : "Todos os processos") + "</select></label>" +
-      (fil_.processo || !todosTurnos() || fil_.horas ? '<button type="button" class="limpar" data-limpar="1">Limpar filtros</button>' : "") +
+      '<div class="filtros bl-fil"><label>Processo<select data-fil="processo" id="r-processo">' + opcoes(lista, fil_.processo, D.escopo && D.escopo !== "todos" ? "Todos os meus processos" : "Todos os processos") + "</select></label>" + hR.html +
+      (fil_.processo || hierAtiva() || !todosTurnos() || fil_.horas ? '<button type="button" class="limpar" data-limpar="1">Limpar filtros</button>' : "") +
       '<button type="button" class="bl-copiar" data-copiar-resumo="1" title="Copia a imagem do resumo para colar (Ctrl+V) no WhatsApp ou no e-mail">📋 Copiar imagem</button></div></header>';
 
     function bloco(cls, icone, titulo, corpo, ate) {
