@@ -1914,6 +1914,14 @@ window.iniciarPainel = function (D) {
         }).join("") + "</ol></div>";
         corpoO += '<div class="bl-duo"><div class="bl-graf">' + pizza + leg + "</div>" + t3 + "</div>";
       }
+      // Tratativas (25/11/2026): celular, sem cinto, distração, faixa e cigarro só entram no painel quando viram tratativa
+      // (planilha Notificação das Ocorrências), então a soma deles na semana é o que gerou tratativa.
+      var TRT = ["celular", "cinto", "distracao", "faixa", "cigarro"];
+      var tr = c.cats.filter(function (x) { return TRT.indexOf(x.c.id) >= 0 && x.n; }), nTr = sum(tr, function (x) { return x.n; });
+      corpoO += '<p class="bl-trat' + (nTr ? " tem" : "") + '"><span class="bl-ti" aria-hidden="true">' + (nTr ? "!" : "✓") + "</span><span>" +
+        (nTr ? "<b>" + num(nTr, 0) + " " + plural(nTr, "ocorrência gerou", "ocorrências geraram") + " tratativa</b> nesta semana: " +
+          tr.map(function (x) { return esc(x.c.nome.toLowerCase()) + " (" + num(x.n, 0) + ")"; }).join(", ") + "."
+          : "<b>Nenhuma ocorrência gerou tratativa</b> nesta semana.") + "</span></p>";
       partes.push(bloco("bl-oc", BL_ICO.oc, "Ocorrências", corpoO, c.ate));
     }
 
