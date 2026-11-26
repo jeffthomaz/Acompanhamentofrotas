@@ -1418,7 +1418,7 @@ window.iniciarPainel = function (D) {
     var por = S.dias.map(function (_, k) { return i0 + k <= fimC && i0 + k >= 0 ? 0 : null; });
     var okA = S.dias.map(function (_, k) { return por[k] !== null && a0 + k >= 0; });
     if (por.every(function (v) { return v === null; })) return semDados(S, "comportamento", "Comportamental", "ocorrências");
-    var cur = 0, ant = 0, porT = T.map(function () { return 0; }), porTA = porT.slice(), porP = {}, porF = {}, porFC = {};
+    var cur = 0, ant = 0, porT = T.map(function () { return 0; }), porTA = porT.slice(), porP = {}, porF = {}, porFC = {}, porPA = {}, porFA = {};
     var ci = T.map(function (t) { var g = t.grupo || t.id; for (var j = 0; j < CATS.length; j++) if (CATS[j].id === g) return j; return -1; });
     var porDC = S.dias.map(function () { return CATS.map(function () { return 0; }); });
     // Turno pela hora da ocorrência (5º item do ev): 0 = A, 1 = B, 2 = C; sem o item = sem hora.
@@ -1439,7 +1439,7 @@ window.iniciarPainel = function (D) {
         if (ci[e[1]] >= 0) { var pfc = porFC[e[2]] || (porFC[e[2]] = CATS.map(function () { return 0; })); pfc[ci[e[1]]] += e[3]; }
         porDC[k][ci[e[1]]] += e[3];
       }
-      else if (q >= 0 && q < 7 && okA[q]) { ant += e[3]; porTA[e[1]] += e[3]; }
+      else if (q >= 0 && q < 7 && okA[q]) { ant += e[3]; porTA[e[1]] += e[3]; porPA[f.processo] = (porPA[f.processo] || 0) + e[3]; porFA[e[2]] = (porFA[e[2]] || 0) + e[3]; }
     });
     var cats = CATS.map(function (c) {
       var ix = T.map(function (t, i) { return (t.grupo || t.id) === c.id ? i : -1; }).filter(function (i) { return i >= 0; });
@@ -1460,7 +1460,7 @@ window.iniciarPainel = function (D) {
     return { aba: "comportamento", nome: "Comportamental", ini: S.ini, fim: S.fim, ate: dFim < S.fim ? dFim : null,
       valor: num(cur, 0), un: plural(cur, "ocorrência", "ocorrências"), delta: ant ? delta(cur, ant) : '<span class="dl neutro">sem base</span>',
       graf: barras7(por, S.dias, function (v) { return num(v, 0) + " " + plural(v, "ocorrência", "ocorrências"); }, "Ocorrências por dia"),
-      diag: diag, alertas: al, cur: cur, ant: ant, tu: tu, tuA: tuA, tuC: tuC, hr: hr, hrC: hrC, vals: por, porDC: porDC, cats: cats, porP: porP, porF: porF, porFC: porFC, frotas: F, porT: porT, T: T,
+      diag: diag, alertas: al, cur: cur, ant: ant, tu: tu, tuA: tuA, tuC: tuC, hr: hr, hrC: hrC, vals: por, porDC: porDC, cats: cats, porP: porP, porF: porF, porFC: porFC, frotas: F, porT: porT, T: T, porPA: porPA, porFA: porFA,
       vel: ["vel1", "vel2", "vel3"].map(function (id) { var i = T.map(function (t) { return t.id; }).indexOf(id); return i >= 0 ? { nome: T[i].nome, n: porT[i] } : null; }).filter(Boolean) };
   }
 
@@ -1932,7 +1932,25 @@ window.iniciarPainel = function (D) {
             '<div class="bl-tb" role="img" aria-label="' + esc(CATS.map(function (cc, k) { return pc[k] ? cc.nome + " " + num(pc[k] / x.n * 100, 0) + "%" : ""; }).filter(Boolean).join(", ")) + '">' +
             CATS.map(function (cc, k) { return pc[k] ? '<i class="c-' + cc.id + '" style="width:' + (pc[k] / x.n * 100).toFixed(1) + '%" title="' + esc(cc.nome + ": " + num(pc[k], 0) + " (" + num(pc[k] / x.n * 100, 0) + "%)") + '"></i>' : ""; }).join("") + "</div></li>";
         }).join("") + "</ol></div>";
-        corpoO += '<div class="bl-duo"><div class="bl-graf">' + pizza + leg + "</div>" + t3 + "</div>";
+        // Pontos de atenção (26/11/2026): o que subiu e o que caiu em relação à semana anterior (tipos, processos e frota).
+        var pa = [], nc = function (x) { return esc(x.c.nome.toLowerCase()); };
+        var sub = c.cats.filter(function (x) { return x.n > x.a; }).sort(function (a, b) { return (b.n - b.a) - (a.n - a.a); });
+        var cai = c.cats.filter(function (x) { return x.n < x.a; }).sort(function (a, b) { return (b.a - b.n) - (a.a - a.n); });
+        if (sub.length) pa.push(["sobe", "↑", "<b>Subiram:</b> " + sub.map(function (x) { return nc(x) + " (" + num(x.a, 0) + " → " + num(x.n, 0) + ")"; }).join(", ") + "."]);
+        if (cai.length) pa.push(["cai", "↓", "<b>Caíram:</b> " + cai.map(function (x) { return nc(x) + " (" + num(x.a, 0) + " → " + num(x.n, 0) + ")"; }).join(", ") + "."]);
+        var dP = Object.keys(c.porP).concat(Object.keys(c.porPA)).filter(function (p, i, a) { return p && a.indexOf(p) === i; })
+          .map(function (p) { return { p: p, d: (c.porP[p] || 0) - (c.porPA[p] || 0), n: c.porP[p] || 0, a: c.porPA[p] || 0 }; });
+        if (!fil_.processo && dP.length > 1) {
+          var pS = dP.slice().sort(function (a, b) { return b.d - a.d; })[0], pC = dP.slice().sort(function (a, b) { return a.d - b.d; })[0];
+          if (pS.d > 0) pa.push(["sobe", "↑", "Processo que mais subiu: <b style=\"text-transform:capitalize\">" + esc(pS.p.toLowerCase()) + "</b> (" + num(pS.a, 0) + " → " + num(pS.n, 0) + ")."]);
+          if (pC.d < 0) pa.push(["cai", "↓", "Processo que mais caiu: <b style=\"text-transform:capitalize\">" + esc(pC.p.toLowerCase()) + "</b> (" + num(pC.a, 0) + " → " + num(pC.n, 0) + ")."]);
+        }
+        var fS = Object.keys(c.porF).map(function (f) { return { f: f, d: c.porF[f] - (c.porFA[f] || 0), a: c.porFA[f] || 0, n: c.porF[f] }; }).sort(function (a, b) { return b.d - a.d; })[0];
+        if (fS && fS.d > 0) pa.push(["sobe", "↑", "Frota que mais subiu: <b>" + esc(fS.f) + "</b> (" + num(fS.a, 0) + " → " + num(fS.n, 0) + ")."]);
+        var i3v = c.T.map(function (t) { return t.id; }).indexOf("vel3");
+        if (i3v >= 0 && c.porT[i3v]) pa.push(["sobe", "!", "<b>" + num(c.porT[i3v], 0) + "</b> " + plural(c.porT[i3v], "excesso", "excessos") + " de velocidade acima de 50% do limite da via."]);
+        var pontos = pa.length ? '<div class="bl-pa"><h4>Pontos de atenção</h4><ul>' + pa.map(function (x) { return '<li class="' + x[0] + '"><span class="bl-pai" aria-hidden="true">' + x[1] + "</span><span>" + x[2] + "</span></li>"; }).join("") + "</ul></div>" : "";
+        corpoO += '<div class="bl-duo"><div><div class="bl-graf">' + pizza + leg + "</div>" + pontos + "</div>" + t3 + "</div>";
       }
       // Tratativas (25/11/2026): celular, sem cinto, distração, faixa e cigarro só entram no painel quando viram tratativa
       // (planilha Notificação das Ocorrências), então a soma deles na semana é o que gerou tratativa.
