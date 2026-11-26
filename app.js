@@ -299,7 +299,7 @@ window.iniciarPainel = function (D) {
         return '<button type="button" data-cfrota="' + o[0] + '" aria-pressed="' + (fc.frota === o[0]) + '">' + o[1] + "</button>";
       }).join("") + "</div></div>" +
       (fc.frota || fil_.processo || hierAtiva() || fil_.tipos || stC.p !== stC.padrao || !todosTurnos() || fil_.horas ? '<button type="button" class="limpar" data-limpar="1">Limpar filtros</button>' : "") +
-      '<button type="button" class="bl-copiar" data-foto-comp="1" title="Copia a imagem dos cards, de Ocorrências por turno e de Horas de pico (com os filtros atuais) para colar com Ctrl+V">📋 Copiar imagem</button>' +
+      '<button type="button" class="bl-copiar" data-foto-aba="comportamento" title="Copia a imagem dos cards, de Ocorrências por turno e de Horas de pico (com os filtros atuais) para colar com Ctrl+V">📋 Copiar imagem</button>' +
       '<p class="ctx">' + num(nVeic, 0) + " " + plural(nVeic, "veículo", "veículos") + " com ocorrência, " + rot(a0) + " a " + rot(a1) + (temBase ? " (comparado com " + rot(b0) + " a " + rot(a0 - 1) + ")" : "") + (turnoTexto() ? ", só " + turnoTexto() + " (clique nos turnos ou nas horas para mudar; o mapa mostra todos)" : "") + (fil_.tipos ? ". Tipos: " + CATS.filter(function (c) { return c.on; }).map(function (c) { return c.nome.toLowerCase(); }).join(", ") + " (clique nos cards para mudar)" : "") + "</p></div>";
 
     // Top 5 veículos de cada tipo, numa gaveta embaixo de cada card (abre e fecha tudo junto; a escolha fica guardada).
@@ -526,6 +526,7 @@ window.iniciarPainel = function (D) {
       hO.html +
       (diasOp.length ? perControle("motor-ocioso", stO, diasOp, fO) : "") +
       (fil_.processo || hierAtiva() || stO.p !== stO.padrao ? '<button type="button" class="limpar" data-limpar="1">Limpar filtros</button>' : "") +
+      '<button type="button" class="bl-copiar" data-foto-aba="motor-ocioso" title="Copia a imagem da evolução, do Top 5, de Por processo, das Conclusões e dos Veículos menos usados (com os filtros atuais) para colar com Ctrl+V">📋 Copiar imagem</button>' +
       '<p class="ctx">' + rows.length + " " + plural(rows.length, "veículo leve", "veículos leves") + " (" + nAtv + " " + plural(nAtv, "ativo", "ativos") + ", " + nIna + " " + plural(nIna, "inativo", "inativos") + "), " + (kds ? (fO.de === fO.ate ? "em " : "de ") + perTexto(fO) : esc(m.periodo)) + "</p></div>";
 
     // Resumo do período: saiu do topo e foi para os Insights (20/11/2026).
@@ -731,7 +732,8 @@ window.iniciarPainel = function (D) {
     var filtros = '<div class="filtros"><label>Processo<select data-fil="processo" id="p-processo">' + opcoes(F.processos, fil_.processo, D.escopo && D.escopo !== "todos" ? "Todos os meus processos" : "Todos os processos") + "</select></label>" + F.hierHtml +
       (F.diasEv.length ? perControle("permanencia", F.st, F.diasEv, F.f) : "") +
       '<div class="campo"><span class="rot">Calor por</span><div class="pills" role="group" aria-label="Medida do mapa de calor"><button type="button" data-medida="tempo" aria-pressed="' + (pm.medida === "tempo") + '">Tempo parado</button><button type="button" data-medida="vezes" aria-pressed="' + (pm.medida === "vezes") + '">Nº de permanências</button></div></div>' +
-      (fil_.processo || hierAtiva() || F.st.p !== F.st.padrao ? '<button type="button" class="limpar" data-limpar="1">Limpar filtros</button>' : "") + "</div>";
+      (fil_.processo || hierAtiva() || F.st.p !== F.st.padrao ? '<button type="button" class="limpar" data-limpar="1">Limpar filtros</button>' : "") +
+      '<button type="button" class="bl-copiar" data-foto-aba="permanencia" title="Copia a imagem do mapa, dos Locais de permanência e das Permanências mais longas (com os filtros atuais) para colar com Ctrl+V">📋 Copiar imagem</button>' + "</div>";
 
     // Nas observações, só estabelecimentos (posto, padaria, restaurante...), nunca cercas com nome de colaborador.
     var topoX = locais.filter(function (x) { return P.locais[x.i].tipo === "estabelecimento"; })[0];
@@ -2242,34 +2244,44 @@ window.iniciarPainel = function (D) {
     { id: "motor-ocioso", nome: "Motor ocioso", keep: [".mo-g1", ".mo-g2"] },
     { id: "permanencia", nome: "Permanência", keep: [".mapa-g"] }
   ];
-  // Botão "📋 Copiar imagem" da aba Comportamental (26/11/2026): sempre os cards (com Top 5 aberto), Ocorrências por turno e Horas de pico.
+  // Botão "📋 Copiar imagem" (26/11/2026) das abas Comportamental, Motor ocioso e Permanência: sempre os mesmos quadros
+  // (os das antigas Fotos dos painéis), num quadro branco igual ao do Boletim.
+  var FOTO_ABA = { comportamento: "Comportamental", "motor-ocioso": "Motor ocioso", permanencia: "Permanência" };
   painel.addEventListener("click", async function (e) {
-    var b = e.target.closest("[data-foto-comp]"); if (!b || b.disabled) return;
+    var b = e.target.closest("[data-foto-aba]"); if (!b || b.disabled) return;
+    var FA = FOTOS.filter(function (x) { return x.id === b.dataset.fotoAba; })[0]; if (!FA) return;
     if (!window.htmlToImage || !navigator.clipboard || !window.ClipboardItem) { alert("Este navegador não deixa copiar imagens. Use o Chrome ou o Edge atualizados."); return; }
     b.disabled = true; b.textContent = "Tirando foto…";
     var fundo = getComputedStyle(document.body).backgroundColor || "#eef0ec", ok = false;
     try {
       // Igual à imagem do Boletim (26/11/2026): quadro branco com logo, título, período e filtros usados.
       var fl = [];
-      painel.querySelectorAll(".filtros select").forEach(function (sl) { if (sl.value && sl.selectedOptions[0]) fl.push((sl.closest("label") ? sl.closest("label").firstChild.textContent.trim() + ": " : "") + sl.selectedOptions[0].textContent); });
+      painel.querySelectorAll(".filtros select").forEach(function (sl) { if (sl.value && sl.selectedOptions[0] && !sl.hasAttribute("data-per")) fl.push((sl.closest("label") ? sl.closest("label").firstChild.textContent.trim() + ": " : "") + sl.selectedOptions[0].textContent); });
+      var de = painel.querySelector(".filtros [data-perde]"), ate = painel.querySelector(".filtros [data-perate]");
+      var perT = de && ate && de.value ? (de.value === ate.value ? dataBR(de.value) : dataBR(de.value) + " a " + dataBR(ate.value)) : "";
       painel.querySelectorAll('.filtros [data-cfrota][aria-pressed="true"]').forEach(function (x) { if (x.dataset.cfrota) fl.push("Frota " + x.textContent.toLowerCase()); });
       fotoModo = true; render(); await espera(150);
-      var mp = (painel.querySelector(".comp-hz") || painel).textContent.match(/comportamental · ([^·]+?)(?: · |Turno|$)/);
+      if (FA.id === "permanencia") await esperaMapas();
       var cab = document.createElement("header"); cab.className = "bl-topo foto-cab";
-      cab.innerHTML = '<div class="bl-marca"><img class="bl-logo" src="logo-verde.png?v=202611261130" alt="" width="49" height="64"><div><h2 class="bl-tit">Comportamental</h2><p class="bl-per">' +
-        (mp ? "<b>" + esc(mp[1].trim()) + "</b>" : "") + (fl.length ? (mp ? " · " : "") + esc(fl.join(" · ")) : (mp ? " · todos os processos" : "")) + "</p></div></div>";
-      Array.prototype.forEach.call(painel.children, function (n) { if (!(n.matches(".kpis") || n.matches(".comp-hz"))) n.style.display = "none"; });
+      cab.innerHTML = '<div class="bl-marca"><img class="bl-logo" src="logo-verde.png?v=202611261130" alt="" width="49" height="64"><div><h2 class="bl-tit">' + esc(FOTO_ABA[FA.id] || FA.nome) + '</h2><p class="bl-per">' +
+        (perT ? "<b>" + esc(perT) + "</b>" : "") + (fl.length ? (perT ? " · " : "") + esc(fl.join(" · ")) : (perT ? " · todos os processos" : "")) + "</p></div></div>";
+      Array.prototype.forEach.call(painel.children, function (n) { if (!FA.keep.some(function (sel) { return n.matches(sel); })) n.style.display = "none"; });
       painel.insertBefore(cab, painel.firstChild);
       await new Promise(function (r) { var im = cab.querySelector("img"); if (im.complete) r(); else { im.onload = im.onerror = r; } });
+      // Mantém a largura do conteúdo igual à da tela (o padding do quadro vai por fora), senão as colunas apertam.
+      var wP = painel.getBoundingClientRect().width, stO = painel.getAttribute("style") || "";
       fixarSvg(painel); painel.classList.add("foto-quadro");
+      var cs_ = getComputedStyle(painel); painel.style.boxSizing = "border-box"; painel.style.maxWidth = "none";
+      painel.style.width = (wP + parseFloat(cs_.paddingLeft) + parseFloat(cs_.paddingRight) + 2) + "px";
       fundo = getComputedStyle(painel).backgroundColor;
-      var blob = await window.htmlToImage.toBlob(painel, { pixelRatio: 3, backgroundColor: fundo }).finally(function () { painel.classList.remove("foto-quadro"); cab.remove(); });
+      var blob = await window.htmlToImage.toBlob(painel, { pixelRatio: 3, backgroundColor: fundo,
+        filter: function (n) { return !(n.classList && (n.classList.contains("leaflet-control-zoom") || n.classList.contains("leaflet-control-layers"))); } }).finally(function () { painel.classList.remove("foto-quadro"); painel.setAttribute("style", stO); cab.remove(); });
       await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
       ok = true;
     } catch (err) { console.error(err); }
     fotoModo = false; render();
-    var nb = painel.querySelector("[data-foto-comp]");
-    if (nb) { nb.textContent = ok ? "✓ Copiada — cole com Ctrl+V" : "Não copiou — tente de novo"; nb.disabled = true; setTimeout(function () { var x = painel.querySelector("[data-foto-comp]"); if (x) { x.textContent = "📋 Copiar imagem"; x.disabled = false; } }, 3000); }
+    var nb = painel.querySelector("[data-foto-aba]");
+    if (nb) { nb.textContent = ok ? "✓ Copiada — cole com Ctrl+V" : "Não copiou — tente de novo"; nb.disabled = true; setTimeout(function () { var x = painel.querySelector("[data-foto-aba]"); if (x) { x.textContent = "📋 Copiar imagem"; x.disabled = false; } }, 3000); }
   });
   async function tirarFotos() {
     if (!window.htmlToImage) { alert("Não foi possível carregar a ferramenta de fotos. Atualize a página (Ctrl+F5) e tente de novo."); return; }
