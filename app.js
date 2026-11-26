@@ -2003,7 +2003,9 @@ window.iniciarPainel = function (D) {
         '<text x="24" y="116" text-anchor="middle" class="bl-gl">0%</text><text x="176" y="116" text-anchor="middle" class="bl-gl">' + num(mx, 0) + "%</text>" +
         '<text x="' + pt(o.meta, 104)[0] + '" y="' + pt(o.meta, 104)[1] + '" text-anchor="middle" class="bl-gl bl-glm">meta ' + o.meta + "%</text></svg>";
       var fatos = '<ul class="bl-fatos bl-fatos-c"><li><b>' + horas(o.oc) + "</b> ociosas de " + horas(o.lc) + " de ignição</li>" +
-        (dif !== null ? '<li><b class="' + (Math.abs(dif) < 0.05 ? "" : dif < 0 ? "caiu" : "subiu") + '">' + (Math.abs(dif) < 0.05 ? "igual" : (dif < 0 ? "↓ " : "↑ ") + num(Math.abs(dif), 1) + " p.p.") + "</b> sobre a semana anterior (" + num(o.pAnt, 1) + "%)</li>" : "") +
+        // Sem "p.p." (26/11/2026): escrito como "Subiu de 4,0% para 4,7% em relação à semana anterior".
+        (dif !== null ? "<li>" + (Math.abs(dif) < 0.05 ? '<b>Igual</b> à semana anterior (' + num(o.pAnt, 1) + "%)" :
+          '<b class="' + (dif < 0 ? "caiu" : "subiu") + '">' + (dif < 0 ? "↓ Caiu" : "↑ Subiu") + "</b> de " + num(o.pAnt, 1) + "% para <b>" + num(o.pct, 1) + "%</b> em relação à semana anterior") + "</li>" : "") +
         "<li>" + (o.acima ? "<b>" + o.acima + "</b> " + plural(o.acima, "veículo acima", "veículos acima") + " da meta" : "Todos os veículos dentro da meta") + "</li></ul>";
       var t3o = o.rows.slice().sort(function (a, b) { return b.o - a.o; }).slice(0, 5);
       var top3o = '<div class="bl-top"><h4>Top 5 veículos</h4><ol>' + t3o.map(function (rw) {
