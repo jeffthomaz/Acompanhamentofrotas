@@ -299,7 +299,7 @@ window.iniciarPainel = function (D) {
         return '<button type="button" data-cfrota="' + o[0] + '" aria-pressed="' + (fc.frota === o[0]) + '">' + o[1] + "</button>";
       }).join("") + "</div></div>" +
       (fc.frota || fil_.processo || hierAtiva() || fil_.tipos || stC.p !== stC.padrao || !todosTurnos() || fil_.horas ? '<button type="button" class="limpar" data-limpar="1">Limpar filtros</button>' : "") +
-      '<button type="button" class="bl-copiar" data-foto-comp="1" title="Copia uma foto dos cards, de Ocorrências por turno e de Horas de pico (com os filtros atuais) para colar com Ctrl+V">📷 Copiar foto</button>' +
+      '<button type="button" class="bl-copiar" data-foto-comp="1" title="Copia a imagem dos cards, de Ocorrências por turno e de Horas de pico (com os filtros atuais) para colar com Ctrl+V">📋 Copiar imagem</button>' +
       '<p class="ctx">' + num(nVeic, 0) + " " + plural(nVeic, "veículo", "veículos") + " com ocorrência, " + rot(a0) + " a " + rot(a1) + (temBase ? " (comparado com " + rot(b0) + " a " + rot(a0 - 1) + ")" : "") + (turnoTexto() ? ", só " + turnoTexto() + " (clique nos turnos ou nas horas para mudar; o mapa mostra todos)" : "") + (fil_.tipos ? ". Tipos: " + CATS.filter(function (c) { return c.on; }).map(function (c) { return c.nome.toLowerCase(); }).join(", ") + " (clique nos cards para mudar)" : "") + "</p></div>";
 
     // Top 5 veículos de cada tipo, numa gaveta embaixo de cada card (abre e fecha tudo junto; a escolha fica guardada).
@@ -2242,23 +2242,34 @@ window.iniciarPainel = function (D) {
     { id: "motor-ocioso", nome: "Motor ocioso", keep: [".mo-g1", ".mo-g2"] },
     { id: "permanencia", nome: "Permanência", keep: [".mapa-g"] }
   ];
-  // Botão "📷 Copiar foto" da aba Comportamental (26/11/2026): sempre os cards (com Top 5 aberto), Ocorrências por turno e Horas de pico.
+  // Botão "📋 Copiar imagem" da aba Comportamental (26/11/2026): sempre os cards (com Top 5 aberto), Ocorrências por turno e Horas de pico.
   painel.addEventListener("click", async function (e) {
     var b = e.target.closest("[data-foto-comp]"); if (!b || b.disabled) return;
     if (!window.htmlToImage || !navigator.clipboard || !window.ClipboardItem) { alert("Este navegador não deixa copiar imagens. Use o Chrome ou o Edge atualizados."); return; }
     b.disabled = true; b.textContent = "Tirando foto…";
     var fundo = getComputedStyle(document.body).backgroundColor || "#eef0ec", ok = false;
     try {
+      // Igual à imagem do Boletim (26/11/2026): quadro branco com logo, título, período e filtros usados.
+      var fl = [];
+      painel.querySelectorAll(".filtros select").forEach(function (sl) { if (sl.value && sl.selectedOptions[0]) fl.push((sl.closest("label") ? sl.closest("label").firstChild.textContent.trim() + ": " : "") + sl.selectedOptions[0].textContent); });
+      painel.querySelectorAll('.filtros [data-cfrota][aria-pressed="true"]').forEach(function (x) { if (x.dataset.cfrota) fl.push("Frota " + x.textContent.toLowerCase()); });
       fotoModo = true; render(); await espera(150);
+      var mp = (painel.querySelector(".comp-hz") || painel).textContent.match(/comportamental · ([^·]+?)(?: · |Turno|$)/);
+      var cab = document.createElement("header"); cab.className = "bl-topo foto-cab";
+      cab.innerHTML = '<div class="bl-marca"><img class="bl-logo" src="logo-verde.png?v=202611261130" alt="" width="49" height="64"><div><h2 class="bl-tit">Comportamental</h2><p class="bl-per">' +
+        (mp ? "<b>" + esc(mp[1].trim()) + "</b>" : "") + (fl.length ? (mp ? " · " : "") + esc(fl.join(" · ")) : (mp ? " · todos os processos" : "")) + "</p></div></div>";
       Array.prototype.forEach.call(painel.children, function (n) { if (!(n.matches(".kpis") || n.matches(".comp-hz"))) n.style.display = "none"; });
-      fixarSvg(painel); var padO = painel.style.padding; painel.style.padding = "18px"; // margem para as bordas dos cards não cortarem
-      var blob = await window.htmlToImage.toBlob(painel, { pixelRatio: 3, backgroundColor: fundo }).finally(function () { painel.style.padding = padO; });
+      painel.insertBefore(cab, painel.firstChild);
+      await new Promise(function (r) { var im = cab.querySelector("img"); if (im.complete) r(); else { im.onload = im.onerror = r; } });
+      fixarSvg(painel); painel.classList.add("foto-quadro");
+      fundo = getComputedStyle(painel).backgroundColor;
+      var blob = await window.htmlToImage.toBlob(painel, { pixelRatio: 3, backgroundColor: fundo }).finally(function () { painel.classList.remove("foto-quadro"); cab.remove(); });
       await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
       ok = true;
     } catch (err) { console.error(err); }
     fotoModo = false; render();
     var nb = painel.querySelector("[data-foto-comp]");
-    if (nb) { nb.textContent = ok ? "✓ Copiada — cole com Ctrl+V" : "Não copiou — tente de novo"; nb.disabled = true; setTimeout(function () { var x = painel.querySelector("[data-foto-comp]"); if (x) { x.textContent = "📷 Copiar foto"; x.disabled = false; } }, 3000); }
+    if (nb) { nb.textContent = ok ? "✓ Copiada — cole com Ctrl+V" : "Não copiou — tente de novo"; nb.disabled = true; setTimeout(function () { var x = painel.querySelector("[data-foto-comp]"); if (x) { x.textContent = "📋 Copiar imagem"; x.disabled = false; } }, 3000); }
   });
   async function tirarFotos() {
     if (!window.htmlToImage) { alert("Não foi possível carregar a ferramenta de fotos. Atualize a página (Ctrl+F5) e tente de novo."); return; }
