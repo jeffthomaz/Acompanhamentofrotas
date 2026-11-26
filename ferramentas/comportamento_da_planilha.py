@@ -221,28 +221,12 @@ def processar(wb, destino, trat=None):
             rep.append(k); return False
         vistos.add(k); return True
     leves, pesadas = [r for r in leves if unico(r)], [r for r in pesadas if unico(r)]
-    todas = leves + pesadas  # antes das tratativas, para dar nome ao tipo das duplicadas
     print("%d linha(s) repetida(s) tirada(s)" % len(rep))
     div = None
     if trat and trat.get("linhas"):
         leves, pesadas, div = com_tratativas(leves, pesadas, trat)
     print("planilha: %d linhas de frota leve, %d de frota pesada" % (len(leves), len(pesadas)))
     montar(leves, pesadas, base, destino, manter_faixa=False)
-    # Linhas duplicadas na planilha de ocorrências também vão para o alerta de divergências (25/11/2026).
-    # Mesma frota, data, hora e tipo; no painel já contam uma vez só.
-    if rep:
-        from collections import Counter
-        from comportamento_do_powerbi import tipo_id
-        ini_d = (div or {}).get("ini") or (trat or {}).get("ini") or "2026-08-01"
-        tid = {}
-        for r in todas:
-            tid.setdefault((str(r["f"]), r["d"], r["hs"], r["tipo"]), tipo_id(r))
-        dup = [{"f": str(k[0]), "d": k[1], "h": (k[2] or "")[:5], "t": tid.get((str(k[0]), k[1], k[2], k[3])) or str(k[3]), "n": n + 1}
-               for k, n in Counter(rep).items() if k[1] >= ini_d]
-        if dup:
-            div = div if div is not None else {"ini": ini_d, "ult": max((r["d"] for r in leves + pesadas), default=""), "ocSemTrat": [], "tratSemOc": []}
-            div["dup"] = sorted(dup, key=lambda x: (x["d"], x["h"]))
-            print("divergências: %d ocorrência(s) duplicada(s) na planilha de ocorrências" % len(dup))
     if div is not None:
         D = json.load(open(destino, encoding="utf-8"))
         D["comportamento"]["diverg"] = div
