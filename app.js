@@ -1884,8 +1884,9 @@ window.iniciarPainel = function (D) {
     [["comportamento", "frotas"], ["permanencia", "veiculos"]].forEach(function (b) { var x = (D[b[0]] || {})[b[1]] || {}; Object.keys(x).forEach(function (f) { regs.push(x[f]); }); });
     ((D.motorOcioso || {}).veiculos || []).forEach(function (v) { regs.push(v); });
     var hR = hier(regs.filter(function (r) { return noProc(r.processo); }), function (r) { return r; }, "r");
-    var topo = '<header class="bl-topo"><div><h2 class="bl-tit">Resumo da semana</h2>' +
-      '<p class="bl-per"><b>' + faixaExt(S.ini, S.fim) + "</b>, comparada com " + faixaExt(S.ant[0], S.ant[6]) + ".</p></div>" +
+    // Boletim semanal com o logo da Bioenergética Aroeira (26/11/2026); logo-verde.png = logo-branco.png em verde.
+    var topo = '<header class="bl-topo"><div class="bl-marca"><img class="bl-logo" src="logo-verde.png?v=202611261130" alt="Bioenergética Aroeira" width="49" height="64"><div><h2 class="bl-tit">Boletim semanal</h2>' +
+      '<p class="bl-per"><b>' + faixaExt(S.ini, S.fim) + "</b>, comparada com " + faixaExt(S.ant[0], S.ant[6]) + ".</p></div></div>" +
       '<div class="filtros bl-fil"><label>Processo<select data-fil="processo" id="r-processo">' + opcoes(lista, fil_.processo, D.escopo && D.escopo !== "todos" ? "Todos os meus processos" : "Todos os processos") + "</select></label>" + hR.html +
       (fil_.processo || hierAtiva() || !todosTurnos() || fil_.horas ? '<button type="button" class="limpar" data-limpar="1">Limpar filtros</button>' : "") +
       '<button type="button" class="bl-copiar" data-copiar-resumo="1" title="Copia a imagem do resumo para colar (Ctrl+V) no WhatsApp ou no e-mail">📋 Copiar imagem</button></div></header>';
