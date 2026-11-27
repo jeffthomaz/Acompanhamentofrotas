@@ -2080,7 +2080,7 @@ window.iniciarPainel = function (D) {
     }
 
     // 📍 Permanência (27/11/2026): os 5 estabelecimentos com mais paradas e, ao lado de cada um, com uma seta,
-    // as 3 frotas que somaram mais tempo parado ali na semana. Saiu o Top 5 maiores permanências.
+    // as 5 frotas (eram 3 até 27/11/2026 09:30) que somaram mais tempo parado ali na semana. Saiu o Top 5 maiores permanências.
     if (pe && pe.topEst) {
       var mxN = Math.max.apply(null, [1].concat(pe.topEst.map(function (x) { return x.n; })));
       var locaisH = '<div class="bl-locs"><h4>Principais locais de parada</h4>' + (pe.topEst.length ? '<ol class="bl-pts">' + pe.topEst.map(function (x) {
@@ -2089,7 +2089,7 @@ window.iniciarPainel = function (D) {
           '<div class="bl-pv"><b>' + num(x.n, 0) + "</b> " + plural(x.n, "parada", "paradas") + '<span>média de <b>' + hmin(x.min / x.n) + "</b></span></div>" +
           (!window.painelFp ? "</li>" : // só Jefferson, Ana Paula e Giovanna (frotas_paradas_usuarios.json, 27/11/2026)
           '<span class="bl-pseta" aria-hidden="true">→</span><div class="bl-pf" aria-label="Frotas com mais tempo parado neste local">' +
-          Object.keys(x.frMin).sort(function (a, b) { return x.frMin[b] - x.frMin[a] || a.localeCompare(b); }).slice(0, 3).map(function (f) {
+          Object.keys(x.frMin).sort(function (a, b) { return x.frMin[b] - x.frMin[a] || a.localeCompare(b); }).slice(0, 5).map(function (f) {
             var em = x.frMax[f];
             return '<div><span><b>' + esc(f) + "</b> · " + dd(em[5]) + '</span><b title="' + esc("Soma das paradas da frota " + f + " neste local na semana") + '">' + hmin(x.frMin[f]) + "</b></div>";
           }).join("") + "</div></li>");
