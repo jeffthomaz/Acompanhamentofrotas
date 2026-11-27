@@ -12,6 +12,12 @@
       "data": "2026-11-25",
       "tipo": "distracao",
       "motivo": "tratativa de distração das 15:58 chegou na planilha de ocorrências como excesso de velocidade (conferido pelo usuário em 27/11/2026)"
+    },
+    {
+      "frota": "40894",
+      "data": "2026-10-09",
+      "tipo": "celular",
+      "motivo": "tratativa de uso de celular das 05:55 chegou na planilha de ocorrências como distração (conferido pelo usuário em 27/11/2026)"
     }
   ]
 }
