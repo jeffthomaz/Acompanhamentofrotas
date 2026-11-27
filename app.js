@@ -2091,7 +2091,7 @@ window.iniciarPainel = function (D) {
           '<span class="bl-pseta" aria-hidden="true">→</span><div class="bl-pf" aria-label="Frotas com mais tempo parado neste local">' +
           Object.keys(x.frMin).sort(function (a, b) { return x.frMin[b] - x.frMin[a] || a.localeCompare(b); }).slice(0, 5).map(function (f) {
             var em = x.frMax[f];
-            return '<div><span><b>' + esc(f) + "</b> · " + dd(em[5]) + '</span><b title="' + esc("Soma das paradas da frota " + f + " neste local na semana") + '">' + hmin(x.frMin[f]) + "</b></div>";
+            return '<div><span><b>' + esc(f) + "</b> · " + diaSem(em[5]) + " " + dd(em[5]) + (em[6] ? " às " + esc(String(em[6]).slice(0, 5)) : "") + '</span><b title="' + esc("Soma das paradas da frota " + f + " neste local na semana") + '">' + hmin(x.frMin[f]) + "</b></div>";
           }).join("") + "</div></li>");
       }).join("") + "</ol>" : '<p class="cs">Nenhuma parada em estabelecimento na semana.</p>') + "</div>";
       var fraseP = pe.n ? "Os veículos somaram " + '<b class="bl-n">' + (pe.min >= 600 ? num(Math.round(pe.min / 60), 0) + " h" : hmin(pe.min)) + "</b> parados em " + num(pe.n, 0) + " " + plural(pe.n, "permanência", "permanências") + "." : "Nenhuma permanência na semana.";
