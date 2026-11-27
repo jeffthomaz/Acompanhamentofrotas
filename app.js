@@ -325,22 +325,15 @@ window.iniciarPainel = function (D) {
         return '<article class="kpi c-' + c.id + (esc0 ? (marc ? " sel" : " fora") : "") + '" data-tipo="' + c.id + '" role="button" tabindex="0" aria-pressed="' + (esc0 && marc) + '" title="' + (esc0 && marc ? "Clique para tirar " + esc(c.nome.toLowerCase()) + " do filtro" : esc0 ? "Clique para somar " + esc(c.nome.toLowerCase()) + " ao filtro" : "Clique para ver só " + esc(c.nome.toLowerCase())) + '">' + (abreTop ? '<div class="khd">' + cab + "</div>" + gaveta(ci) : cab) + "</article>";
       }).join("") + "</div>";
 
-    // Evolução: por dia até 14 dias, senão por semana.
-    var dados = [];
-    if (J <= 14) {
-      for (k = a0; k <= a1; k++) dados.push({ d: rot(k), partes: CATS.map(function (c) { return sum(c.ix, function (i) { return porDia[k][i]; }); }) });
-    } else {
-      for (var s = a0; s <= a1; s += 7) {
-        var e2 = Math.min(s + 7, a1 + 1), partes = CATS.map(function (c) { var t = 0; for (var q = s; q < e2; q++) t += sum(c.ix, function (i) { return porDia[q][i]; }); return t; });
-        dados.push({ d: rot(s), partes: partes });
-      }
-      if (dados.length > 14) { // muitas semanas: agrupa de duas em duas
-        var d2 = []; for (k = 0; k < dados.length; k += 2) { var b = dados[k + 1]; d2.push({ d: dados[k].d, partes: dados[k].partes.map(function (v, i) { return v + (b ? b.partes[i] : 0); }) }); } dados = d2;
-      }
+    // Evolução (27/11/2026): sempre as últimas 4 semanas até o fim do período, 7 dias contados para trás, no card pequeno.
+    var ev4 = [];
+    for (var w4 = 3; w4 >= 0; w4--) {
+      var f4 = a1 - 7 * w4, i4 = Math.max(0, f4 - 6); if (f4 < 0) continue;
+      var p4 = CATS.map(function (c) { var t = 0; for (var q = i4; q <= f4; q++) t += sum(c.ix, function (i) { return porDia[q][i]; }); return t; });
+      ev4.push({ d: rot(i4), partes: p4, total: sum(p4, function (v) { return v; }) });
     }
-    dados.forEach(function (x) { x.total = sum(x.partes, function (v) { return v; }); });
     var leg = CATS.map(function (c) { return '<li><i class="c-' + c.id + '"></i>' + esc(c.nome) + "</li>"; }).join("");
-    var evolucao = '<section class="card"><h3>Evolução das ocorrências</h3><p class="cs">' + (J <= 14 ? "Por dia." : "Por semana, a partir da data indicada.") + '</p><ul class="legend">' + leg + "</ul>" + empilhado(dados, false, 1300) + "</section>";
+    var evolucao = '<section class="card"><h3>Evolução das últimas 4 semanas</h3><p class="cs">Por semana (o rótulo é o primeiro dia), até ' + rot(a1) + '. Cores como na Tendência mensal.</p>' + empilhado(ev4, false, 520) + "</section>";
 
     var ord = CATS.filter(function (c) { return c.on; }).sort(function (a, b) { return b.n - a.n; });
     var part = '<section class="card"><h3>Participação por tipo</h3><div class="rosca-w">' + rosca(ord, total) + '<ul class="rleg">' + ord.map(function (c) {
@@ -354,11 +347,13 @@ window.iniciarPainel = function (D) {
       var chM = dk.getFullYear() * 12 + dk.getMonth();
       if (!mesAtual || mesAtual.ch !== chM) { mesAtual = { ch: chM, d: MESES[dk.getMonth()] + "/" + String(dk.getFullYear()).slice(2), partes: [], total: 0 }; sem.push(mesAtual); }
       mesAtual.total += sum(porDia[k], function (v) { return v; });
+      CATS.forEach(function (c, ci) { mesAtual.partes[ci] = (mesAtual.partes[ci] || 0) + sum(c.ix, function (i) { return porDia[k][i]; }); });
     }
     sem = sem.slice(-12);
     var dFim = new Date(dia0); dFim.setDate(dFim.getDate() + a1);
     var fimMes = new Date(dFim.getFullYear(), dFim.getMonth() + 1, 0).getDate() === dFim.getDate();
-    var tend = '<section class="card"><h3>Tendência mensal</h3><p class="cs">Total por mês' + (sem.length ? ", de " + sem[0].d + " a " + sem[sem.length - 1].d : "") + "." + (fimMes ? "" : " O último mês vai até " + rot(a1) + " (parcial).") + "</p>" + empilhado(sem, true, 520) + "</section>";
+    // Tendência mensal no bloco largo (27/11/2026), empilhada por tipo com legenda.
+    var tend = '<section class="card"><h3>Tendência mensal</h3><p class="cs">Por mês, empilhado por tipo' + (sem.length ? ", de " + sem[0].d + " a " + sem[sem.length - 1].d : "") + "." + (fimMes ? "" : " O último mês vai até " + rot(a1) + " (parcial).") + '</p><ul class="legend">' + leg + "</ul>" + empilhado(sem, false, 1300) + "</section>";
 
     var velC = CATS[0], velIx = velC.ix, velN = velC.on ? velC.n : 0, mxV = Math.max.apply(null, [1].concat(velIx.map(function (i) { return curF[i]; })));
     var velCard = '<section class="card"><h3>Excesso de velocidade por faixa</h3><p class="cs">Faixas da nova política de frotas, pelo quanto passou do limite da via. ' + (velC.on ? num(velN, 0) + " " + plural(velN, "ocorrência", "ocorrências") + " no período." : "Fora do filtro de tipo.") + "</p>" + velIx.map(function (i, kk) {
@@ -416,7 +411,7 @@ window.iniciarPainel = function (D) {
         lin.map(function (x) { var o = x[0]; return '<tr><th scope="row">' + esc(o.f) + "</th><td>" + dBr(o.d) + "</td><td>" + esc(o.h || "") + "</td><td>" + esc(NTD[o.t] || o.t) + '</td><td class="' + (x[1].indexOf("sem tratativa") >= 0 ? "dv-oc" : "dv-tr") + '">' + x[1] + "</td></tr>"; }).join("") + "</tbody></table></details>";
     }
     return filtros + divHtml + kpis + (horario ? '<div class="rz-dash comp-hz">' + horario + "</div>" : "") +
-      '<div class="evo-larga">' + evolucao + '</div><div class="g3 g-a2">' + part + tend + '</div><div class="g3 g-b">' + velCard + conc + alerta + "</div>" + mapaComp(C, fc, a0, a1);
+      '<div class="evo-larga">' + tend + '</div><div class="g3 g-a2">' + part + evolucao + '</div><div class="g3 g-b">' + velCard + conc + alerta + "</div>" + mapaComp(C, fc, a0, a1);
   }
 
   // ---------- Comportamental: mapa de calor por tipo de ocorrência (sem bocejo) ----------
