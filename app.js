@@ -2087,14 +2087,15 @@ window.iniciarPainel = function (D) {
         var L0 = pe.locais[x.i];
         return '<li><div class="bl-pn"><b>' + esc(L0.nome) + "</b><span>" + esc(L0.cidade || "") + '</span><div class="bl-pb"><i style="width:' + (x.n / mxN * 100).toFixed(1) + '%"></i></div></div>' +
           '<div class="bl-pv"><b>' + num(x.n, 0) + "</b> " + plural(x.n, "parada", "paradas") + '<span>média de <b>' + hmin(x.min / x.n) + "</b></span></div>" +
+          (!window.painelFp ? "</li>" : // só Jefferson, Ana Paula e Giovanna (frotas_paradas_usuarios.json, 27/11/2026)
           '<span class="bl-pseta" aria-hidden="true">→</span><div class="bl-pf" aria-label="Frotas com mais tempo parado neste local">' +
           Object.keys(x.frMin).sort(function (a, b) { return x.frMin[b] - x.frMin[a] || a.localeCompare(b); }).slice(0, 3).map(function (f) {
             var em = x.frMax[f];
             return '<div><span><b>' + esc(f) + "</b> · " + dd(em[5]) + '</span><b title="' + esc("Soma das paradas da frota " + f + " neste local na semana") + '">' + hmin(x.frMin[f]) + "</b></div>";
-          }).join("") + "</div></li>";
+          }).join("") + "</div></li>");
       }).join("") + "</ol>" : '<p class="cs">Nenhuma parada em estabelecimento na semana.</p>') + "</div>";
       var fraseP = pe.n ? "Os veículos somaram " + '<b class="bl-n">' + (pe.min >= 600 ? num(Math.round(pe.min / 60), 0) + " h" : hmin(pe.min)) + "</b> parados em " + num(pe.n, 0) + " " + plural(pe.n, "permanência", "permanências") + "." : "Nenhuma permanência na semana.";
-      partes.push(bloco("bl-pp", BL_ICO.pp, "Permanência", '<p class="bl-frase">' + fraseP + '</p>' + locaisH.replace('<h4>Principais locais de parada</h4>', '<h4>Principais locais de parada e as frotas que ficaram mais tempo em cada um</h4>'), pe.ate));
+      partes.push(bloco("bl-pp", BL_ICO.pp, "Permanência", '<p class="bl-frase">' + fraseP + '</p>' + (window.painelFp ? locaisH.replace('<h4>Principais locais de parada</h4>', '<h4>Principais locais de parada e as frotas que ficaram mais tempo em cada um</h4>').replace('class="bl-locs"', 'class="bl-locs bl-fp"') : locaisH), pe.ate));
     }
 
     var rodape = ""; // frase final da mensagem retirada do Resumo a pedido do usuário (25/11/2026)

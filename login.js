@@ -71,7 +71,7 @@
 
   // Continua logado ao atualizar a página (só nesta aba; some ao fechar o navegador).
   var s = sessao();
-  if (s && A.grupos[s.g]) { window.painelAp = !!s.ap; window.painelDv = !!s.dv; }
+  if (s && A.grupos[s.g]) { window.painelAp = !!s.ap; window.painelDv = !!s.dv; window.painelFp = !!s.fp; }
   if (s && A.grupos[s.g]) entrarComChave(s.g, bin(s.k), s.n).then(function () { botaoAtualizar(s.t, s.n); }).catch(function () { sessao(null); });
 
   form.addEventListener("submit", function (e) {
@@ -94,9 +94,10 @@
       raw = new Uint8Array(res[0]); token = res[1];
       window.painelAp = !!u.ap; // vê a aba Apresentação
       window.painelDv = !!u.dv; // vê as divergências ocorrências × tratativas
+      window.painelFp = !!u.fp; // vê as 3 frotas que mais ficaram em cada local de parada (Resumo)
       return entrarComChave(u.g, raw, usuario.trim());
     }).then(function () {
-      sessao({ g: u.g, k: b64(raw), n: usuario.trim(), t: token || undefined, ap: u.ap ? 1 : undefined, dv: u.dv ? 1 : undefined });
+      sessao({ g: u.g, k: b64(raw), n: usuario.trim(), t: token || undefined, ap: u.ap ? 1 : undefined, dv: u.dv ? 1 : undefined, fp: u.fp ? 1 : undefined });
       botaoAtualizar(token, usuario.trim());
       form.reset();
     }).catch(function () {

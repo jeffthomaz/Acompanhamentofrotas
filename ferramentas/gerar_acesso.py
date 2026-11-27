@@ -567,13 +567,21 @@ def marcar_apresentacao(usuarios):
     except (OSError, ValueError, KeyError):
         dvl = []
     dvs = {id_usuario(l) for l in dvl}
+    # fp=1: vê as 3 frotas que mais ficaram em cada local de parada no Resumo (ferramentas/frotas_paradas_usuarios.json, 27/11/2026)
+    try:
+        fpl = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "frotas_paradas_usuarios.json"), encoding="utf-8"))["usuarios"]
+    except (OSError, ValueError, KeyError):
+        fpl = []
+    fps = {id_usuario(l) for l in fpl}
     out = {}
     for uid, u in usuarios.items():
-        u = {k: v for k, v in u.items() if k not in ("ap", "dv")}
+        u = {k: v for k, v in u.items() if k not in ("ap", "dv", "fp")}
         if uid in ids:
             u["ap"] = 1
         if uid in dvs:
             u["dv"] = 1
+        if uid in fps:
+            u["fp"] = 1
         out[uid] = u
     return out
 
