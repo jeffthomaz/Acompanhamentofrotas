@@ -160,6 +160,32 @@ window.iniciarPainel = function (D) {
     return sv + "</svg>";
   }
 
+  // Barras lado a lado, uma por tipo de ocorrência em cada grupo (27/11/2026, Tendência mensal).
+  // Só entram os tipos que têm alguma ocorrência na série; o número fica em cima de cada barra.
+  function agrupado(dados, largura) {
+    var W = largura || 1300, H = 300, pr = 6, pt = 24, pb = 28, ih = H - pt - pb;
+    var ks = CATS.map(function (c, k) { return k; }).filter(function (k) { return dados.some(function (x) { return x.partes[k]; }); });
+    var max = Math.max.apply(null, [1].concat(dados.map(function (x) { return Math.max.apply(null, [0].concat(ks.map(function (k) { return x.partes[k] || 0; }))); })));
+    var passo = [1, 2, 5, 10, 20, 25, 50, 100, 200, 250, 500, 1000, 2000].filter(function (p) { return max / p <= 6; })[0] || 5000;
+    var topo = Math.ceil(max / passo) * passo, pl = topo >= 10000 ? 44 : 32, bw = (W - pl - pr) / Math.max(dados.length, 1);
+    var sv = '<svg viewBox="0 0 ' + W + " " + H + '" class="chart big" role="img" aria-label="Ocorrências por mês, uma barra por tipo">';
+    for (var g = 0; g <= topo; g += passo) {
+      var y = pt + ih - g / topo * ih;
+      sv += '<line class="grade" x1="' + pl + '" x2="' + (W - pr) + '" y1="' + y.toFixed(1) + '" y2="' + y.toFixed(1) + '"/><text class="tl" x="' + (pl - 5) + '" y="' + (y + 3).toFixed(1) + '" text-anchor="end">' + g + "</text>";
+    }
+    var gw = bw * 0.84, w = gw / Math.max(ks.length, 1);
+    dados.forEach(function (x, i) {
+      var x0 = pl + i * bw + (bw - gw) / 2;
+      ks.forEach(function (k, j) {
+        var n = x.partes[k] || 0, h = n / topo * ih, xx = x0 + j * w + w * 0.08, ww = w * 0.84;
+        if (n) sv += '<rect class="seg c-' + CATS[k].id + '" x="' + xx.toFixed(1) + '" y="' + (pt + ih - Math.max(h, 1)).toFixed(1) + '" width="' + ww.toFixed(1) + '" height="' + Math.max(h, 1).toFixed(1) + '" style="animation-delay:' + i * 45 + 'ms"><title>' + esc(x.d + " · " + CATS[k].nome + ": " + num(n, 0)) + "</title></rect>" +
+          '<text class="tv tv-g" x="' + (xx + ww / 2).toFixed(1) + '" y="' + (pt + ih - Math.max(h, 1) - 4).toFixed(1) + '" text-anchor="middle">' + n + "</text>";
+      });
+      sv += '<text class="tl" x="' + (pl + i * bw + bw / 2).toFixed(1) + '" y="' + (H - 7) + '" text-anchor="middle">' + x.d + "</text>";
+    });
+    return sv + "</svg>";
+  }
+
   function rosca(cats, total) {
     var r = 15.9155, acum = 0, sv = '<svg viewBox="0 0 42 42" class="rosca" role="img" aria-label="Participação por tipo de ocorrência">' +
       '<circle cx="21" cy="21" r="' + r + '" fill="none" stroke="var(--soft)" stroke-width="6"/>';
@@ -353,7 +379,7 @@ window.iniciarPainel = function (D) {
     var dFim = new Date(dia0); dFim.setDate(dFim.getDate() + a1);
     var fimMes = new Date(dFim.getFullYear(), dFim.getMonth() + 1, 0).getDate() === dFim.getDate();
     // Tendência mensal no bloco largo (27/11/2026), empilhada por tipo com legenda.
-    var tend = '<section class="card"><h3>Tendência mensal</h3><p class="cs">Por mês, empilhado por tipo' + (sem.length ? ", de " + sem[0].d + " a " + sem[sem.length - 1].d : "") + "." + (fimMes ? "" : " O último mês vai até " + rot(a1) + " (parcial).") + '</p><ul class="legend">' + leg + "</ul>" + empilhado(sem, false, 1300) + "</section>";
+    var tend = '<section class="card"><h3>Tendência mensal</h3><p class="cs">Por mês, uma barra para cada tipo de ocorrência' + (sem.length ? ", de " + sem[0].d + " a " + sem[sem.length - 1].d : "") + "." + (fimMes ? "" : " O último mês vai até " + rot(a1) + " (parcial).") + '</p><ul class="legend">' + leg + "</ul>" + agrupado(sem, 1300) + "</section>";
 
     var velC = CATS[0], velIx = velC.ix, velN = velC.on ? velC.n : 0, mxV = Math.max.apply(null, [1].concat(velIx.map(function (i) { return curF[i]; })));
     var velCard = '<section class="card"><h3>Excesso de velocidade por faixa</h3><p class="cs">Faixas da nova política de frotas, pelo quanto passou do limite da via. ' + (velC.on ? num(velN, 0) + " " + plural(velN, "ocorrência", "ocorrências") + " no período." : "Fora do filtro de tipo.") + "</p>" + velIx.map(function (i, kk) {
