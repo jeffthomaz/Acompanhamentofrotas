@@ -1,5 +1,5 @@
 {
- "_obs": "Hierarquia por frota (gerente, gestor, líder) da planilha enviada pelo usuário em 19/11/2026 (frotas ativas). Coordenador = responsável (responsaveis_frotas.json). gerente_por_coordenador: gerente de todas as frotas de um coordenador (Ednaldo = Fábio Pozzi, 19/11/2026); vale sobre o gerente por frota.",
+ "_obs": "Hierarquia por frota (gerente, gestor, líder) da planilha enviada pelo usuário em 19/11/2026 (frotas ativas). Coordenador = responsável (responsaveis_frotas.json). gerente_por_coordenador: gerente de todas as frotas de um coordenador (Ednaldo = Fábio Pozzi, 19/11/2026); vale sobre o gerente por frota. Experimentação (27/11/2026): gerente Marcos Rodrigues e gestor Luiz Paulo em todas as frotas do processo, sem coordenador.",
  "frotas": {
   "10095": {
    "gerente": "Marcos Rodrigues",
@@ -903,6 +903,18 @@
   },
   "40783": {
    "gestor": "Cristiano Colucci"
+  },
+  "40641": {
+   "gerente": "Marcos Rodrigues",
+   "gestor": "Luiz Paulo"
+  },
+  "40719": {
+   "gerente": "Marcos Rodrigues",
+   "gestor": "Luiz Paulo"
+  },
+  "40710": {
+   "gerente": "Marcos Rodrigues",
+   "gestor": "Luiz Paulo"
   }
  },
  "gerente_por_coordenador": {
