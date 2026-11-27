@@ -1548,7 +1548,9 @@ window.iniciarPainel = function (D) {
       var k = S.dias.indexOf(e[5]), q = S.ant.indexOf(e[5]);
       if (k >= 0 && porDia[k] !== null) {
         n++; min += e[3]; porDia[k] += e[3]; evS.push(e);
-        var x = loc[e[4]] || (loc[e[4]] = { i: e[4], n: 0, min: 0, fr: {} }); x.n++; x.min += e[3]; x.fr[e[0]] = 1;
+        var x = loc[e[4]] || (loc[e[4]] = { i: e[4], n: 0, min: 0, fr: {}, frMin: {}, frMax: {} }); x.n++; x.min += e[3]; x.fr[e[0]] = 1;
+        // Por frota no local (27/11/2026): soma do tempo parado e a parada mais longa (para a data).
+        x.frMin[e[0]] = (x.frMin[e[0]] || 0) + e[3]; if (!x.frMax[e[0]] || e[3] > x.frMax[e[0]][3]) x.frMax[e[0]] = e;
       } else if (q >= 0 && porDia[q] !== null) minA += e[3];
     });
     var top = Object.keys(loc).map(function (q) { return loc[q]; }).sort(function (a, b) { return b.min - a.min; });
@@ -2077,21 +2079,22 @@ window.iniciarPainel = function (D) {
       partes.push(bloco("bl-mo", BL_ICO.mo, "Motor ocioso", '<p class="bl-frase">' + fraseO + '</p><div class="bl-duo"><div><div class="bl-graf bl-graf-g">' + medidor + fatos + "</div>" + grafIO + "</div>" + top3o + "</div>", o.ate));
     }
 
-    // 📍 Permanência: os 3 estabelecimentos com mais paradas (média de tempo) e, ao lado, as 3 permanências mais longas da semana.
+    // 📍 Permanência (27/11/2026): os 5 estabelecimentos com mais paradas e, ao lado de cada um, com uma seta,
+    // as 3 frotas que somaram mais tempo parado ali na semana. Saiu o Top 5 maiores permanências.
     if (pe && pe.topEst) {
       var mxN = Math.max.apply(null, [1].concat(pe.topEst.map(function (x) { return x.n; })));
       var locaisH = '<div class="bl-locs"><h4>Principais locais de parada</h4>' + (pe.topEst.length ? '<ol class="bl-pts">' + pe.topEst.map(function (x) {
         var L0 = pe.locais[x.i];
         return '<li><div class="bl-pn"><b>' + esc(L0.nome) + "</b><span>" + esc(L0.cidade || "") + '</span><div class="bl-pb"><i style="width:' + (x.n / mxN * 100).toFixed(1) + '%"></i></div></div>' +
-          '<div class="bl-pv"><b>' + num(x.n, 0) + "</b> " + plural(x.n, "parada", "paradas") + '<span>média de <b>' + hmin(x.min / x.n) + "</b></span></div></li>";
+          '<div class="bl-pv"><b>' + num(x.n, 0) + "</b> " + plural(x.n, "parada", "paradas") + '<span>média de <b>' + hmin(x.min / x.n) + "</b></span></div>" +
+          '<span class="bl-pseta" aria-hidden="true">→</span><div class="bl-pf" aria-label="Frotas com mais tempo parado neste local">' +
+          Object.keys(x.frMin).sort(function (a, b) { return x.frMin[b] - x.frMin[a] || a.localeCompare(b); }).slice(0, 3).map(function (f) {
+            var em = x.frMax[f];
+            return '<div><span><b>' + esc(f) + "</b> · " + dd(em[5]) + '</span><b title="' + esc("Soma das paradas da frota " + f + " neste local na semana") + '">' + hmin(x.frMin[f]) + "</b></div>";
+          }).join("") + "</div></li>";
       }).join("") + "</ol>" : '<p class="cs">Nenhuma parada em estabelecimento na semana.</p>') + "</div>";
-      var VV = D.permanencia.veiculos;
-      var longH = '<div class="bl-top"><h4>Top 5 maiores permanências</h4>' + (pe.longas.length ? "<ol>" + pe.longas.map(function (e) {
-        return '<li><div><b>Frota ' + esc(e[0]) + "</b><span><em class=\"cap\">" + esc(pe.locais[e[4]].nome.toLowerCase()) + "</em>, " + dd(e[5]) + (e[6] ? " às " + esc(e[6]) : "") + '</span></div><div class="bl-tq"><b>' + hmin(e[3]) + "</b>" +
-          '<span class="cap">' + esc(((VV[e[0]] || {}).processo || "").toLowerCase()) + "</span></div></li>";
-      }).join("") + "</ol>" : '<p class="cs">Nenhuma permanência na semana.</p>') + "</div>";
       var fraseP = pe.n ? "Os veículos somaram " + '<b class="bl-n">' + (pe.min >= 600 ? num(Math.round(pe.min / 60), 0) + " h" : hmin(pe.min)) + "</b> parados em " + num(pe.n, 0) + " " + plural(pe.n, "permanência", "permanências") + "." : "Nenhuma permanência na semana.";
-      partes.push(bloco("bl-pp", BL_ICO.pp, "Permanência", '<p class="bl-frase">' + fraseP + '</p><div class="bl-duo">' + locaisH + longH + "</div>", pe.ate));
+      partes.push(bloco("bl-pp", BL_ICO.pp, "Permanência", '<p class="bl-frase">' + fraseP + '</p>' + locaisH.replace('<h4>Principais locais de parada</h4>', '<h4>Principais locais de parada e as frotas que ficaram mais tempo em cada um</h4>'), pe.ate));
     }
 
     var rodape = ""; // frase final da mensagem retirada do Resumo a pedido do usuário (25/11/2026)
