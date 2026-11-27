@@ -6,6 +6,12 @@
       "data": "2026-08-19",
       "tipo": "celular",
       "motivo": "duas ocorrências do mesmo colaborador, uma tratativa só (conferido pelo usuário em 23/11/2026)"
+    },
+    {
+      "frota": "40827",
+      "data": "2026-11-25",
+      "tipo": "distracao",
+      "motivo": "tratativa de distração das 15:58 chegou na planilha de ocorrências como excesso de velocidade (conferido pelo usuário em 27/11/2026)"
     }
   ]
 }
