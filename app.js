@@ -78,15 +78,26 @@ window.iniciarPainel = function (D) {
   var NIV_H = [["ger", "gerente", "Gerente", "Todos os gerentes"], ["resp", "responsavel", "Coordenador", "Todos os coordenadores"], ["gest", "gestor", "Gestor", "Todos os gestores"]]; // Líder saiu dos filtros a pedido (25/11/2026); h.lid fica sempre vazio.
   function hierAtiva() { var h = fil_.h || {}; return !!(h.ger || h.resp || h.gest || h.lid); }
   // itens: lista; reg(item) devolve o registro com gerente/responsavel/gestor/lider. Devolve os itens filtrados e o HTML dos 4 selects.
+  // Filtros interligados (27/11/2026): cada lista (Gerente, Coordenador, Gestor) só mostra o que combina com o processo
+  // e com os outros níveis escolhidos, em qualquer ordem; o Processo também só mostra os processos da hierarquia escolhida.
   function hier(itens, reg, pre) {
     var h = fil_.h || (fil_.h = { ger: "", resp: "", gest: "", lid: "" }), html = "";
+    var casa = function (x, exceto) { var r = reg(x) || {}; return NIV_H.every(function (m) { return m[0] === exceto || !h[m[0]] || r[m[1]] === h[m[0]]; }); };
     NIV_H.forEach(function (n) {
-      var l = unicos(itens.map(function (x) { return (reg(x) || {})[n[1]]; }).filter(Boolean));
+      var l = unicos(itens.filter(function (x) { return casa(x, n[0]); }).map(function (x) { return (reg(x) || {})[n[1]]; }).filter(Boolean));
       if (h[n[0]] && l.indexOf(h[n[0]]) < 0) h[n[0]] = "";
-      itens = itens.filter(function (x) { return !h[n[0]] || (reg(x) || {})[n[1]] === h[n[0]]; });
+    });
+    NIV_H.forEach(function (n) {
+      var l = unicos(itens.filter(function (x) { return casa(x, n[0]); }).map(function (x) { return (reg(x) || {})[n[1]]; }).filter(Boolean));
       html += "<label>" + n[2] + '<select data-hier="' + n[0] + '" id="' + pre + "-" + n[0] + '">' + opcoes(l, h[n[0]], n[3]) + "</select></label>";
     });
-    return { itens: itens, html: html };
+    return { itens: itens.filter(function (x) { return casa(x, ""); }), html: html };
+  }
+  // Tira da hierarquia escolhida o que não existe nesta base (filtro compartilhado entre abas) e devolve o teste por registro.
+  function hierBase(regs) {
+    var h = fil_.h; if (!h) return function () { return true; };
+    NIV_H.forEach(function (n) { if (h[n[0]] && !regs.some(function (r) { return (r || {})[n[1]] === h[n[0]]; })) h[n[0]] = ""; });
+    return function (r) { return hierOk(r); };
   }
   var fotoModo = false; // durante as fotos o Top 5 fica sempre aberto
   function top5Aberto() { if (fotoModo) return true; try { return localStorage.getItem("painel-top5") === "1"; } catch (e) { return !!fil_.top5; } }
@@ -249,7 +260,8 @@ window.iniciarPainel = function (D) {
     var fc = fil_.comp || (fil_.comp = { frota: "", resp: "", ger: "", gest: "", lid: "" });
     // Filtros: tipo de frota, processo e gerência.
     var ids = Object.keys(F).filter(function (f) { return !fc.frota || F[f].frota === fc.frota; });
-    var processos = unicos(ids.map(function (f) { return F[f].processo; }));
+    var okC = hierBase(ids.map(function (f) { return F[f]; }));
+    var processos = unicos(ids.filter(function (f) { return okC(F[f]); }).map(function (f) { return F[f].processo; }));
     if (fil_.processo && processos.indexOf(fil_.processo) < 0) fil_.processo = "";
     ids = ids.filter(function (f) { return !fil_.processo || F[f].processo === fil_.processo; });
     var hC = hier(ids, function (f) { return F[f]; }, "c"); ids = hC.itens;
@@ -526,7 +538,8 @@ window.iniciarPainel = function (D) {
     var stO = perEstado("motor-ocioso", "todo"), fO = diasOp.length ? perFaixa(stO, diasOp) : { todo: true };
     var kds = fO.todo ? null : U.map(function (d, i) { return d >= fO.de && d <= fO.ate ? i : -1; }).filter(function (i) { return i >= 0; });
     var somaD = function (arr) { return sum(kds, function (q) { return (arr || [])[q] || 0; }); };
-    var processos = unicos(V.map(function (v) { return v.processo; }));
+    var okO = hierBase(V);
+    var processos = unicos(V.filter(okO).map(function (v) { return v.processo; }));
     if (fil_.processo && processos.indexOf(fil_.processo) < 0) fil_.processo = "";
     var doProc = V.filter(function (v) { return !fil_.processo || v.processo === fil_.processo; });
     var hO = hier(doProc, function (v) { return v; }, "o"), vs = hO.itens;
@@ -708,7 +721,8 @@ window.iniciarPainel = function (D) {
   var pm = { frotas: [], medida: "tempo", dias: 0, dia: "", abertoFrotas: false, refit: true, mapa: null, vista: null, marcas: {}, localSel: null };
   function permFiltrados() {
     var P = D.permanencia, V = P.veiculos;
-    var processos = unicos(Object.keys(V).map(function (f) { return V[f].processo; }));
+    var okP = hierBase(Object.keys(V).map(function (f) { return V[f]; }));
+    var processos = unicos(Object.keys(V).filter(function (f) { return okP(V[f]); }).map(function (f) { return V[f].processo; }));
     if (fil_.processo && processos.indexOf(fil_.processo) < 0) fil_.processo = "";
     var hP = hier(Object.keys(V).filter(function (f) { return !fil_.processo || V[f].processo === fil_.processo; }), function (f) { return V[f]; }, "p");
     var frotasProc = hP.itens.sort();
@@ -1903,12 +1917,15 @@ window.iniciarPainel = function (D) {
       var x = (D[b[0]] || {})[b[1]] || {}; Object.keys(x).forEach(function (f) { if (x[f].processo) procs[x[f].processo] = 1; });
     });
     ((D.motorOcioso || {}).veiculos || []).forEach(function (v) { procs[v.processo] = 1; });
-    var lista = unicos(Object.keys(procs));
     // Gerente/Coordenador/Gestor: opções tiradas das três bases, já respeitando o processo.
     var regs = [];
     [["comportamento", "frotas"], ["permanencia", "veiculos"]].forEach(function (b) { var x = (D[b[0]] || {})[b[1]] || {}; Object.keys(x).forEach(function (f) { regs.push(x[f]); }); });
     ((D.motorOcioso || {}).veiculos || []).forEach(function (v) { regs.push(v); });
+    var okR = hierBase(regs);
+    var lista = unicos(Object.keys(procs)).filter(function (p) { return regs.some(function (r) { return r.processo === p && okR(r); }); });
+    if (fil_.processo && lista.indexOf(fil_.processo) < 0) fil_.processo = "";
     var hR = hier(regs.filter(function (r) { return noProc(r.processo); }), function (r) { return r; }, "r");
+    c = rzComportamento(S); o = rzOcioso(S); pe = rzPermanencia(S); // de novo, com os filtros já acertados
     // Boletim semanal com o logo da Bioenergética Aroeira (26/11/2026); logo-verde.png = logo-branco.png em verde.
     var topo = '<header class="bl-topo"><div class="bl-marca"><img class="bl-logo" src="logo-verde.png?v=202611261130" alt="Bioenergética Aroeira" width="49" height="64"><div><h2 class="bl-tit">Boletim semanal</h2>' +
       '<p class="bl-per"><b>' + faixaExt(S.ini, S.fim) + "</b>, comparada com " + faixaExt(S.ant[0], S.ant[6]) + ".</p></div></div>" +
